@@ -72,6 +72,8 @@ Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`.
 | Fill watch | `world-cup-bot watch` | No — ingests venue fills over WS |
 | Live LP | `DRY_RUN=false` | Yes — limit orders only |
 
+See [SHADOW.md](SHADOW.md) for the phased go-live checklist (≥3 dry-run days, watch, egress preflight).
+
 ## Kalshi (optional)
 
 Cross-venue scanner is **alert-only** in v1. Kalshi credentials optional.
@@ -110,7 +112,7 @@ world-cup-bot ui
 # open http://127.0.0.1:8765
 ```
 
-Tabs: **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds `127.0.0.1` by default.
+Tabs: **Ready** (preflight + shadow progress), **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds `127.0.0.1` by default.
 
 Config paths resolve against the **repo root** automatically — you can run `world-cup-bot ui` from any directory after `pip install -e .`.
 

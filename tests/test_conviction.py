@@ -65,6 +65,14 @@ def test_missing_rewards_skipped():
     assert "reward params" in result.reason
 
 
+def test_group_b_conviction_tiers():
+    cfg = load_conviction_config()
+    assert cfg.team_mode("Canada") == TeamMode.YES_HEAVY
+    assert cfg.team_mode("Bosnia & Herzegovina") == TeamMode.YES_HEAVY
+    assert cfg.team_mode("Qatar") == TeamMode.SKIP
+    assert cfg.team_mode("Switzerland") == TeamMode.FADE_WATCH
+
+
 def test_filter_quote_only():
     cfg = load_conviction_config()
     markets = [

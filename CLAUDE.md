@@ -117,8 +117,7 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 ## Open backlog (do not claim done)
 
 - Module 6 cross-venue alert scanner (Kalshi ticker map)
-- Group B conviction YAML completeness vs research matrix
-- Formal shadow/MCPT gate checklist in CI
+- Formal shadow/MCPT gate checklist in CI (operator checklist: `SHADOW.md` + UI **Ready** tab)
 - Full REST `/orders` vs open-quote state diff (trades reconcile covers fills; quote drift is separate)
 
 ## Related

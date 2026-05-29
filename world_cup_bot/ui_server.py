@@ -12,9 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from world_cup_bot.config import Settings
+from world_cup_bot.shadow_checklist import ready_payload
 from world_cup_bot.ui_data import (
     advisor_context_payload,
     calendar_payload,
+    conviction_summary_payload,
     markets_payload,
     meta_payload,
     plan_payload,
@@ -84,6 +86,12 @@ class UiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/advisor/context":
                 self._send_json(200, advisor_context_payload(settings))
+                return
+            if path == "/api/ready":
+                self._send_json(200, ready_payload(settings, test_auth=False))
+                return
+            if path == "/api/conviction/summary":
+                self._send_json(200, conviction_summary_payload(settings))
                 return
             self._send_json(404, {"error": "not_found", "path": path})
         except Exception as exc:

@@ -15,6 +15,41 @@ from world_cup_bot.paths import PROJECT_ROOT
 from world_cup_bot.quoter import QuoteIntent
 
 
+def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
+    cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    markets = scanner.discover_advance_markets(
+        settings.gamma_url,
+        min_hours_before_kickoff=settings.min_hours_before_kickoff,
+    )
+    by_mode: dict[str, int] = {}
+    group_b: list[dict[str, Any]] = []
+    group_b_teams = frozenset({"Canada", "Switzerland", "Bosnia & Herzegovina", "Qatar"})
+    for market in markets:
+        ev = conviction.evaluate_market(market, cfg)
+        by_mode[ev.mode.value] = by_mode.get(ev.mode.value, 0) + 1
+        if market.team in group_b_teams:
+            group_b.append(
+                {
+                    "team": market.team,
+                    "mid": market.mid,
+                    "mode": ev.mode.value,
+                    "quote": ev.quote,
+                    "reason": ev.reason,
+                }
+            )
+    return {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "config_version": 2,
+        "yaml_path": settings.conviction_config,
+        "market_count": len(markets),
+        "by_mode": by_mode,
+        "group_b": group_b,
+        "yes_conviction_count": len(cfg.yes_conviction),
+        "bilateral_count": len(cfg.bilateral_only),
+        "fade_watch_count": len(cfg.fade_watch),
+    }
+
+
 def meta_payload(settings: Settings) -> dict[str, Any]:
     spec = load_strategy_version(Path(settings.logic_version_config))
     return {

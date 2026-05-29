@@ -166,8 +166,36 @@
       border: 2px solid var(--border); border-top-color: var(--accent);
       border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+    .step-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+    .step {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+    }
+    .step .phase {
+      font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(122,162,247,0.12);
+      padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+    }
+    .step.done { border-color: rgba(91, 209, 122, 0.35); }
+    .step.warn { border-color: rgba(224, 175, 104, 0.4); }
+    .step.blocked { border-color: rgba(239, 111, 108, 0.35); }
+    .step h4 { margin: 0 0 4px; font-size: 14px; }
+    .step p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.45; }
+    .step code { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+    .check-row {
+      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+      border-bottom: 1px solid var(--border); font-size: 13px;
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-badge {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 3px 7px; border-radius: 6px; min-width: 42px; text-align: center;
+    }
+    .check-badge.pass { background: rgba(91,209,122,0.15); color: var(--ok); }
+    .check-badge.warn { background: rgba(224,175,104,0.15); color: var(--warn); }
+    .check-badge.fail { background: rgba(239,111,108,0.15); color: var(--bad); }
+    .check-badge.skip { background: var(--panel-2); color: var(--text-dim); }
+    .doc-link { color: var(--accent); text-decoration: none; }
+    .doc-link:hover { text-decoration: underline; }
 </head>
 <body>
   <header>
@@ -186,12 +214,15 @@
   </header>
   <p class="banner">
     Shadow / read-only — refresh pulls live Gamma mids. Orders are never posted from this page.
-    CLI: <code style="color:var(--accent)">world-cup-bot plan</code> ·
-    <code style="color:var(--accent)">watch</code> for fills.
+    Shadow checklist — see <a class="doc-link" href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md" target="_blank" rel="noopener">SHADOW.md</a>.
+    CLI: <code style="color:var(--accent)">world-cup-bot preflight</code> ·
+    <code style="color:var(--accent)">plan --record</code> ·
+    <code style="color:var(--accent)">watch</code>.
   </p>
 
   <nav id="tabs">
-    <button type="button" data-tab="markets" class="active">Markets</button>
+    <button type="button" data-tab="ready" class="active">Ready</button>
+    <button type="button" data-tab="markets">Markets</button>
     <button type="button" data-tab="plan">Plan</button>
     <button type="button" data-tab="calendar">Calendar</button>
     <button type="button" data-tab="pnl">PnL</button>
@@ -206,7 +237,18 @@
     </div>
     <div id="error" class="err" style="display:none"></div>
 
-    <section id="panel-markets" class="panel active">
+    <section id="panel-ready" class="panel active">
+      <div class="cards" id="ready-cards"></div>
+      <div class="step-list" id="ready-steps"></div>
+      <div class="table-wrap">
+        <div id="preflight-checks"></div>
+      </div>
+      <p style="color:var(--text-dim);font-size:13px;margin-top:14px">
+        Full phases: <code>SHADOW.md</code> in repo root. Geoblock WARN from US is OK while <code>DRY_RUN=true</code>.
+      </p>
+    </section>
+
+    <section id="panel-markets" class="panel">
       <div class="cards" id="markets-cards"></div>
       <div class="table-wrap">
         <table>
@@ -269,7 +311,7 @@
   <footer id="footer-meta">localhost · optional UI · no API keys required</footer>
 
   <script>
-    let activeTab = "markets";
+    let activeTab = "ready";
     let busy = false;
 
     function fmt(v, d = 3) {
@@ -315,10 +357,38 @@
         `localhost · ${m.logic_version} · ${m.dry_run ? "shadow" : "live mode"} · Gamma live`;
     }
 
+    async function loadReady() {
+      const d = await fetchJson("/api/ready");
+      const pfOk = d.preflight_ok ? "PASS" : "CHECK";
+      document.getElementById("ready-cards").innerHTML =
+        card("Shadow progress", d.shadow_progress) +
+        card("Preflight", pfOk, true) +
+        card("Quote intents", d.ledger.quote_intents || 0) +
+        card("Plan days", d.ledger.distinct_days || 0);
+      document.getElementById("ready-steps").innerHTML = d.shadow_steps.map(s => `
+        <div class="step ${s.status}">
+          <div class="phase">P${s.phase}</div>
+          <div>
+            <h4>${s.title}</h4>
+            <p>${s.detail}</p>
+            ${s.cli ? `<p style="margin-top:8px"><code>${s.cli}</code></p>` : ""}
+          </div>
+        </div>`).join("");
+      document.getElementById("preflight-checks").innerHTML = d.preflight_checks.map(c => `
+        <div class="check-row">
+          <span class="check-badge ${c.status}">${c.status}</span>
+          <div><strong>${c.name}</strong><div style="color:var(--text-dim);margin-top:2px">${c.detail}</div></div>
+        </div>`).join("");
+    }
+
     async function loadMarkets() {
       const d = await fetchJson("/api/markets");
+      let summary = null;
+      try { summary = await fetchJson("/api/conviction/summary"); } catch (_) {}
+      const gb = summary && summary.group_b && summary.group_b.length
+        ? card("Group B", summary.group_b.length, true) : "";
       document.getElementById("markets-cards").innerHTML =
-        card("Markets", d.count) + card("LP filter", d.eligible_only ? "on" : "off", true);
+        card("Markets", d.count) + card("LP filter", d.eligible_only ? "on" : "off", true) + gb;
       const tbody = document.getElementById("markets-body");
       const empty = document.getElementById("markets-empty");
       if (!d.markets.length) {
@@ -382,7 +452,7 @@
       document.getElementById("advisor-pre").textContent = JSON.stringify(d.context, null, 2);
     }
 
-    const loaders = { markets: loadMarkets, plan: loadPlan, calendar: loadCalendar, pnl: loadPnl, advisor: loadAdvisor };
+    const loaders = { ready: loadReady, markets: loadMarkets, plan: loadPlan, calendar: loadCalendar, pnl: loadPnl, advisor: loadAdvisor };
 
     async function refreshTab(tab) {
       if (busy) return;
@@ -427,7 +497,7 @@
     (async () => {
       try {
         await loadMeta();
-        await refreshTab("markets");
+        await refreshTab("ready");
       } catch (e) {
         showError("Startup failed", e.detail || e.message, e.hint);
       }

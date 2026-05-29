@@ -1,21 +1,34 @@
 # World Cup Bot — conviction LP seeds (K82 research synthesis)
-# Prices come from Gamma at runtime; this file only gates WHICH teams to quote.
-# See: https://github.com/cemini23/llm-wiki-by-cemini (world-cup-2026-group-conviction-matrix)
+# Prices from Gamma at runtime; this file only gates WHICH teams to quote.
+# Matrix: OSINT wiki world-cup-2026-group-conviction-matrix (DeadBall + B Wade + Gemini)
 
-version: 1
+version: 2
 
 # Mid-tier YES-heavy LP (target mid ~0.20–0.80)
 yes_conviction:
-  - Turkey
-  - Colombia
+  # Group B — B Wade fill (DeadBall Group B video pending)
+  - Canada
+  - Bosnia & Herzegovina
+  # Group C / E / F — DeadBall 2nd–3rd advance paths
   - Morocco
+  - Scotland
   - Ecuador
+  - Ivory Coast
+  - Japan
+  # Group D
+  - Turkey
+  - Paraguay
+  - Australia
+  # Group H / I / J / K
+  - Cape Verde
   - Senegal
   - Norway
-  - Paraguay
   - Algeria
-  - Cape Verde
-  - Japan
+  - Austria
+  - Colombia
+  # Group G / L — third-place math candidates
+  - Iran
+  - Panama
 
 # Whales / high mid — two-sided only (mandatory NO above ~90¢)
 bilateral_only:
@@ -28,6 +41,9 @@ bilateral_only:
   - Portugal
   - Mexico
   - Switzerland
+  - Netherlands
+  - Belgium
+  - Uruguay
 
 # Cross-venue / research fade — alert only, no auto YES sizing
 fade_watch:
@@ -42,14 +58,43 @@ limits:
   max_mid: 0.80
   bilateral_mid: 0.90
   default_max_notional_usd: 2000
-  yes_size_ratio: 0.70   # YES leg share of max notional in yes_heavy mode
-  min_reward_shares: 500    # sports books often 500–1000; Gamma value required for lp_eligible
+  yes_size_ratio: 0.70
+  min_reward_shares: 500
 
 per_team:
   Turkey:
     max_notional_usd: 2500
   Colombia:
     max_notional_usd: 2500
+  Canada:
+    max_notional_usd: 2000
+  Bosnia & Herzegovina:
+    max_notional_usd: 2000
   USA:
     max_notional_usd: 500
     mode: skip
+  Qatar:
+    mode: skip
+  Haiti:
+    mode: skip
+  Curaçao:
+    mode: skip
+  Uzbekistan:
+    mode: skip
+  Jordan:
+    mode: skip
+  Ghana:
+    mode: skip
+  Saudi Arabia:
+    mode: skip
+  Tunisia:
+    mode: skip
+  New Zealand:
+    mode: skip
+  Iraq:
+    mode: skip
+
+# Research notes (not loaded by bot — documentation only)
+# Group B: B Wade — Switzerland win ~53% Kalshi; Canada competitive; Bosnia > Qatar advance rank
+# Group D: DeadBall USA OUT (3 pts); max PM vs research split — USA skip + fade_watch
+# Cross-venue flags: USA, Switzerland, England, Croatia — see fade_watch + Module 6 (future)
