@@ -29,7 +29,7 @@ class Limits:
     bilateral_mid: float = 0.90
     default_max_notional_usd: float = 2000.0
     yes_size_ratio: float = 0.70
-    min_reward_shares: float = 50.0
+    min_reward_shares: float = 500.0
 
 
 @dataclass(frozen=True)
@@ -132,8 +132,14 @@ def evaluate_market(market: AdvanceMarket, config: ConvictionConfig) -> Convicti
         return ConvictionResult(market, mode, False, "fade_watch — alert only")
     if mode == TeamMode.UNLISTED:
         return ConvictionResult(market, mode, False, "not in conviction YAML")
+    if not market.kickoff_known:
+        return ConvictionResult(market, mode, False, "unknown kickoff — fail closed")
+    if not market.rewards_params_ok:
+        return ConvictionResult(market, mode, False, "missing Gamma reward params")
     if not market.lp_eligible:
-        return ConvictionResult(market, mode, False, "failed LP eligibility (calendar/spread)")
+        return ConvictionResult(
+            market, mode, False, "failed LP eligibility (calendar/spread/rewards)"
+        )
 
     mid = market.mid
     if mid is None:

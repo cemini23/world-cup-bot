@@ -1,5 +1,3 @@
-
-
 from world_cup_bot.logic_version import (
     LEGACY_UNVERSIONED,
     PnlScope,

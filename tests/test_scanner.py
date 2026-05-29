@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from market_helpers import make_market
 from world_cup_bot import scanner
 
 FIXTURE = Path(__file__).parent / "fixtures" / "gamma_search_sample.json"
@@ -34,6 +35,8 @@ def test_discover_from_fixture():
     assert mexico.mid == pytest.approx(0.83)
     assert not mexico.bilateral_mode
     assert mexico.lp_eligible
+    assert mexico.rewards_params_ok
+    assert mexico.kickoff_known
 
 
 def test_bilateral_mode_high_mid():
@@ -44,9 +47,32 @@ def test_bilateral_mode_high_mid():
         "clobTokenIds": ["1", "2"],
         "bestBid": 0.92,
         "bestAsk": 0.94,
+        "rewardsMinSize": 500,
+        "rewardsMaxSpread": 4.5,
         "acceptingOrders": True,
     }
     now = datetime(2026, 6, 1, tzinfo=UTC)
     parsed = scanner.parse_market(market, now=now)
     assert parsed is not None
     assert parsed.bilateral_mode
+
+
+def test_lp_eligible_fail_closed_unknown_kickoff():
+    m = make_market("Unknown FC", mid=0.45, hours_to_kickoff=None)
+    assert not m.kickoff_known
+    assert not m.lp_eligible
+
+
+def test_lp_eligible_fail_closed_missing_rewards():
+    m = make_market("Turkey", mid=0.45, rewards_min_shares=None)
+    assert not m.rewards_params_ok
+    assert not m.lp_eligible
+
+
+def test_lp_eligible_respects_min_hours_config():
+    m = make_market("Turkey", mid=0.45, hours_to_kickoff=8.0, min_hours=10.0)
+    assert m.must_cancel
+    assert not m.lp_eligible
+
+    m2 = make_market("Turkey", mid=0.45, hours_to_kickoff=12.0, min_hours=10.0)
+    assert m2.lp_eligible

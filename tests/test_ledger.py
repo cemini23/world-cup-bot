@@ -5,7 +5,7 @@ import pytest
 
 from world_cup_bot import ledger
 from world_cup_bot.logic_version import LEGACY_UNVERSIONED, PnlScope, load_strategy_version
-from world_cup_bot.quoter import QuoteIntent
+from world_cup_bot.quoter import MarketSnapshot, QuoteIntent
 
 
 @pytest.fixture
@@ -16,6 +16,35 @@ def version_spec():
 @pytest.fixture
 def ledger_path(tmp_path: Path) -> Path:
     return tmp_path / "ledger.jsonl"
+
+
+def _snapshot() -> MarketSnapshot:
+    return MarketSnapshot(
+        mid=0.45,
+        best_bid=0.43,
+        best_ask=0.47,
+        spread=0.04,
+        rewards_min_shares=500,
+        rewards_max_spread=4.5,
+        hours_to_kickoff=48.0,
+    )
+
+
+def _intent(**overrides) -> QuoteIntent:
+    base = dict(
+        team="Turkey",
+        side="YES",
+        token_id="111",
+        order_id="dry-turkey-yes-test0001",
+        price=0.44,
+        size_shares=100.0,
+        notional_usd=44.0,
+        dry_run=True,
+        reason="test",
+        snapshot=_snapshot(),
+    )
+    base.update(overrides)
+    return QuoteIntent(**base)
 
 
 def test_filter_scope_current(version_spec):
@@ -32,20 +61,12 @@ def test_filter_scope_current(version_spec):
 
 
 def test_record_and_summarize(version_spec, ledger_path):
-    intents = [
-        QuoteIntent(
-            team="Turkey",
-            side="YES",
-            token_id="111",
-            price=0.44,
-            size_shares=100.0,
-            notional_usd=44.0,
-            dry_run=True,
-            reason="test",
-        )
-    ]
     n = ledger.record_quote_intents(
-        intents, version_spec, path=ledger_path, dry_run=True, correlation_id="test-run"
+        [_intent()],
+        version_spec,
+        path=ledger_path,
+        dry_run=True,
+        correlation_id="test-run",
     )
     assert n == 1
 
@@ -53,6 +74,9 @@ def test_record_and_summarize(version_spec, ledger_path):
     assert rows[0]["event"] == "quote_intent_dry_run"
     assert rows[0]["logic_version"] == version_spec.version_id
     assert rows[0]["correlation_id"] == "test-run"
+    assert rows[0]["order_id"] == "dry-turkey-yes-test0001"
+    assert rows[0]["mid_at_place"] == pytest.approx(0.45)
+    assert rows[0]["rewards_max_spread"] == pytest.approx(4.5)
 
     summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
     assert summary.quote_intents == 1
@@ -90,6 +114,32 @@ def test_fill_pnl_net(version_spec, ledger_path):
     assert summary.rewards_usd == pytest.approx(25.0)
     assert summary.fees_usd == pytest.approx(0.5)
     assert summary.net_pnl_usd == pytest.approx(12.0)
+
+
+def test_fill_dedup(version_spec, ledger_path):
+    ok1 = ledger.record_fill(
+        path=ledger_path,
+        spec=version_spec,
+        team="Turkey",
+        side="YES",
+        order_id="ord-dup",
+        price=0.50,
+        size_shares=100,
+    )
+    ok2 = ledger.record_fill(
+        path=ledger_path,
+        spec=version_spec,
+        team="Turkey",
+        side="YES",
+        order_id="ord-dup",
+        price=0.50,
+        size_shares=100,
+    )
+    assert ok1 is True
+    assert ok2 is False
+    rows = ledger.load_rows(ledger_path)
+    summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
+    assert summary.fills == 1
 
 
 def test_legacy_excluded_in_summary(version_spec, ledger_path):

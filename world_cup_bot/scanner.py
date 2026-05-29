@@ -18,6 +18,7 @@ _ADVANCE_QUESTION = re.compile(
     re.IGNORECASE,
 )
 _SEARCH_QUERY = "world cup advance knockout"
+DEFAULT_MIN_HOURS_BEFORE_KICKOFF = 10.0
 
 
 @dataclass(frozen=True)
@@ -40,14 +41,28 @@ class AdvanceMarket:
     hours_to_kickoff: float | None
     must_cancel: bool
     bilateral_mode: bool
+    min_hours_before_kickoff: float
+
+    @property
+    def kickoff_known(self) -> bool:
+        return self.hours_to_kickoff is not None
+
+    @property
+    def rewards_params_ok(self) -> bool:
+        return self.rewards_min_shares is not None and self.rewards_max_spread is not None
 
     @property
     def lp_eligible(self) -> bool:
+        """Fail closed: unknown kickoff or missing reward params → not eligible."""
         if not self.accepting_orders:
+            return False
+        if not self.kickoff_known:
+            return False
+        if not self.rewards_params_ok:
             return False
         if self.must_cancel:
             return False
-        if self.hours_to_kickoff is not None and self.hours_to_kickoff < 10.0:
+        if self.hours_to_kickoff < self.min_hours_before_kickoff:
             return False
         return self.mid is not None
 
@@ -80,7 +95,7 @@ def parse_market(
     *,
     now: datetime | None = None,
     schedule: dict[str, list[datetime]] | None = None,
-    min_hours_before_kickoff: float = 10.0,
+    min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
 ) -> AdvanceMarket | None:
     question = market.get("question") or ""
     team = parse_team_from_question(question)
@@ -131,6 +146,7 @@ def parse_market(
         hours_to_kickoff=hours,
         must_cancel=must_cancel,
         bilateral_mode=bilateral,
+        min_hours_before_kickoff=min_hours_before_kickoff,
     )
 
 
@@ -152,7 +168,7 @@ def discover_advance_markets(
     *,
     now: datetime | None = None,
     schedule: dict[str, list[datetime]] | None = None,
-    min_hours_before_kickoff: float = 10.0,
+    min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
     opener: Any | None = None,
 ) -> list[AdvanceMarket]:
     """Fetch advance markets from Gamma public-search; prices are live, not hardcoded."""

@@ -43,7 +43,7 @@ limits:
   bilateral_mid: 0.90
   default_max_notional_usd: 2000
   yes_size_ratio: 0.70   # YES leg share of max notional in yes_heavy mode
-  min_reward_shares: 50    # fallback if Gamma omits rewardsMinSize
+  min_reward_shares: 500    # sports books often 500–1000; Gamma value required for lp_eligible
 
 per_team:
   Turkey:

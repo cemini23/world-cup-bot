@@ -2,13 +2,44 @@
 
 from __future__ import annotations
 
+import secrets
 from dataclasses import dataclass
 from typing import Literal
 
 from world_cup_bot.config import Settings
 from world_cup_bot.conviction import ConvictionConfig, ConvictionResult, TeamMode
+from world_cup_bot.scanner import AdvanceMarket
 
 Side = Literal["YES", "NO"]
+
+
+@dataclass(frozen=True)
+class MarketSnapshot:
+    """Book + reward state at quote time (K75 replay / Phase-0 place-time logging)."""
+
+    mid: float
+    best_bid: float | None
+    best_ask: float | None
+    spread: float | None
+    rewards_min_shares: float
+    rewards_max_spread: float
+    hours_to_kickoff: float | None
+
+    @classmethod
+    def from_market(cls, market: AdvanceMarket) -> MarketSnapshot | None:
+        if market.mid is None:
+            return None
+        if market.rewards_min_shares is None or market.rewards_max_spread is None:
+            return None
+        return cls(
+            mid=market.mid,
+            best_bid=market.best_bid,
+            best_ask=market.best_ask,
+            spread=market.spread,
+            rewards_min_shares=market.rewards_min_shares,
+            rewards_max_spread=market.rewards_max_spread,
+            hours_to_kickoff=market.hours_to_kickoff,
+        )
 
 
 @dataclass(frozen=True)
@@ -16,11 +47,13 @@ class QuoteIntent:
     team: str
     side: Side
     token_id: str
+    order_id: str
     price: float
     size_shares: float
     notional_usd: float
     dry_run: bool
     reason: str
+    snapshot: MarketSnapshot
 
 
 def _tick_price(value: float) -> float:
@@ -28,11 +61,33 @@ def _tick_price(value: float) -> float:
     return max(0.01, min(0.99, round(value, 2)))
 
 
+def _max_spread_distance(max_spread_cents: float) -> float:
+    """Gamma rewardsMaxSpread is in cents (e.g. 4.5 → ±4.5¢ from midpoint)."""
+    return max_spread_cents / 100.0
+
+
+def _clamp_yes_bid(bid: float, mid: float, max_spread_cents: float) -> float:
+    floor = mid - _max_spread_distance(max_spread_cents)
+    return _tick_price(max(bid, floor))
+
+
+def _clamp_no_bid(bid: float, yes_mid: float, max_spread_cents: float) -> float:
+    no_mid = 1.0 - yes_mid
+    floor = no_mid - _max_spread_distance(max_spread_cents)
+    return _tick_price(max(bid, floor))
+
+
 def _shares_for_notional(notional_usd: float, price: float, min_shares: float) -> float:
     if price <= 0:
         return 0.0
     shares = notional_usd / price
     return max(min_shares, round(shares, 2))
+
+
+def _new_order_id(team: str, side: Side, *, dry_run: bool) -> str:
+    prefix = "dry" if dry_run else "live"
+    slug = team.lower().replace(" ", "-")[:20]
+    return f"{prefix}-{slug}-{side.lower()}-{secrets.token_hex(4)}"
 
 
 def build_quotes(
@@ -45,14 +100,22 @@ def build_quotes(
     if not result.quote or market.mid is None:
         return []
 
-    max_notional = config.max_notional(market.team)
-    min_shares = market.rewards_min_shares or config.limits.min_reward_shares
-    dry = settings.dry_run
+    snapshot = MarketSnapshot.from_market(market)
+    if snapshot is None:
+        return []
 
-    yes_price = _tick_price(market.best_bid if market.best_bid is not None else market.mid - 0.01)
-    no_ref = (1.0 - market.mid) if market.mid is not None else None
+    max_notional = config.max_notional(market.team)
+    min_shares = snapshot.rewards_min_shares
+    dry = settings.dry_run
+    max_spread = snapshot.rewards_max_spread
+
+    preferred_yes = market.best_bid if market.best_bid is not None else market.mid - 0.01
+    yes_price = _clamp_yes_bid(preferred_yes, market.mid, max_spread)
+
     no_bid_implied = (1.0 - (market.best_ask or market.mid)) if market.best_ask else None
-    no_price = _tick_price(no_bid_implied if no_bid_implied is not None else (no_ref or 0.5) - 0.01)
+    no_ref = 1.0 - market.mid
+    preferred_no = no_bid_implied if no_bid_implied is not None else no_ref - 0.01
+    no_price = _clamp_no_bid(preferred_no, market.mid, max_spread)
 
     bilateral = result.mode == TeamMode.BILATERAL_ONLY or market.bilateral_mode
     if bilateral:
@@ -70,11 +133,13 @@ def build_quotes(
             team=market.team,
             side="YES",
             token_id=market.yes_token_id,
+            order_id=_new_order_id(market.team, "YES", dry_run=dry),
             price=yes_price,
             size_shares=_shares_for_notional(yes_notional, yes_price, min_shares),
             notional_usd=yes_notional,
             dry_run=dry,
             reason=result.reason,
+            snapshot=snapshot,
         )
     ]
 
@@ -84,11 +149,13 @@ def build_quotes(
                 team=market.team,
                 side="NO",
                 token_id=market.no_token_id,
+                order_id=_new_order_id(market.team, "NO", dry_run=dry),
                 price=no_price,
                 size_shares=_shares_for_notional(no_notional, no_price, min_shares),
                 notional_usd=no_notional,
                 dry_run=dry,
                 reason="mandatory NO leg (bilateral mode)",
+                snapshot=snapshot,
             )
         )
 

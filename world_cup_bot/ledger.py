@@ -14,9 +14,13 @@ from world_cup_bot.logic_version import (
     StrategyVersionSpec,
     filter_rows_by_scope,
 )
-from world_cup_bot.quoter import QuoteIntent
+from world_cup_bot.quoter import MarketSnapshot, QuoteIntent
 
 DEFAULT_LEDGER = Path("data/local/ledger.jsonl")
+
+
+class DuplicateFillError(Exception):
+    """Raised when the same order_id is recorded twice (blind-spot #4)."""
 
 
 @dataclass
@@ -53,6 +57,31 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _snapshot_fields(snapshot: MarketSnapshot) -> dict[str, Any]:
+    fields: dict[str, Any] = {
+        "mid_at_place": snapshot.mid,
+        "rewards_min_shares": snapshot.rewards_min_shares,
+        "rewards_max_spread": snapshot.rewards_max_spread,
+    }
+    if snapshot.best_bid is not None:
+        fields["best_bid_at_place"] = snapshot.best_bid
+    if snapshot.best_ask is not None:
+        fields["best_ask_at_place"] = snapshot.best_ask
+    if snapshot.spread is not None:
+        fields["spread_at_place"] = snapshot.spread
+    if snapshot.hours_to_kickoff is not None:
+        fields["hours_to_kickoff"] = snapshot.hours_to_kickoff
+    return fields
+
+
+def fill_order_ids(path: Path) -> set[str]:
+    return {
+        str(r["order_id"])
+        for r in load_rows(path)
+        if r.get("event") == "order_fill" and r.get("order_id")
+    }
+
+
 def append_row(path: Path, row: LedgerRow) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
@@ -84,6 +113,7 @@ def record_quote_intents(
     event = "quote_intent_dry_run" if dry_run else "quote_intent"
     cid = correlation_id or f"plan-{_now_iso()}"
     for intent in intents:
+        extra = {"token_id": intent.token_id, **_snapshot_fields(intent.snapshot)}
         append_row(
             path,
             LedgerRow(
@@ -93,12 +123,13 @@ def record_quote_intents(
                 timestamp=_now_iso(),
                 team=intent.team,
                 side=intent.side,
+                order_id=intent.order_id,
                 price=intent.price,
                 size_shares=intent.size_shares,
                 notional_usd=intent.notional_usd,
                 reason=intent.reason,
                 correlation_id=cid,
-                extra={"token_id": intent.token_id},
+                extra=extra,
             ),
         )
     return len(intents)
@@ -117,7 +148,11 @@ def record_fill(
     fees_usd: float | None = None,
     reason: str | None = None,
     correlation_id: str | None = None,
-) -> None:
+    allow_duplicate: bool = False,
+) -> bool:
+    """Append fill row; return False if order_id already recorded (dedup)."""
+    if not allow_duplicate and order_id in fill_order_ids(path):
+        return False
     append_row(
         path,
         LedgerRow(
@@ -137,6 +172,7 @@ def record_fill(
             correlation_id=correlation_id,
         ),
     )
+    return True
 
 
 @dataclass(frozen=True)
