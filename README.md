@@ -1,5 +1,6 @@
 # World Cup Bot
 
+[![CI](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets on [Polymarket](https://polymarket.com).
@@ -31,11 +32,14 @@ Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — not
 git clone https://github.com/cemini23/world-cup-bot.git
 cd world-cup-bot
 cp .env.example .env   # fill in your own Polymarket keys
-pip install -e ".[dev]"  # when package layout lands
-python -m world_cup_bot --help
+pip install -e ".[dev]"
+world-cup-bot calendar --team Mexico
+world-cup-bot calendar --cancel-window --min-hours 10
 ```
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).
+
+**Calendar guard (Module 5)** uses vendored [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) fixtures (`data/worldcup2026-fixtures.json`, CC0) — not live prices. See `data/DATA_ATTRIBUTION.md`.
 
 See [SETUP.md](SETUP.md) for environment variables and geoblock notes.
 

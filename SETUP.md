@@ -15,6 +15,18 @@ Copy `.env.example` → `.env` and fill values locally.
 | `POLYMARKET_PRIVATE_KEY` | LP mode | CLOB signing key |
 | `POLYMARKET_FUNDER_ADDRESS` | LP mode | Proxy/funder address |
 | `DRY_RUN` | yes | Keep `true` until you have shadow-tested |
+| `MIN_HOURS_BEFORE_KICKOFF` | no | Calendar guard cancel threshold (default `10`) |
+
+## Calendar guard
+
+Kickoff times from bundled CC0 fixtures (`data/worldcup2026-fixtures.json`), not Polymarket:
+
+```bash
+world-cup-bot calendar --team Turkey
+world-cup-bot calendar --cancel-window --min-hours 10
+```
+
+Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`.
 
 ## Modes
 

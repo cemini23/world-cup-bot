@@ -15,5 +15,6 @@ build/
 .idea/
 .vscode/
 local/
-data/
 *.log
+# Keep vendored CC0 fixtures; ignore local data overrides only
+data/local/
