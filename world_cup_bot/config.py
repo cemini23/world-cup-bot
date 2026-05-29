@@ -27,6 +27,7 @@ class Settings:
     dry_run: bool
     min_hours_before_kickoff: float
     max_notional_per_market_usd: float
+    conviction_config: str
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -40,4 +41,5 @@ class Settings:
             dry_run=_bool("DRY_RUN", True),
             min_hours_before_kickoff=_float("MIN_HOURS_BEFORE_KICKOFF", 10.0),
             max_notional_per_market_usd=_float("MAX_NOTIONAL_PER_MARKET_USD", 2000.0),
+            conviction_config=os.environ.get("CONVICTION_CONFIG", "config/conviction.yaml"),
         )

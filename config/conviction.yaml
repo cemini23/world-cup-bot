@@ -1,0 +1,55 @@
+# World Cup Bot — conviction LP seeds (K82 research synthesis)
+# Prices come from Gamma at runtime; this file only gates WHICH teams to quote.
+# See: https://github.com/cemini23/llm-wiki-by-cemini (world-cup-2026-group-conviction-matrix)
+
+version: 1
+
+# Mid-tier YES-heavy LP (target mid ~0.20–0.80)
+yes_conviction:
+  - Turkey
+  - Colombia
+  - Morocco
+  - Ecuador
+  - Senegal
+  - Norway
+  - Paraguay
+  - Algeria
+  - Cape Verde
+  - Japan
+
+# Whales / high mid — two-sided only (mandatory NO above ~90¢)
+bilateral_only:
+  - Spain
+  - France
+  - Germany
+  - Brazil
+  - Argentina
+  - England
+  - Portugal
+  - Mexico
+  - Switzerland
+
+# Cross-venue / research fade — alert only, no auto YES sizing
+fade_watch:
+  - USA
+  - England
+  - Croatia
+  - Switzerland
+  - Mexico
+
+limits:
+  min_mid: 0.20
+  max_mid: 0.80
+  bilateral_mid: 0.90
+  default_max_notional_usd: 2000
+  yes_size_ratio: 0.70   # YES leg share of max notional in yes_heavy mode
+  min_reward_shares: 50    # fallback if Gamma omits rewardsMinSize
+
+per_team:
+  Turkey:
+    max_notional_usd: 2500
+  Colombia:
+    max_notional_usd: 2500
+  USA:
+    max_notional_usd: 500
+    mode: skip

@@ -36,6 +36,8 @@ pip install -e ".[dev]"
 world-cup-bot calendar --team Mexico
 world-cup-bot calendar --cancel-window --min-hours 10
 world-cup-bot scan              # live Gamma mids + LP eligibility
+world-cup-bot scan --conviction # conviction tier + quote gate
+world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
 ```
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).

@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
-from world_cup_bot import calendar_guard, scanner
+from world_cup_bot import calendar_guard, conviction, quoter, scanner
 from world_cup_bot.config import Settings
 
 
@@ -50,12 +51,16 @@ def _cmd_calendar(args: argparse.Namespace) -> int:
     return 1
 
 
-def _cmd_scan(args: argparse.Namespace) -> int:
-    settings = Settings.from_env()
-    markets = scanner.discover_advance_markets(
+def _load_markets(settings: Settings) -> list[scanner.AdvanceMarket]:
+    return scanner.discover_advance_markets(
         settings.gamma_url,
         min_hours_before_kickoff=settings.min_hours_before_kickoff,
     )
+
+
+def _cmd_scan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
     if args.eligible_only:
         markets = scanner.filter_lp_eligible(markets)
 
@@ -63,17 +68,60 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         print("No advance markets found.")
         return 1
 
-    print(f"{'TEAM':24} {'MID':>6} {'SPRD':>6} {'LIQ':>8} {'HRS':>6} {'BIL':>4} {'LP':>3}")
-    for m in markets:
-        mid = f"{m.mid:.3f}" if m.mid is not None else "  —  "
-        spr = f"{m.spread:.3f}" if m.spread is not None else "  —  "
-        liq = f"{m.liquidity:8.0f}" if m.liquidity is not None else "       —"
-        hrs = f"{m.hours_to_kickoff:6.1f}" if m.hours_to_kickoff is not None else "     —"
-        print(
-            f"{m.team:24} {mid:>6} {spr:>6} {liq:>8} {hrs:>6} "
-            f"{'Y' if m.bilateral_mode else 'N':>4} {'Y' if m.lp_eligible else 'N':>3}"
-        )
+    cfg = None
+    if args.conviction:
+        cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+
+    if cfg:
+        print(f"{'TEAM':24} {'MID':>6} {'MODE':>16} {'QUOTE':>5} {'LP':>3}  REASON")
+        for m in markets:
+            mid = f"{m.mid:.3f}" if m.mid is not None else "  —  "
+            ev = conviction.evaluate_market(m, cfg)
+            print(
+                f"{m.team:24} {mid:>6} {ev.mode.value:>16} "
+                f"{'Y' if ev.quote else 'N':>5} {'Y' if m.lp_eligible else 'N':>3}  {ev.reason}"
+            )
+    else:
+        print(f"{'TEAM':24} {'MID':>6} {'SPRD':>6} {'LIQ':>8} {'HRS':>6} {'BIL':>4} {'LP':>3}")
+        for m in markets:
+            mid = f"{m.mid:.3f}" if m.mid is not None else "  —  "
+            spr = f"{m.spread:.3f}" if m.spread is not None else "  —  "
+            liq = f"{m.liquidity:8.0f}" if m.liquidity is not None else "       —"
+            hrs = f"{m.hours_to_kickoff:6.1f}" if m.hours_to_kickoff is not None else "     —"
+            print(
+                f"{m.team:24} {mid:>6} {spr:>6} {liq:>8} {hrs:>6} "
+                f"{'Y' if m.bilateral_mode else 'N':>4} {'Y' if m.lp_eligible else 'N':>3}"
+            )
     print(f"\n{len(markets)} markets (live Gamma)")
+    return 0
+
+
+def _cmd_plan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    markets = _load_markets(settings)
+    results = conviction.filter_conviction_markets(markets, cfg, quote_only=not args.all)
+
+    if not results:
+        print("No conviction targets (try --all to see skips).")
+        return 1
+
+    intents: list[quoter.QuoteIntent] = []
+    for result in results:
+        if result.quote:
+            intents.extend(quoter.build_quotes(result, cfg, settings))
+
+    quoter.submit_quotes(intents, settings)
+
+    print(f"{'TEAM':20} {'SIDE':>4} {'PRICE':>6} {'SHARES':>8} {'USD':>8}  REASON")
+    for q in intents:
+        print(
+            f"{q.team:20} {q.side:>4} {q.price:>6.2f} {q.size_shares:>8.1f} "
+            f"{q.notional_usd:>8.0f}  {q.reason}"
+        )
+
+    mode = "DRY_RUN" if settings.dry_run else "LIVE"
+    print(f"\n{len(intents)} quote intents ({mode}) from {len(results)} conviction rows")
     return 0
 
 
@@ -106,7 +154,23 @@ def main(argv: list[str] | None = None) -> None:
         action="store_false",
         help="Include markets outside LP eligibility filter",
     )
+    sc.add_argument(
+        "--conviction",
+        action="store_true",
+        help="Show conviction tier + quote gate per team",
+    )
     sc.set_defaults(eligible_only=True, func=_cmd_scan)
+
+    pl = sub.add_parser(
+        "plan",
+        help="Conviction filter + dry-run quote intents (Gamma mids, no hardcoded prices)",
+    )
+    pl.add_argument(
+        "--all",
+        action="store_true",
+        help="Include conviction rows that fail quote gate (no intents built)",
+    )
+    pl.set_defaults(func=_cmd_plan)
 
     args = parser.parse_args(argv)
     if not args.command:
