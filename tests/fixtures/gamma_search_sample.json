@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "title": "World Cup: Team to advance to Knockout Stages",
+      "slug": "world-cup-team-to-advance-to-knockout-stages",
+      "markets": [
+        {
+          "question": "Will Mexico advance to the knockout stages at the 2026 FIFA World Cup?",
+          "slug": "will-mexico-advance",
+          "conditionId": "0xabc",
+          "clobTokenIds": ["111", "222"],
+          "bestBid": 0.80,
+          "bestAsk": 0.86,
+          "spread": 0.06,
+          "rewardsMinSize": 50,
+          "rewardsMaxSpread": 4.5,
+          "liquidity": 5000,
+          "volume": 1200,
+          "acceptingOrders": true
+        },
+        {
+          "question": "Will South Korea advance to the knockout stages at the 2026 FIFA World Cup?",
+          "slug": "will-south-korea-advance",
+          "conditionId": "0xdef",
+          "clobTokenIds": ["333", "444"],
+          "bestBid": 0.64,
+          "bestAsk": 0.71,
+          "spread": 0.07,
+          "rewardsMinSize": 50,
+          "rewardsMaxSpread": 4.5,
+          "acceptingOrders": true
+        }
+      ]
+    }
+  ]
+}

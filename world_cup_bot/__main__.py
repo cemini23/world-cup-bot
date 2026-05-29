@@ -6,7 +6,8 @@ import argparse
 import sys
 from datetime import UTC, datetime
 
-from world_cup_bot import calendar_guard
+from world_cup_bot import calendar_guard, scanner
+from world_cup_bot.config import Settings
 
 
 def _cmd_calendar(args: argparse.Namespace) -> int:
@@ -49,6 +50,33 @@ def _cmd_calendar(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_scan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = scanner.discover_advance_markets(
+        settings.gamma_url,
+        min_hours_before_kickoff=settings.min_hours_before_kickoff,
+    )
+    if args.eligible_only:
+        markets = scanner.filter_lp_eligible(markets)
+
+    if not markets:
+        print("No advance markets found.")
+        return 1
+
+    print(f"{'TEAM':24} {'MID':>6} {'SPRD':>6} {'LIQ':>8} {'HRS':>6} {'BIL':>4} {'LP':>3}")
+    for m in markets:
+        mid = f"{m.mid:.3f}" if m.mid is not None else "  —  "
+        spr = f"{m.spread:.3f}" if m.spread is not None else "  —  "
+        liq = f"{m.liquidity:8.0f}" if m.liquidity is not None else "       —"
+        hrs = f"{m.hours_to_kickoff:6.1f}" if m.hours_to_kickoff is not None else "     —"
+        print(
+            f"{m.team:24} {mid:>6} {spr:>6} {liq:>8} {hrs:>6} "
+            f"{'Y' if m.bilateral_mode else 'N':>4} {'Y' if m.lp_eligible else 'N':>3}"
+        )
+    print(f"\n{len(markets)} markets (live Gamma)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
@@ -70,6 +98,15 @@ def main(argv: list[str] | None = None) -> None:
         help="Cancel if next kickoff is sooner than this (default: 10)",
     )
     cal.set_defaults(func=_cmd_calendar)
+
+    sc = sub.add_parser("scan", help="Discover advance markets via Gamma (live prices)")
+    sc.add_argument(
+        "--all",
+        dest="eligible_only",
+        action="store_false",
+        help="Include markets outside LP eligibility filter",
+    )
+    sc.set_defaults(eligible_only=True, func=_cmd_scan)
 
     args = parser.parse_args(argv)
     if not args.command:

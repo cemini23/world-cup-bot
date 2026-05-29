@@ -35,6 +35,7 @@ cp .env.example .env   # fill in your own Polymarket keys
 pip install -e ".[dev]"
 world-cup-bot calendar --team Mexico
 world-cup-bot calendar --cancel-window --min-hours 10
+world-cup-bot scan              # live Gamma mids + LP eligibility
 ```
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).
