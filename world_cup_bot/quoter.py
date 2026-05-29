@@ -94,6 +94,8 @@ def build_quotes(
     result: ConvictionResult,
     config: ConvictionConfig,
     settings: Settings,
+    *,
+    notional_multiplier: float = 1.0,
 ) -> list[QuoteIntent]:
     """Resting limit bids from live Gamma book — no hardcoded mids."""
     market = result.market
@@ -104,7 +106,10 @@ def build_quotes(
     if snapshot is None:
         return []
 
-    max_notional = config.max_notional(market.team)
+    scale = max(0.0, min(1.0, notional_multiplier))
+    max_notional = config.max_notional(market.team) * scale
+    if max_notional <= 0:
+        return []
     min_shares = snapshot.rewards_min_shares
     dry = settings.dry_run
     max_spread = snapshot.rewards_max_spread

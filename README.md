@@ -14,6 +14,7 @@ Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets
 | **Scanner** | Discovers WC advance markets via Gamma; reads reward params at runtime |
 | **Conviction LP** | Resting limits on research-backed mid-tier teams; bilateral mode above ~90¢ |
 | **Fill handler** | Limit exit within ~60s; queue-depletion pull; **live fills via user-channel WS** |
+| **Optional advisor** | `context --json` or `plan --advisor` — LLM overlay; **off by default** (no API cost) |
 | **Cross-venue scanner** | Polymarket vs Kalshi advance gaps — **alert-only** in v1 |
 | **Ledger** | Daily P&L from fills + rewards |
 
@@ -39,6 +40,8 @@ world-cup-bot scan              # live Gamma mids + LP eligibility
 world-cup-bot scan --conviction # conviction tier + quote gate
 world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
 world-cup-bot plan --record     # append intents to versioned JSONL ledger
+world-cup-bot context --json    # decision bundle for external LLM (no API call)
+world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
 world-cup-bot watch --verbose   # user-channel WS → fill handler (needs L2 API creds)
 world-cup-bot pnl               # headline PnL (scope=current logic_version only)
 world-cup-bot fill --team Turkey --side YES --order-id ord-1 --price 0.44 --shares 500 --record

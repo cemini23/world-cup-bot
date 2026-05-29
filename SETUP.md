@@ -56,6 +56,31 @@ Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`.
 
 Cross-venue scanner is **alert-only** in v1. Kalshi credentials optional.
 
+## Optional LLM advisor (zero cost by default)
+
+The bot runs fully without any LLM. Advisor env vars are **commented out** in `.env.example`.
+
+| Step | Command | API cost |
+|------|---------|----------|
+| Export context only | `world-cup-bot context --json` | None — pipe into Cursor, Claude, ChatGPT, Ollama |
+| In-process review | `world-cup-bot plan --advisor` | Only if `ADVISOR_BASE_URL` is set |
+| Hard gate | `world-cup-bot plan --advisor --advisor-gate hard` | Same — skips teams on `skip` / `human_review` |
+
+**Ollama (local, no cloud bill):**
+
+```bash
+ollama serve
+export ADVISOR_BASE_URL=http://localhost:11434/v1
+export ADVISOR_MODEL=llama3.2
+world-cup-bot plan --advisor --advisor-gate soft
+```
+
+**OpenAI-compatible cloud** (OpenAI, OpenRouter, etc.): set `ADVISOR_BASE_URL` + `ADVISOR_API_KEY`.
+
+If `--advisor` is passed but `ADVISOR_BASE_URL` is unset, the bot **continues without the LLM** and prints a one-line notice. Use `--advisor-strict` to fail instead.
+
+Prompt template: `prompts/advisor.md`. The advisor may only **skip, reduce, or flag** — never raise notional above YAML caps.
+
 ## Disclaimer
 
 Prediction markets involve loss of capital. LP without cancel discipline around kickoff has burned operators. Read the code before live mode.

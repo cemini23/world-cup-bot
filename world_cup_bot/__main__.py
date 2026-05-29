@@ -4,16 +4,63 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from world_cup_bot import calendar_guard, conviction, fill_handler, ledger, quoter, scanner, ws_user
+from world_cup_bot import (
+    advisor,
+    calendar_guard,
+    conviction,
+    fill_handler,
+    ledger,
+    quoter,
+    scanner,
+    ws_user,
+)
 from world_cup_bot.clob_auth import MissingClobAuthError, load_clob_auth
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
+
+
+def _ledger_summary_dict(settings: Settings, version_spec) -> dict | None:
+    path = Path(settings.ledger_path)
+    rows = ledger.load_rows(path)
+    if not rows:
+        return None
+    summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
+    return {
+        "scope": summary.scope,
+        "row_count": summary.row_count,
+        "fills": summary.fills,
+        "net_pnl_usd": summary.net_pnl_usd,
+    }
+
+
+def _build_advisor_context(settings: Settings, markets: list[scanner.AdvanceMarket]):
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    schedule = calendar_guard.build_team_schedule()
+    now = datetime.now(UTC)
+    cancel_rows = calendar_guard.teams_in_cancel_window(
+        min_hours_before_kickoff=settings.min_hours_before_kickoff,
+        now=now,
+        schedule=schedule,
+    )
+    advisor_settings = advisor.AdvisorSettings.from_env()
+    return advisor.build_decision_context(
+        markets=markets,
+        conviction=cfg,
+        version_spec=version_spec,
+        dry_run=settings.dry_run,
+        min_hours_before_kickoff=settings.min_hours_before_kickoff,
+        cancel_window=cancel_rows,
+        ledger_summary=_ledger_summary_dict(settings, version_spec),
+        prompt_path=advisor_settings.prompt_path,
+    )
 
 
 def _cmd_calendar(args: argparse.Namespace) -> int:
@@ -114,10 +161,52 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         print("No conviction targets (try --all to see skips).")
         return 1
 
+    gate = advisor.AdvisorGate.OFF
+    multipliers: dict[str, float] = {}
+    if args.advisor:
+        gate = advisor.AdvisorGate(args.advisor_gate)
+        advisor_settings = advisor.AdvisorSettings.from_env()
+        if not advisor_settings.configured:
+            print(
+                "Advisor not configured (ADVISOR_BASE_URL unset) — continuing without LLM. "
+                "See SETUP.md § Optional LLM advisor."
+            )
+        else:
+            try:
+                ctx = _build_advisor_context(settings, markets)
+                llm = advisor.load_advisor(advisor_settings)
+                verdicts = llm.review(ctx)
+                applied = advisor.apply_advisor_gates(results, verdicts, gate=gate)
+                results = applied.kept
+                multipliers = applied.multipliers
+                if applied.skipped:
+                    print("Advisor hard-gate skips:")
+                    for row, v in applied.skipped:
+                        reasons = ", ".join(v.reasons[:2])
+                        print(f"  {row.market.team:20} {v.verdict.value:14} — {reasons}")
+                if gate == advisor.AdvisorGate.SOFT and verdicts:
+                    print("Advisor soft-gate notes:")
+                    for v in verdicts:
+                        if v.verdict != advisor.AdvisorVerdict.QUOTE or v.notional_multiplier < 1.0:
+                            note = ", ".join(v.reasons[:2])
+                            print(
+                                f"  {v.team:20} {v.verdict.value:14} "
+                                f"mult={v.notional_multiplier:.2f} — {note}"
+                            )
+            except (advisor.AdvisorNotConfiguredError, RuntimeError) as exc:
+                print(f"Advisor error: {exc}")
+                if args.advisor_strict:
+                    return 1
+
+    if not results:
+        print("No targets after advisor gate.")
+        return 1
+
     intents: list[quoter.QuoteIntent] = []
     for result in results:
         if result.quote:
-            intents.extend(quoter.build_quotes(result, cfg, settings))
+            mult = multipliers.get(result.market.team, 1.0)
+            intents.extend(quoter.build_quotes(result, cfg, settings, notional_multiplier=mult))
 
     quoter.submit_quotes(intents, settings)
 
@@ -139,6 +228,32 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     mode = "DRY_RUN" if settings.dry_run else "LIVE"
     print(f"\n{len(intents)} quote intents ({mode}) from {len(results)} conviction rows")
+    return 0
+
+
+def _cmd_context(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
+    if args.eligible_only:
+        markets = scanner.filter_lp_eligible(markets)
+    if not markets:
+        print("No advance markets found.")
+        return 1
+
+    ctx = _build_advisor_context(settings, markets)
+    if args.json:
+        print(json.dumps(ctx.to_dict(), indent=2))
+        return 0
+
+    print(f"generated_at: {ctx.generated_at}")
+    print(f"logic_version: {ctx.logic_version}")
+    print(f"teams: {len(ctx.conviction_rows)}")
+    if ctx.cancel_window:
+        print(f"cancel_window: {len(ctx.cancel_window)} teams")
+    quoting = [r for r in ctx.conviction_rows if r.get("quote_gate")]
+    print(f"quote_gate_pass: {len(quoting)}")
+    print("\nUse --json to pipe into Claude / ChatGPT / Ollama / local agent.")
+    print("Prompt template: prompts/advisor.md")
     return 0
 
 
@@ -380,7 +495,40 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Append quote intents to JSONL ledger (data/local/ledger.jsonl)",
     )
+    pl.add_argument(
+        "--advisor",
+        action="store_true",
+        help="Optional LLM review (requires ADVISOR_BASE_URL — see SETUP.md)",
+    )
+    pl.add_argument(
+        "--advisor-gate",
+        choices=[g.value for g in advisor.AdvisorGate if g != advisor.AdvisorGate.OFF],
+        default=advisor.AdvisorGate.SOFT.value,
+        help="soft=log verdicts; hard=skip on skip/human_review (default: soft)",
+    )
+    pl.add_argument(
+        "--advisor-strict",
+        action="store_true",
+        help="Exit non-zero if advisor is enabled but API call fails",
+    )
     pl.set_defaults(func=_cmd_plan)
+
+    cx = sub.add_parser(
+        "context",
+        help="Export decision context JSON for external LLM / agent (no API call)",
+    )
+    cx.add_argument(
+        "--json",
+        action="store_true",
+        help="Print full JSON to stdout (pipe to any agent)",
+    )
+    cx.add_argument(
+        "--all",
+        dest="eligible_only",
+        action="store_false",
+        help="Include markets outside LP eligibility filter",
+    )
+    cx.set_defaults(eligible_only=True, func=_cmd_context)
 
     pn = sub.add_parser(
         "pnl",
