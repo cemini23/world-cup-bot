@@ -92,6 +92,8 @@ world-cup-bot ui
 
 Tabs: **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds `127.0.0.1` by default.
 
+Config paths resolve against the **repo root** automatically — you can run `world-cup-bot ui` from any directory after `pip install -e .`.
+
 Override port: `world-cup-bot ui --port 8765`. CLI remains the path for `watch`, live fills, and recording.
 
 ## Disclaimer

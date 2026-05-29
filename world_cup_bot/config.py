@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from world_cup_bot.paths import resolve_project_path
+
 
 def _float(name: str, default: float) -> float:
     raw = os.environ.get(name)
@@ -49,10 +51,18 @@ class Settings:
             dry_run=_bool("DRY_RUN", True),
             min_hours_before_kickoff=_float("MIN_HOURS_BEFORE_KICKOFF", 10.0),
             max_notional_per_market_usd=_float("MAX_NOTIONAL_PER_MARKET_USD", 2000.0),
-            conviction_config=os.environ.get("CONVICTION_CONFIG", "config/conviction.yaml"),
-            logic_version_config=os.environ.get(
-                "LOGIC_VERSION_CONFIG", "config/strategy_logic_versions.yaml"
+            conviction_config=str(
+                resolve_project_path(os.environ.get("CONVICTION_CONFIG", "config/conviction.yaml"))
             ),
-            ledger_path=os.environ.get("LEDGER_PATH", "data/local/ledger.jsonl"),
-            operating_config=os.environ.get("OPERATING_CONFIG", "config/operating.yaml"),
+            logic_version_config=str(
+                resolve_project_path(
+                    os.environ.get("LOGIC_VERSION_CONFIG", "config/strategy_logic_versions.yaml")
+                )
+            ),
+            ledger_path=str(
+                resolve_project_path(os.environ.get("LEDGER_PATH", "data/local/ledger.jsonl"))
+            ),
+            operating_config=str(
+                resolve_project_path(os.environ.get("OPERATING_CONFIG", "config/operating.yaml"))
+            ),
         )

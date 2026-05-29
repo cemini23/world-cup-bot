@@ -87,12 +87,18 @@ class UiHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(404, {"error": "not_found", "path": path})
         except Exception as exc:
+            hint = "Gamma/network unreachable? Check connection or try CLI: world-cup-bot scan"
+            if "No such file" in str(exc) or "not found" in str(exc).lower():
+                hint = (
+                    "Config file missing — pip install -e . from the world-cup-bot repo, "
+                    "or set CONVICTION_CONFIG / LOGIC_VERSION_CONFIG to absolute paths."
+                )
             self._send_json(
                 502,
                 {
                     "error": "upstream_failed",
                     "detail": str(exc),
-                    "hint": "Gamma/network unreachable? Try again or use CLI scan.",
+                    "hint": hint,
                     "trace": traceback.format_exc(limit=3),
                 },
             )

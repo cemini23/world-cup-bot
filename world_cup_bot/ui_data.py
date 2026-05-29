@@ -11,6 +11,7 @@ from world_cup_bot import advisor, calendar_guard, conviction, quoter, scanner
 from world_cup_bot.config import Settings
 from world_cup_bot.ledger import load_rows, summarize_by_version, summarize_pnl
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.paths import PROJECT_ROOT
 from world_cup_bot.quoter import QuoteIntent
 
 
@@ -23,6 +24,7 @@ def meta_payload(settings: Settings) -> dict[str, Any]:
         "dry_run": settings.dry_run,
         "gamma_url": settings.gamma_url,
         "advisor_configured": advisor.AdvisorSettings.from_env().configured,
+        "project_root": str(PROJECT_ROOT),
     }
 
 

@@ -32,7 +32,7 @@ def _settings() -> Settings:
 def test_index_html_exists():
     body = _index_bytes()
     assert b"World Cup Bot" in body
-    assert b"read-only" in body.lower() or b"Read-only" in body
+    assert b"read-only" in body.lower()
 
 
 def test_meta_payload():
