@@ -38,6 +38,9 @@ world-cup-bot calendar --cancel-window --min-hours 10
 world-cup-bot scan              # live Gamma mids + LP eligibility
 world-cup-bot scan --conviction # conviction tier + quote gate
 world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
+world-cup-bot plan --record     # append intents to versioned JSONL ledger
+world-cup-bot pnl               # headline PnL (scope=current logic_version only)
+world-cup-bot pnl --scope all --by-version  # forensics breakdown
 ```
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).

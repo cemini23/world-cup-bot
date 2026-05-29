@@ -7,8 +7,9 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from world_cup_bot import calendar_guard, conviction, quoter, scanner
+from world_cup_bot import calendar_guard, conviction, ledger, quoter, scanner
 from world_cup_bot.config import Settings
+from world_cup_bot.logic_version import PnlScope, load_strategy_version
 
 
 def _cmd_calendar(args: argparse.Namespace) -> int:
@@ -98,6 +99,9 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
 def _cmd_plan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    print(version_spec.version_banner())
+
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     markets = _load_markets(settings)
     results = conviction.filter_conviction_markets(markets, cfg, quote_only=not args.all)
@@ -113,6 +117,15 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     quoter.submit_quotes(intents, settings)
 
+    if args.record:
+        n = ledger.record_quote_intents(
+            intents,
+            version_spec,
+            path=Path(settings.ledger_path),
+            dry_run=settings.dry_run,
+        )
+        print(f"Recorded {n} rows → {settings.ledger_path}")
+
     print(f"{'TEAM':20} {'SIDE':>4} {'PRICE':>6} {'SHARES':>8} {'USD':>8}  REASON")
     for q in intents:
         print(
@@ -122,6 +135,39 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     mode = "DRY_RUN" if settings.dry_run else "LIVE"
     print(f"\n{len(intents)} quote intents ({mode}) from {len(results)} conviction rows")
+    return 0
+
+
+def _cmd_pnl(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    print(version_spec.version_banner())
+
+    scope = PnlScope(args.scope)
+    rows = ledger.load_rows(Path(settings.ledger_path))
+    if not rows:
+        print(f"No ledger rows at {settings.ledger_path}")
+        return 1
+
+    summary = ledger.summarize_pnl(rows, version_spec, scope)
+    print(f"scope:            {summary.scope}")
+    print(f"rows:             {summary.row_count}")
+    print(f"quote_intents:    {summary.quote_intents}")
+    print(f"fills:            {summary.fills}")
+    print(f"realized_pnl_usd: {summary.realized_pnl_usd:+.2f}")
+    print(f"rewards_usd:      {summary.rewards_usd:+.2f}")
+    print(f"fees_usd:         {summary.fees_usd:+.2f}")
+    print(f"net_pnl_usd:      {summary.net_pnl_usd:+.2f}")
+    if summary.legacy_excluded:
+        print(f"legacy_excluded:  {summary.legacy_excluded} rows (scope=current)")
+
+    if args.by_version:
+        print("\nBy logic_version:")
+        for block in ledger.summarize_by_version(rows):
+            print(
+                f"  {block['logic_version']:24} rows={block['row_count']:4} "
+                f"fills={block['fills']:3} net={block['net_pnl_usd']:+.2f}"
+            )
     return 0
 
 
@@ -170,7 +216,29 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Include conviction rows that fail quote gate (no intents built)",
     )
+    pl.add_argument(
+        "--record",
+        action="store_true",
+        help="Append quote intents to JSONL ledger (data/local/ledger.jsonl)",
+    )
     pl.set_defaults(func=_cmd_plan)
+
+    pn = sub.add_parser(
+        "pnl",
+        help="P&L summary from ledger (default scope=current, K75 version filter)",
+    )
+    pn.add_argument(
+        "--scope",
+        choices=[s.value for s in PnlScope],
+        default=PnlScope.CURRENT.value,
+        help="current=active logic_version only; legacy=all old versions; all=unfiltered",
+    )
+    pn.add_argument(
+        "--by-version",
+        action="store_true",
+        help="Print breakdown grouped by logic_version",
+    )
+    pn.set_defaults(func=_cmd_pnl)
 
     args = parser.parse_args(argv)
     if not args.command:

@@ -37,6 +37,8 @@ def test_yes_heavy_single_leg():
         min_hours_before_kickoff=10.0,
         max_notional_per_market_usd=2000.0,
         conviction_config="config/conviction.yaml",
+        logic_version_config="config/strategy_logic_versions.yaml",
+        ledger_path="data/local/ledger.jsonl",
     )
     m = _market("Turkey", mid=0.45)
     result = conviction.evaluate_market(m, cfg)
@@ -85,6 +87,8 @@ def test_submit_live_raises():
         min_hours_before_kickoff=10.0,
         max_notional_per_market_usd=2000.0,
         conviction_config="config/conviction.yaml",
+        logic_version_config="config/strategy_logic_versions.yaml",
+        ledger_path="data/local/ledger.jsonl",
     )
     intent = quoter.QuoteIntent(
         team="Turkey",

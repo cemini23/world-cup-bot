@@ -1,0 +1,12 @@
+# Strategy logic version registry (K75 pattern — see Cemini wiki pnl-attribution-versioning)
+# Bump current_version_id + deployed_at on every material signal/sizing/execution change.
+
+strategy_key: pm_wc_advance_lp
+
+current:
+  version_id: wc_advance_lp_v1
+  deployed_at: "2026-05-30T00:00:00Z"
+  note: "Scanner + conviction YAML + dry-run quoter; bilateral split 50/50 above 90c mid"
+
+legacy_version_ids:
+  - legacy_unversioned

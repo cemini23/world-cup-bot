@@ -1,0 +1,218 @@
+"""Daily P&L ledger — append-only JSONL with logic_version on every row (Module 7)."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+from world_cup_bot.logic_version import (
+    LEGACY_UNVERSIONED,
+    PnlScope,
+    StrategyVersionSpec,
+    filter_rows_by_scope,
+)
+from world_cup_bot.quoter import QuoteIntent
+
+DEFAULT_LEDGER = Path("data/local/ledger.jsonl")
+
+
+@dataclass
+class LedgerRow:
+    """Structured ledger event — stable fields for grep/Loki-style queries."""
+
+    event: str
+    logic_version: str
+    strategy_key: str
+    timestamp: str
+    team: str | None = None
+    side: str | None = None
+    order_id: str | None = None
+    price: float | None = None
+    size_shares: float | None = None
+    notional_usd: float | None = None
+    pnl_usd: float | None = None
+    rewards_usd: float | None = None
+    fees_usd: float | None = None
+    reason: str | None = None
+    correlation_id: str | None = None
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        base = asdict(self)
+        extra = base.pop("extra") or {}
+        out = {k: v for k, v in base.items() if v is not None}
+        if extra:
+            out.update(extra)
+        return out
+
+
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def append_row(path: Path, row: LedgerRow) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row.to_dict(), separators=(",", ":")) + "\n")
+
+
+def load_rows(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    rows: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows
+
+
+def record_quote_intents(
+    intents: list[QuoteIntent],
+    spec: StrategyVersionSpec,
+    *,
+    path: Path,
+    correlation_id: str | None = None,
+    dry_run: bool = True,
+) -> int:
+    """Log quote intents as quote_intent events (DRY_RUN or live submit)."""
+    event = "quote_intent_dry_run" if dry_run else "quote_intent"
+    cid = correlation_id or f"plan-{_now_iso()}"
+    for intent in intents:
+        append_row(
+            path,
+            LedgerRow(
+                event=event,
+                logic_version=spec.version_id,
+                strategy_key=spec.strategy_key,
+                timestamp=_now_iso(),
+                team=intent.team,
+                side=intent.side,
+                price=intent.price,
+                size_shares=intent.size_shares,
+                notional_usd=intent.notional_usd,
+                reason=intent.reason,
+                correlation_id=cid,
+                extra={"token_id": intent.token_id},
+            ),
+        )
+    return len(intents)
+
+
+def record_fill(
+    *,
+    path: Path,
+    spec: StrategyVersionSpec,
+    team: str,
+    side: str,
+    order_id: str,
+    price: float,
+    size_shares: float,
+    pnl_usd: float | None = None,
+    fees_usd: float | None = None,
+    reason: str | None = None,
+    correlation_id: str | None = None,
+) -> None:
+    append_row(
+        path,
+        LedgerRow(
+            event="order_fill",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            team=team,
+            side=side,
+            order_id=order_id,
+            price=price,
+            size_shares=size_shares,
+            notional_usd=price * size_shares,
+            pnl_usd=pnl_usd,
+            fees_usd=fees_usd,
+            reason=reason,
+            correlation_id=correlation_id,
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class PnlSummary:
+    logic_version: str
+    strategy_key: str
+    scope: str
+    row_count: int
+    quote_intents: int
+    fills: int
+    realized_pnl_usd: float
+    rewards_usd: float
+    fees_usd: float
+    net_pnl_usd: float
+    legacy_excluded: int
+
+
+def summarize_pnl(
+    rows: list[dict[str, Any]],
+    spec: StrategyVersionSpec,
+    scope: PnlScope,
+) -> PnlSummary:
+    total_before = len(rows)
+    scoped = filter_rows_by_scope(rows, spec, scope)
+    legacy_excluded = total_before - len(scoped) if scope == PnlScope.CURRENT else 0
+
+    quote_intents = sum(
+        1 for r in scoped if r.get("event") in {"quote_intent", "quote_intent_dry_run"}
+    )
+    fills = sum(1 for r in scoped if r.get("event") == "order_fill")
+
+    realized = sum(float(r.get("pnl_usd") or 0) for r in scoped if r.get("event") == "order_fill")
+    rewards = sum(float(r.get("rewards_usd") or 0) for r in scoped)
+    fees = sum(float(r.get("fees_usd") or 0) for r in scoped)
+    net = realized + rewards - fees
+
+    version_label = spec.version_id if scope == PnlScope.CURRENT else f"{scope.value}_mix"
+
+    return PnlSummary(
+        logic_version=version_label,
+        strategy_key=spec.strategy_key,
+        scope=scope.value,
+        row_count=len(scoped),
+        quote_intents=quote_intents,
+        fills=fills,
+        realized_pnl_usd=round(realized, 2),
+        rewards_usd=round(rewards, 2),
+        fees_usd=round(fees, 2),
+        net_pnl_usd=round(net, 2),
+        legacy_excluded=legacy_excluded,
+    )
+
+
+def summarize_by_version(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Grouped metrics for forensics (--scope all breakdown)."""
+    buckets: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        v = row.get("logic_version") or LEGACY_UNVERSIONED
+        buckets.setdefault(str(v), []).append(row)
+
+    out: list[dict[str, Any]] = []
+    for version_id, group in sorted(buckets.items()):
+        pseudo_spec = StrategyVersionSpec(
+            strategy_key="pm_wc_advance_lp",
+            version_id=version_id,
+            deployed_at=datetime.now(UTC),
+            note="",
+            legacy_version_ids=frozenset(),
+        )
+        s = summarize_pnl(group, pseudo_spec, PnlScope.ALL)
+        out.append(
+            {
+                "logic_version": version_id,
+                "row_count": s.row_count,
+                "fills": s.fills,
+                "net_pnl_usd": s.net_pnl_usd,
+            }
+        )
+    return out
