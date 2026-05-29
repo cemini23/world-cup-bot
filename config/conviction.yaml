@@ -1,14 +1,13 @@
-# World Cup Bot — conviction LP seeds (K82 research synthesis)
+# World Cup Bot — conviction LP seeds (K83 Gemini DR ingest)
 # Prices from Gamma at runtime; this file only gates WHICH teams to quote.
-# Matrix: OSINT wiki world-cup-2026-group-conviction-matrix (DeadBall + B Wade + Gemini)
+# Matrix: OSINT wiki world-cup-2026-group-conviction-matrix (DeadBall + B Wade + Gemini DR May 29)
 
-version: 2
+version: 3
 
 # Mid-tier YES-heavy LP (target mid ~0.20–0.80)
 yes_conviction:
-  # Group B — B Wade fill (DeadBall Group B video pending)
+  # Group B — Gemini DR Group B (Canada yes_conviction; Bosnia/Qatar → fade_watch)
   - Canada
-  - Bosnia & Herzegovina
   # Group C / E / F — DeadBall 2nd–3rd advance paths
   - Morocco
   - Scotland
@@ -52,6 +51,8 @@ fade_watch:
   - Croatia
   - Switzerland
   - Mexico
+  - Bosnia & Herzegovina
+  - Qatar
 
 limits:
   min_mid: 0.20
@@ -67,13 +68,17 @@ per_team:
   Colombia:
     max_notional_usd: 2500
   Canada:
-    max_notional_usd: 2000
+    max_notional_usd: 2500
+  Ivory Coast:
+    max_notional_usd: 2500
   Bosnia & Herzegovina:
     max_notional_usd: 2000
   USA:
     max_notional_usd: 500
     mode: skip
   Qatar:
+    mode: skip
+  DR Congo:
     mode: skip
   Haiti:
     mode: skip
@@ -95,6 +100,7 @@ per_team:
     mode: skip
 
 # Research notes (not loaded by bot — documentation only)
-# Group B: B Wade — Switzerland win ~53% Kalshi; Canada competitive; Bosnia > Qatar advance rank
-# Group D: DeadBall USA OUT (3 pts); max PM vs research split — USA skip + fade_watch
-# Cross-venue flags: USA, Switzerland, England, Croatia — see fade_watch + Module 6 (future)
+# K83 Group B DR: Canada yes_conviction $2500; Bosnia/Qatar fade_watch (8–14pp PM vs Kalshi)
+# K83 Third-place DR: Ivory Coast +51pp mispricing → cap 2500; DR Congo skip (GD blowout risk)
+# K83 Market-gap live (May 29): advance-to-knockout PM↔Kalshi NOT pairable; group-winner gaps <5pp
+# Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)

@@ -128,4 +128,12 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 
 ## Skills / extra agent files
 
-**No in-repo Cursor skills required** — this repo is one Python package + YAML + tests. For LLM overlay behavior, edit `prompts/advisor.md`. If the project grows (cross-venue module, hosted UI), reconsider a `.cursor/skills/` ingest skill then.
+**No in-repo Cursor skills required** — this repo is one Python package + YAML + tests.
+
+| Lane | Path |
+|------|------|
+| Daily LP gate | `prompts/advisor.md` + `context --json` |
+| Gemini Deep Research | `prompts/gemini-deep-research/` + `research gemini <mode>` |
+| Agent JSON research | `prompts/deep-research-*.md` + `research run <mode> --json` |
+
+See `prompts/README.md` for mode catalog.

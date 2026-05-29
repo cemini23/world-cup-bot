@@ -18,6 +18,7 @@ from world_cup_bot import (
     ledger,
     preflight,
     quoter,
+    research,
     scanner,
     ws_user,
 )
@@ -235,6 +236,72 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     mode = "DRY_RUN" if settings.dry_run else "LIVE"
     print(f"\n{len(intents)} quote intents ({mode}) from {len(results)} conviction rows")
+    return 0
+
+
+def _cmd_research_list(_args: argparse.Namespace) -> int:
+    print(f"{'MODE':24} AGENT PROMPT")
+    for row in research.list_research_modes():
+        mark = "" if row["exists"] == "True" else " (missing)"
+        print(f"{row['mode']:24} {row['prompt']}{mark}")
+    print("\nAgent JSON:  world-cup-bot research run <mode> --json")
+    print("Gemini DR:   world-cup-bot research gemini <mode> [--group B] [--team X]")
+    print("See prompts/README.md and prompts/gemini-deep-research/README.md")
+    return 0
+
+
+def _cmd_research_gemini(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    try:
+        mode = research.ResearchMode(args.mode)
+    except ValueError:
+        print(f"Unknown mode {args.mode!r}. Use: world-cup-bot research list")
+        return 1
+    try:
+        prompt = research.build_gemini_deep_research_prompt(
+            mode,
+            settings,
+            group=args.group,
+            team=args.team,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        print(str(exc))
+        return 1
+    print(prompt)
+    return 0
+
+
+def _cmd_research_run(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    try:
+        mode = research.ResearchMode(args.mode)
+    except ValueError:
+        print(f"Unknown mode {args.mode!r}. Use: world-cup-bot research list")
+        return 1
+    try:
+        bundle = research.build_research_bundle(
+            mode,
+            settings,
+            group=args.group,
+            team=args.team,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        print(str(exc))
+        return 1
+
+    if args.messages:
+        print(json.dumps(research.bundle_to_chat_messages(bundle), indent=2))
+        return 0
+    if args.json:
+        print(json.dumps(bundle.to_dict(), indent=2))
+        return 0
+
+    print(f"mode:          {bundle.mode}")
+    print(f"logic_version: {bundle.logic_version}")
+    print(f"prompt:        prompts/{bundle.prompt_file}")
+    print(f"output_schema: {bundle.output_schema}")
+    print("\nUse --json for full bundle or --messages for chat API payload.")
+    print("Paste prompts/{bundle.prompt_file} as system message with focus JSON as user.")
     return 0
 
 
@@ -563,6 +630,44 @@ def main(argv: list[str] | None = None) -> None:
         help="Include markets outside LP eligibility filter",
     )
     cx.set_defaults(eligible_only=True, func=_cmd_context)
+
+    rs = sub.add_parser(
+        "research",
+        help="Deep research modes — targeted prompts + focused context (no API call)",
+    )
+    rs_sub = rs.add_subparsers(dest="research_command")
+
+    rs_list = rs_sub.add_parser("list", help="List deep research modes")
+    rs_list.set_defaults(func=_cmd_research_list)
+
+    rs_run = rs_sub.add_parser("run", help="Build research bundle for an external agent")
+    rs_run.add_argument(
+        "mode",
+        choices=[m.value for m in research.ResearchMode],
+        help="Research mode (see prompts/README.md)",
+    )
+    rs_run.add_argument("--group", help="Group letter A–L (group-conviction mode)")
+    rs_run.add_argument("--team", help="Team name (team-lp-risk mode)")
+    rs_run.add_argument("--json", action="store_true", help="Print full JSON bundle")
+    rs_run.add_argument(
+        "--messages",
+        action="store_true",
+        help="Print OpenAI-style system+user messages JSON",
+    )
+    rs_run.set_defaults(func=_cmd_research_run)
+
+    rs_gemini = rs_sub.add_parser(
+        "gemini",
+        help="Print copy-paste prompt for Gemini Deep Research (gemini.google.com)",
+    )
+    rs_gemini.add_argument(
+        "mode",
+        choices=[m.value for m in research.ResearchMode],
+        help="Research mode (see prompts/gemini-deep-research/)",
+    )
+    rs_gemini.add_argument("--group", help="Group letter A–L (group-conviction mode)")
+    rs_gemini.add_argument("--team", help="Team name (team-lp-risk mode)")
+    rs_gemini.set_defaults(func=_cmd_research_gemini)
 
     pn = sub.add_parser(
         "pnl",

@@ -78,6 +78,28 @@ See [SHADOW.md](SHADOW.md) for the phased go-live checklist (≥3 dry-run days, 
 
 Cross-venue scanner is **alert-only** in v1. Kalshi credentials optional.
 
+## Deep research prompts
+
+**Gemini Deep Research** (long-form cited reports): `prompts/gemini-deep-research/`
+
+```bash
+world-cup-bot research gemini group-conviction --group B
+world-cup-bot research gemini cross-venue
+```
+
+Copy output → **gemini.google.com** → Deep Research → Start research.
+
+**Agent JSON** (Cursor/Claude): `prompts/deep-research-*.md`
+
+```bash
+world-cup-bot research list
+world-cup-bot research run group-conviction --group B --json
+world-cup-bot research run cross-venue --json
+world-cup-bot research run team-lp-risk --team Turkey --json --messages
+```
+
+See [prompts/README.md](prompts/README.md) and [prompts/gemini-deep-research/README.md](prompts/gemini-deep-research/README.md). Operational daily gate remains [prompts/advisor.md](prompts/advisor.md).
+
 ## Optional LLM advisor (zero cost by default)
 
 The bot runs fully without any LLM. Advisor env vars are **commented out** in `.env.example`.

@@ -1,0 +1,66 @@
+# Module 6 — alert-only cross-venue scanner config (v1)
+# Source: Gemini DR World Cup 2026 Market Gap Analysis (2026-05-29 live verification)
+# Semantic note: ONLY group-winner pairs verified equivalent May 29. Advance-to-knockout
+# PM slugs were TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
+
+version: 1
+alert_threshold_pp: 5.0
+poll_interval_sec: 120
+fee_kalshi_profit_pct: 7.0
+
+# fade_watch cohort — group winner markets only (May 29 verified)
+pairs:
+  - team: USA
+    market_type: group_winner
+    polymarket_hint: "Will USA win Group D?"
+    kalshi_event_ticker: KXWCGROUPWIN-26D
+    kalshi_market_ticker: KXWCGROUPWIN-26D-USA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Live gap 1.0pp — no alert"
+
+  - team: Switzerland
+    market_type: group_winner
+    polymarket_hint: "Will Switzerland win Group B?"
+    kalshi_event_ticker: KXWCGROUPWIN-26B
+    kalshi_market_ticker: KXWCGROUPWIN-26B-SUI
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Live gap 1.5pp — no alert; advance PM unavailable"
+
+  - team: England
+    market_type: group_winner
+    polymarket_hint: "Will England win Group L?"
+    kalshi_event_ticker: KXWCGROUPWIN-26L
+    kalshi_market_ticker: KXWCGROUPWIN-26L-ENG
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Live gap 1.0pp — no alert"
+
+  - team: Croatia
+    market_type: group_winner
+    polymarket_hint: "Will Croatia win Group L?"
+    kalshi_event_ticker: KXWCGROUPWIN-26L
+    kalshi_market_ticker: KXWCGROUPWIN-26L-CRO
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Largest gap 2.0pp; Kalshi vol $266 — stale-book risk"
+
+  - team: Mexico
+    market_type: group_winner
+    polymarket_hint: "Will Mexico win Group A?"
+    kalshi_event_ticker: KXWCGROUPWIN-26A
+    kalshi_market_ticker: KXWCGROUPWIN-26A-MEX
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Live gap 0.0pp"
+
+blockers:
+  - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
+  - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
+  - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"

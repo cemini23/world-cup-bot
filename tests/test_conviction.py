@@ -68,9 +68,11 @@ def test_missing_rewards_skipped():
 def test_group_b_conviction_tiers():
     cfg = load_conviction_config()
     assert cfg.team_mode("Canada") == TeamMode.YES_HEAVY
-    assert cfg.team_mode("Bosnia & Herzegovina") == TeamMode.YES_HEAVY
+    assert cfg.team_mode("Bosnia & Herzegovina") == TeamMode.FADE_WATCH
     assert cfg.team_mode("Qatar") == TeamMode.SKIP
     assert cfg.team_mode("Switzerland") == TeamMode.FADE_WATCH
+    assert cfg.max_notional("Canada") == 2500
+    assert cfg.max_notional("Ivory Coast") == 2500
 
 
 def test_filter_quote_only():

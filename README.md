@@ -14,7 +14,9 @@ Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets
 | **Scanner** | Discovers WC advance markets via Gamma; reads reward params at runtime |
 | **Conviction LP** | Resting limits on research-backed mid-tier teams; bilateral mode above ~90¢ |
 | **Fill handler** | Limit exit within ~60s; queue-depletion pull; **live fills via user-channel WS** |
-| **Optional advisor** | `context --json` or `plan --advisor` — LLM overlay; **off by default** (no API cost) |
+| **Optional advisor** | `context --json` or `plan --advisor` — LLM overlay; **off by default** |
+| **Gemini Deep Research** | `research gemini <mode>` — paste into gemini.google.com |
+| **Agent JSON research** | `research run <mode> --json` — Cursor/Claude prompts in `prompts/` |
 | **Optional UI** | `world-cup-bot ui` — read-only localhost dashboard (stdlib, port 8765) |
 | **Cross-venue scanner** | Polymarket vs Kalshi advance gaps — **alert-only** in v1 |
 | **Ledger** | Daily P&L from fills + rewards |
@@ -42,6 +44,9 @@ world-cup-bot scan --conviction # conviction tier + quote gate
 world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
 world-cup-bot plan --record     # append intents to versioned JSONL ledger
 world-cup-bot context --json    # decision bundle for external LLM (no API call)
+world-cup-bot research list     # research modes
+world-cup-bot research gemini group-conviction --group B   # paste → Gemini Deep Research
+world-cup-bot research run group-conviction --group B --json
 world-cup-bot ui                  # optional read-only dashboard → http://127.0.0.1:8765
 world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
 world-cup-bot preflight         # geoblock + Gamma + CLOB auth before live LP

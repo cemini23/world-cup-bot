@@ -54,3 +54,5 @@ Return **only** a JSON array (no prose outside the array). One object per team y
 - **No API key / no URL:** omit advisor env vars — bot runs without this layer (zero cost)
 
 Pipe context manually: `world-cup-bot context --json | your-agent`
+
+For **deep research** (YAML patches, cross-venue map, Module 6 spec): see `prompts/README.md` and `world-cup-bot research run <mode> --json`.
