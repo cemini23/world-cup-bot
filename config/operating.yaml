@@ -1,0 +1,16 @@
+# Operating thresholds from wiki (NOT live prices — config only).
+# @polymarket-sports-lp-operating-rules.md
+# @polymarket-lp-bot-phase0-spec.md (WC overrides)
+
+calendar:
+  prefer_hours_before_kickoff: 24
+
+bilateral:
+  high_mid: 0.90
+  low_mid: 0.10
+
+fill_handler:
+  exit_within_seconds: 60
+  queue_depletion_usd: 300
+  vol_drop_pct: 0.25
+  exit_loss_ticks: 1

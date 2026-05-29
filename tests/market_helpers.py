@@ -15,6 +15,7 @@ def make_market(
     rewards_min_shares: float | None = 500.0,
     rewards_max_spread: float | None = 4.5,
     min_hours: float = 10.0,
+    prefer_hours: float = 24.0,
 ) -> scanner.AdvanceMarket:
     must_cancel = hours_to_kickoff is not None and hours_to_kickoff < min_hours
     return scanner.AdvanceMarket(
@@ -37,4 +38,5 @@ def make_market(
         must_cancel=must_cancel,
         bilateral_mode=bilateral or mid > 0.90 or mid < 0.10,
         min_hours_before_kickoff=min_hours,
+        prefer_hours_before_kickoff=prefer_hours,
     )

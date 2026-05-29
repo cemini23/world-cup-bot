@@ -7,9 +7,10 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from world_cup_bot import calendar_guard, conviction, ledger, quoter, scanner
+from world_cup_bot import calendar_guard, conviction, fill_handler, ledger, quoter, scanner
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.operating_config import load_operating_config
 
 
 def _cmd_calendar(args: argparse.Namespace) -> int:
@@ -171,6 +172,77 @@ def _cmd_pnl(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_fill(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    operating = load_operating_config(Path(settings.operating_config))
+    print(version_spec.version_banner())
+
+    markets = _load_markets(settings)
+    market = next((m for m in markets if m.team.lower() == args.team.lower()), None)
+    if market is None:
+        print(f"No advance market found for team {args.team!r}")
+        return 1
+
+    filled_at = datetime.now(UTC)
+    side = args.side.upper()
+    token_id = market.yes_token_id if side == "YES" else market.no_token_id
+
+    fill = fill_handler.FillEvent(
+        order_id=args.order_id,
+        team=market.team,
+        side=side,
+        token_id=token_id,
+        fill_price=args.price,
+        fill_shares=args.shares,
+        filled_at=filled_at,
+    )
+
+    result = fill_handler.handle_fill(
+        fill,
+        market,
+        operating,
+        ahead_notional_usd=args.ahead_usd,
+        dry_run=settings.dry_run,
+    )
+
+    if args.record:
+        ledger.record_fill(
+            path=Path(settings.ledger_path),
+            spec=version_spec,
+            team=fill.team,
+            side=fill.side,
+            order_id=fill.order_id,
+            price=fill.fill_price,
+            size_shares=fill.fill_shares,
+        )
+        if result.exit_intent:
+            ledger.record_exit_intent(
+                result.exit_intent,
+                version_spec,
+                path=Path(settings.ledger_path),
+                fill_order_id=fill.order_id,
+                dry_run=settings.dry_run,
+            )
+
+    print(f"fill:         {fill.order_id} {fill.side} @ {fill.fill_price:.2f} x {fill.fill_shares}")
+    print(f"kill_switch:  {result.kill_switch}")
+    print(f"pull_quotes:  {result.pull_quotes}")
+    print(f"reason:       {result.reason}")
+
+    if result.exit_intent:
+        ex = result.exit_intent
+        fill_handler.submit_exit(ex, dry_run=settings.dry_run)
+        print(
+            f"exit_intent:  {ex.order_id} {ex.side} @ {ex.price:.2f} x {ex.size_shares:.1f} "
+            f"due {ex.due_by.isoformat()}"
+        )
+    else:
+        print("exit_intent:  (none — kill switch active)")
+
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
@@ -239,6 +311,21 @@ def main(argv: list[str] | None = None) -> None:
         help="Print breakdown grouped by logic_version",
     )
     pn.set_defaults(func=_cmd_pnl)
+
+    fl = sub.add_parser("fill", help="Handle a venue-confirmed fill → exit intent (Module 4)")
+    fl.add_argument("--team", required=True, help="Team name (must match Gamma market)")
+    fl.add_argument("--side", required=True, choices=["YES", "NO", "yes", "no"])
+    fl.add_argument("--order-id", required=True, help="Venue fill order id (for dedup)")
+    fl.add_argument("--price", type=float, required=True, help="Fill price")
+    fl.add_argument("--shares", type=float, required=True, help="Fill size in shares")
+    fl.add_argument(
+        "--ahead-usd",
+        type=float,
+        default=0.0,
+        help="Notional filled ahead of you in queue (queue depletion trigger)",
+    )
+    fl.add_argument("--record", action="store_true", help="Append fill + exit rows to ledger")
+    fl.set_defaults(func=_cmd_fill)
 
     args = parser.parse_args(argv)
     if not args.command:

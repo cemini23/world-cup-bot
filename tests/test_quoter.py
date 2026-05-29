@@ -19,6 +19,7 @@ def _settings(**overrides) -> Settings:
         conviction_config="config/conviction.yaml",
         logic_version_config="config/strategy_logic_versions.yaml",
         ledger_path="data/local/ledger.jsonl",
+        operating_config="config/operating.yaml",
     )
     base.update(overrides)
     return Settings(**base)

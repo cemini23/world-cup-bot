@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from world_cup_bot import calendar_guard, team_names
+from world_cup_bot.operating_config import OperatingConfig, load_operating_config
 
 _ADVANCE_QUESTION = re.compile(
     r"^Will (.+?) advance to the knockout stages at the 2026 FIFA World Cup\?$",
@@ -42,6 +43,7 @@ class AdvanceMarket:
     must_cancel: bool
     bilateral_mode: bool
     min_hours_before_kickoff: float
+    prefer_hours_before_kickoff: float
 
     @property
     def kickoff_known(self) -> bool:
@@ -50,6 +52,13 @@ class AdvanceMarket:
     @property
     def rewards_params_ok(self) -> bool:
         return self.rewards_min_shares is not None and self.rewards_max_spread is not None
+
+    @property
+    def preferred_lp(self) -> bool:
+        """Wiki: prefer quoting >24h before kickoff (soft gate for sorting/alerts)."""
+        if not self.lp_eligible:
+            return False
+        return self.hours_to_kickoff >= self.prefer_hours_before_kickoff
 
     @property
     def lp_eligible(self) -> bool:
@@ -96,6 +105,7 @@ def parse_market(
     now: datetime | None = None,
     schedule: dict[str, list[datetime]] | None = None,
     min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
+    operating: OperatingConfig | None = None,
 ) -> AdvanceMarket | None:
     question = market.get("question") or ""
     team = parse_team_from_question(question)
@@ -125,7 +135,10 @@ def parse_market(
         now=now,
         schedule=schedule,
     )
-    bilateral = mid is not None and (mid > 0.90 or mid < 0.10)
+    ops = operating or load_operating_config()
+    bilateral = mid is not None and (
+        mid > ops.bilateral.high_mid or mid < ops.bilateral.low_mid
+    )
 
     return AdvanceMarket(
         team=team,
@@ -147,6 +160,7 @@ def parse_market(
         must_cancel=must_cancel,
         bilateral_mode=bilateral,
         min_hours_before_kickoff=min_hours_before_kickoff,
+        prefer_hours_before_kickoff=ops.calendar.prefer_hours_before_kickoff,
     )
 
 
@@ -169,6 +183,7 @@ def discover_advance_markets(
     now: datetime | None = None,
     schedule: dict[str, list[datetime]] | None = None,
     min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
+    operating: OperatingConfig | None = None,
     opener: Any | None = None,
 ) -> list[AdvanceMarket]:
     """Fetch advance markets from Gamma public-search; prices are live, not hardcoded."""
@@ -177,6 +192,7 @@ def discover_advance_markets(
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"Gamma public-search failed: {exc}") from exc
 
+    ops = operating or load_operating_config()
     sched = schedule if schedule is not None else calendar_guard.build_team_schedule()
     now = now or datetime.now(UTC)
     out: list[AdvanceMarket] = []
@@ -188,6 +204,7 @@ def discover_advance_markets(
                 now=now,
                 schedule=sched,
                 min_hours_before_kickoff=min_hours_before_kickoff,
+                operating=ops,
             )
             if parsed:
                 out.append(parsed)

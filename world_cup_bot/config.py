@@ -30,6 +30,7 @@ class Settings:
     conviction_config: str
     logic_version_config: str
     ledger_path: str
+    operating_config: str
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -48,4 +49,5 @@ class Settings:
                 "LOGIC_VERSION_CONFIG", "config/strategy_logic_versions.yaml"
             ),
             ledger_path=os.environ.get("LEDGER_PATH", "data/local/ledger.jsonl"),
+            operating_config=os.environ.get("OPERATING_CONFIG", "config/operating.yaml"),
         )

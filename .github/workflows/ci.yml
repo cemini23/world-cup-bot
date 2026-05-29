@@ -22,5 +22,7 @@ jobs:
         run: ruff check world_cup_bot tests
       - name: Ruff format
         run: ruff format --check world_cup_bot tests
+      - name: Threshold grep
+        run: bash scripts/check_hardcoded_thresholds.sh
       - name: Pytest
         run: pytest -q

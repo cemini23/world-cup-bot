@@ -40,6 +40,7 @@ world-cup-bot scan --conviction # conviction tier + quote gate
 world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
 world-cup-bot plan --record     # append intents to versioned JSONL ledger
 world-cup-bot pnl               # headline PnL (scope=current logic_version only)
+world-cup-bot fill --team Turkey --side YES --order-id ord-1 --price 0.44 --shares 500 --record
 world-cup-bot pnl --scope all --by-version  # forensics breakdown
 ```
 

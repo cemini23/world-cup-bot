@@ -4,9 +4,10 @@
 strategy_key: pm_wc_advance_lp
 
 current:
-  version_id: wc_advance_lp_v1
-  deployed_at: "2026-05-30T00:00:00Z"
-  note: "Scanner + conviction YAML + dry-run quoter; bilateral split 50/50 above 90c mid"
+  version_id: wc_advance_lp_v2
+  deployed_at: "2026-05-30T12:00:00Z"
+  note: "Fill handler module 4 — 60s limit exit, queue depletion, kill switch"
 
 legacy_version_ids:
+  - wc_advance_lp_v1
   - legacy_unversioned

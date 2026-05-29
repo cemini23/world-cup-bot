@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from world_cup_bot.fill_handler import ExitIntent
 from world_cup_bot.logic_version import (
     LEGACY_UNVERSIONED,
     PnlScope,
@@ -173,6 +174,40 @@ def record_fill(
         ),
     )
     return True
+
+
+def record_exit_intent(
+    intent: ExitIntent,
+    spec: StrategyVersionSpec,
+    *,
+    path: Path,
+    fill_order_id: str,
+    correlation_id: str | None = None,
+    dry_run: bool = True,
+) -> None:
+    event = "exit_intent_dry_run" if dry_run else "exit_intent"
+    append_row(
+        path,
+        LedgerRow(
+            event=event,
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            team=intent.team,
+            side=intent.side,
+            order_id=intent.order_id,
+            price=intent.price,
+            size_shares=intent.size_shares,
+            reason=intent.reason,
+            correlation_id=correlation_id,
+            extra={
+                "token_id": intent.token_id,
+                "fill_order_id": fill_order_id,
+                "due_by": intent.due_by.isoformat(),
+                "kill_switch": intent.kill_switch,
+            },
+        ),
+    )
 
 
 @dataclass(frozen=True)
