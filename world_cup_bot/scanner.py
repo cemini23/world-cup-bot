@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from world_cup_bot import calendar_guard, team_names
+from world_cup_bot.http_client import urlopen_get
 from world_cup_bot.operating_config import OperatingConfig, load_operating_config
 
 _ADVANCE_QUESTION = re.compile(
@@ -170,8 +171,10 @@ def fetch_search_payload(
 ) -> dict[str, Any]:
     params = urllib.parse.urlencode({"q": query, "limit_per_type": "50"})
     url = f"{gamma_url}/public-search?{params}"
-    open_fn = opener or urllib.request.urlopen
-    with open_fn(url, timeout=30) as resp:
+    if opener is not None:
+        with opener(url, timeout=30) as resp:
+            return json.loads(resp.read().decode())
+    with urlopen_get(url, timeout=30) as resp:
         return json.loads(resp.read().decode())
 
 

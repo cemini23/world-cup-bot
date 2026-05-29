@@ -3,8 +3,10 @@
 ## Prerequisites
 
 - Python 3.11+
-- Polymarket account with CLOB API access
+- Polymarket account with CLOB API access (for live LP only)
 - US geoblock: check `GET https://polymarket.com/api/geoblock` from your egress IP before live orders
+
+**Gamma reads vs trading:** `gamma-api.polymarket.com` public-search works from a US IP when the client sends a normal `User-Agent` (bare Python `urllib` gets HTTP 403 from Cloudflare). **Order POST** is geo-blocked from the US — use non-US egress (see repo geoblock notes) for live quotes.
 
 ## Environment
 

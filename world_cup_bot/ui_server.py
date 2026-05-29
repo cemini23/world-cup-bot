@@ -88,6 +88,12 @@ class UiHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not_found", "path": path})
         except Exception as exc:
             hint = "Gamma/network unreachable? Check connection or try CLI: world-cup-bot scan"
+            if "403" in str(exc) and "Forbidden" in str(exc):
+                hint = (
+                    "HTTP 403 from Gamma is usually Cloudflare blocking bare Python clients — "
+                    "upgrade to latest world-cup-bot (User-Agent fix). "
+                    "US IP blocks order POST, not public Gamma reads."
+                )
             if "No such file" in str(exc) or "not found" in str(exc).lower():
                 hint = (
                     "Config file missing — pip install -e . from the world-cup-bot repo, "
