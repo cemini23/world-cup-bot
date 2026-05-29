@@ -16,11 +16,17 @@ from world_cup_bot import (
     conviction,
     fill_handler,
     ledger,
+    preflight,
     quoter,
     scanner,
     ws_user,
 )
-from world_cup_bot.clob_auth import MissingClobAuthError, load_clob_auth
+from world_cup_bot.clob_auth import (
+    MissingClobAuthError,
+    load_clob_auth,
+    load_maker_address,
+    load_poly_address,
+)
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
@@ -381,6 +387,19 @@ def _print_fill_result(result: fill_handler.FillHandlerResult) -> None:
         print("exit_intent:  (none — kill switch active)")
 
 
+def _cmd_preflight(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    report = preflight.run_preflight(settings, test_auth=not args.skip_auth)
+    for check in report.checks:
+        icon = {"pass": "OK", "warn": "WARN", "fail": "FAIL", "skip": "SKIP"}[check.status.value]
+        print(f"[{icon:4}] {check.name:16} {check.detail}")
+    if report.ok:
+        print("\nPreflight passed.")
+        return 0
+    print("\nPreflight failed — fix FAIL items before live LP.")
+    return 1
+
+
 def _cmd_watch(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     version_spec = load_strategy_version(Path(settings.logic_version_config))
@@ -389,6 +408,8 @@ def _cmd_watch(args: argparse.Namespace) -> int:
 
     try:
         auth = load_clob_auth()
+        poly_address = load_poly_address()
+        maker_address = load_maker_address()
     except MissingClobAuthError as exc:
         print(str(exc))
         return 1
@@ -407,6 +428,11 @@ def _cmd_watch(args: argparse.Namespace) -> int:
         ledger_path=settings.ledger_path,
         dry_run=settings.dry_run,
         record=args.record,
+        settings=settings,
+        clob_url=settings.clob_url,
+        auth=auth,
+        poly_address=poly_address,
+        maker_address=maker_address,
         on_result=_print_fill_result if args.verbose else None,
     )
 
@@ -596,6 +622,17 @@ def main(argv: list[str] | None = None) -> None:
         help="Logging level (default: INFO)",
     )
     wch.set_defaults(eligible_only=True, func=_cmd_watch)
+
+    pf = sub.add_parser(
+        "preflight",
+        help="Geoblock + Gamma + CLOB auth checks before live LP",
+    )
+    pf.add_argument(
+        "--skip-auth",
+        action="store_true",
+        help="Skip L2 GET /data/orders auth probe",
+    )
+    pf.set_defaults(func=_cmd_preflight)
 
     ui = sub.add_parser(
         "ui",

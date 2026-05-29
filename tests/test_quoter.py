@@ -90,7 +90,7 @@ def test_submit_dry_run_returns_intents():
     assert out == [intent]
 
 
-def test_submit_live_raises():
+def test_submit_live_requires_clob_client(monkeypatch):
     settings = _settings(dry_run=False)
     snap = MarketSnapshot(
         mid=0.45,
@@ -113,5 +113,12 @@ def test_submit_live_raises():
         reason="test",
         snapshot=snap,
     )
-    with pytest.raises(NotImplementedError):
+
+    from world_cup_bot.clob_live import LiveClobNotConfiguredError
+
+    def fake_build(_settings):
+        raise LiveClobNotConfiguredError("missing")
+
+    monkeypatch.setattr("world_cup_bot.clob_live.build_clob_client", fake_build)
+    with pytest.raises(LiveClobNotConfiguredError):
         quoter.submit_quotes([intent], settings)

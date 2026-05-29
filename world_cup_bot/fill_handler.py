@@ -5,11 +5,14 @@ from __future__ import annotations
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from world_cup_bot.operating_config import FillHandlerOps, OperatingConfig
 from world_cup_bot.quoter import _tick_price
 from world_cup_bot.scanner import AdvanceMarket
+
+if TYPE_CHECKING:
+    from world_cup_bot.config import Settings
 
 Side = Literal["YES", "NO"]
 
@@ -145,9 +148,21 @@ def handle_fill(
     )
 
 
-def submit_exit(intent: ExitIntent, *, dry_run: bool = True) -> ExitIntent:
+def submit_exit(
+    intent: ExitIntent,
+    *,
+    dry_run: bool = True,
+    settings: Settings | None = None,
+) -> ExitIntent:
     if dry_run:
         return intent
-    raise NotImplementedError(
-        "Live CLOB exit POST not enabled in public OSS — set DRY_RUN=true or use Cemini module"
-    )
+    from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_exit_intent
+    from world_cup_bot.config import Settings as BotSettings
+
+    cfg = settings or BotSettings.from_env()
+    client = build_clob_client(cfg)
+    try:
+        post_exit_intent(client, intent)
+    except LiveClobPostError as exc:
+        raise RuntimeError(f"exit POST failed for {intent.team} {intent.side}: {exc}") from exc
+    return intent

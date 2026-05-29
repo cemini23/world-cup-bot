@@ -168,9 +168,15 @@ def build_quotes(
 
 
 def submit_quotes(intents: list[QuoteIntent], settings: Settings) -> list[QuoteIntent]:
-    """Post to CLOB when DRY_RUN=false; prod wiring uses cemini-egress-fi."""
+    """Post to CLOB when DRY_RUN=false (requires py-clob-client + non-US egress)."""
     if settings.dry_run:
         return intents
-    raise NotImplementedError(
-        "Live CLOB POST not enabled in public OSS — set DRY_RUN=true or use Cemini module"
-    )
+    from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_quote_intent
+
+    client = build_clob_client(settings)
+    for intent in intents:
+        try:
+            post_quote_intent(client, intent)
+        except LiveClobPostError as exc:
+            raise RuntimeError(f"quote POST failed for {intent.team} {intent.side}: {exc}") from exc
+    return intents

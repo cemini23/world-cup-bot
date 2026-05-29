@@ -12,6 +12,8 @@ dependencies = [
 [project.optional-dependencies]
 live = [
     "websockets>=12.0",
+    "py-clob-client>=0.34.0",
+    "eth-account>=0.13.0",
 ]
 dev = [
     "pytest>=8.0",

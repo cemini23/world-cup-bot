@@ -33,7 +33,25 @@ world-cup-bot watch --verbose --record
 
 Subscribes to `wss://ws-subscriptions-clob.polymarket.com/ws/user` for WC advance **condition IDs** discovered via Gamma. On `TRADE` / `MATCHED`, parses **maker** legs → fill handler → optional ledger.
 
-Pair with periodic REST `/orders` reconciliation before live capital (stub loop runs every 30s; full HMAC pass is a follow-up). WS alone can miss silent fills per Cemini wiki.
+Pair with periodic REST `/data/trades` reconciliation (every 30s in `watch`) before live capital. WS alone can miss silent fills per Cemini wiki.
+
+## Pre-flight (before live LP)
+
+```bash
+world-cup-bot preflight
+```
+
+Checks: geoblock, Gamma public-search, CLOB `/time`, L2 creds, optional `GET /data/orders` auth probe, `py-clob-client` when `DRY_RUN=false`.
+
+## Live POST (DRY_RUN=false)
+
+```bash
+pip install -e ".[live]"   # py-clob-client + websockets + eth-account
+world-cup-bot preflight      # must pass geoblock + deps from non-US egress
+world-cup-bot plan           # posts post-only GTC limits when DRY_RUN=false
+```
+
+Requires `POLYMARKET_PRIVATE_KEY`, L2 API creds, and `POLYMARKET_FUNDER_ADDRESS` for proxy wallets. **Order POST is geo-blocked from the US.**
 
 ## Calendar guard
 

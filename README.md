@@ -44,6 +44,7 @@ world-cup-bot plan --record     # append intents to versioned JSONL ledger
 world-cup-bot context --json    # decision bundle for external LLM (no API call)
 world-cup-bot ui                  # optional read-only dashboard → http://127.0.0.1:8765
 world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
+world-cup-bot preflight         # geoblock + Gamma + CLOB auth before live LP
 world-cup-bot watch --verbose   # user-channel WS → fill handler (needs L2 API creds)
 world-cup-bot pnl               # headline PnL (scope=current logic_version only)
 world-cup-bot fill --team Turkey --side YES --order-id ord-1 --price 0.44 --shares 500 --record
@@ -55,6 +56,8 @@ Requires a Polymarket account with CLOB API access. Kalshi alerts need separate 
 **Calendar guard (Module 5)** uses vendored [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) fixtures (`data/worldcup2026-fixtures.json`, CC0) — not live prices. See `data/DATA_ATTRIBUTION.md`.
 
 See [SETUP.md](SETUP.md) for environment variables and geoblock notes.
+
+**Contributors / AI agents:** read [CLAUDE.md](CLAUDE.md) for module map, config rules, and dev checklist.
 
 ## Security
 

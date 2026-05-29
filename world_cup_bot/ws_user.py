@@ -11,10 +11,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 from world_cup_bot.clob_auth import ClobAuth
+from world_cup_bot.config import Settings
 from world_cup_bot.fill_handler import FillEvent, FillHandlerResult, handle_fill, submit_exit
 from world_cup_bot.ledger import DuplicateFillError, record_exit_intent, record_fill
 from world_cup_bot.logic_version import StrategyVersionSpec
 from world_cup_bot.operating_config import OperatingConfig
+from world_cup_bot.reconcile import ReconcileState, run_reconcile_pass
 from world_cup_bot.scanner import AdvanceMarket
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,12 @@ class FillWatchContext:
     ledger_path: str
     dry_run: bool
     record: bool
+    settings: Settings | None = None
+    clob_url: str = "https://clob.polymarket.com"
+    auth: ClobAuth | None = None
+    poly_address: str = ""
+    maker_address: str = ""
+    reconcile_state: ReconcileState = field(default_factory=ReconcileState)
     seen_fill_keys: set[str] = field(default_factory=set)
     stats: WatchStats = field(default_factory=WatchStats)
     on_result: Callable[[FillHandlerResult], None] | None = None
@@ -211,7 +219,7 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
                 )
 
         if result.exit_intent:
-            submit_exit(result.exit_intent, dry_run=ctx.dry_run)
+            submit_exit(result.exit_intent, dry_run=ctx.dry_run, settings=ctx.settings)
 
         if ctx.on_result:
             ctx.on_result(result)
@@ -229,16 +237,40 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
     return results
 
 
-async def reconciliation_loop(*, stop: asyncio.Event) -> None:
-    """Periodic REST reconciliation stub (wiki: WS alone misses silent fills).
+async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> None:
+    """Periodic REST /data/trades pass — WS alone can miss silent fills."""
+    if ctx.auth is None or not ctx.poly_address or not ctx.maker_address:
+        while not stop.is_set():
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=RECONCILE_INTERVAL_SEC)
+            except TimeoutError:
+                logger.debug("reconcile skipped — L2 creds or address not configured")
+        return
 
-    Full GET /orders HMAC auth lands in a follow-up — keeps the cadence hook live.
-    """
     while not stop.is_set():
         try:
             await asyncio.wait_for(stop.wait(), timeout=RECONCILE_INTERVAL_SEC)
         except TimeoutError:
-            logger.debug("reconcile tick — REST /orders pass not wired yet")
+            stats = run_reconcile_pass(
+                clob_url=ctx.clob_url,
+                auth=ctx.auth,
+                poly_address=ctx.poly_address,
+                maker_address=ctx.maker_address,
+                ctx=ctx,
+                state=ctx.reconcile_state,
+            )
+            if stats.fills_processed:
+                logger.info(
+                    "reconcile pass: fetched=%d recovered=%d",
+                    stats.trades_fetched,
+                    stats.fills_processed,
+                )
+            else:
+                logger.debug(
+                    "reconcile pass: fetched=%d skipped=%d",
+                    stats.trades_fetched,
+                    stats.fills_skipped,
+                )
 
 
 async def _ping_loop(ws: Any, *, stop: asyncio.Event) -> None:
@@ -276,7 +308,7 @@ async def watch_fills(
     async with websockets.connect(ws_url, ping_interval=None) as ws:
         await ws.send(json.dumps(sub))
         ping_task = asyncio.create_task(_ping_loop(ws, stop=stop))
-        reconcile_task = asyncio.create_task(reconciliation_loop(stop=stop))
+        reconcile_task = asyncio.create_task(reconciliation_loop(stop=stop, ctx=ctx))
         try:
             async for raw in ws:
                 ctx.stats.messages += 1

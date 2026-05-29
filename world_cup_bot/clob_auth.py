@@ -46,3 +46,30 @@ def load_clob_auth() -> ClobAuth:
             "create_or_derive_api_creds()."
         )
     return ClobAuth(api_key=api_key, secret=secret, passphrase=passphrase)
+
+
+def load_poly_address() -> str:
+    """Signer address for L2 POLY_ADDRESS header."""
+    explicit = os.environ.get("POLYMARKET_POLY_ADDRESS", "").strip()
+    if explicit:
+        return explicit
+    pk = os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip()
+    if pk:
+        try:
+            from eth_account import Account
+        except ImportError as exc:
+            raise MissingClobAuthError(
+                "Set POLYMARKET_POLY_ADDRESS or pip install -e '.[live]' (eth-account)"
+            ) from exc
+        return Account.from_key(pk).address
+    raise MissingClobAuthError(
+        "POLYMARKET_POLY_ADDRESS or POLYMARKET_PRIVATE_KEY required for L2 REST"
+    )
+
+
+def load_maker_address() -> str:
+    """Funder/proxy address for GET /data/trades maker filter."""
+    funder = os.environ.get("POLYMARKET_FUNDER_ADDRESS", "").strip()
+    if funder:
+        return funder
+    return load_poly_address()
