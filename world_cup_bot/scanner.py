@@ -136,9 +136,7 @@ def parse_market(
         schedule=schedule,
     )
     ops = operating or load_operating_config()
-    bilateral = mid is not None and (
-        mid > ops.bilateral.high_mid or mid < ops.bilateral.low_mid
-    )
+    bilateral = mid is not None and (mid > ops.bilateral.high_mid or mid < ops.bilateral.low_mid)
 
     return AdvanceMarket(
         team=team,

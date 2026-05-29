@@ -1,0 +1,24 @@
+{
+  "asset_id": "52114319501245915516055106046884209969926127482827954674443846427813813222426",
+  "event_type": "trade",
+  "id": "28c4d2eb-bbea-40e7-a9f0-b2fdb56b2c2e",
+  "last_update": "1717248000",
+  "maker_orders": [
+    {
+      "asset_id": "yes",
+      "matched_amount": "500",
+      "order_id": "0xff354cd7ca7539dfa9c28d90943ab5779a4eac34b9b37a757d7b32bdfb11790b",
+      "outcome": "YES",
+      "price": "0.44"
+    }
+  ],
+  "market": "0x1",
+  "matchtime": "1717248000",
+  "outcome": "YES",
+  "price": "0.44",
+  "side": "BUY",
+  "size": "500",
+  "status": "MATCHED",
+  "timestamp": "1717248000",
+  "type": "TRADE"
+}

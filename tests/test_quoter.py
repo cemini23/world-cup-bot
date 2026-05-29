@@ -13,6 +13,7 @@ def _settings(**overrides) -> Settings:
     base = dict(
         gamma_url="https://gamma-api.polymarket.com",
         clob_url="https://clob.polymarket.com",
+        ws_user_url="wss://ws-subscriptions-clob.polymarket.com/ws/user",
         dry_run=True,
         min_hours_before_kickoff=10.0,
         max_notional_per_market_usd=2000.0,

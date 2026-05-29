@@ -4,10 +4,11 @@
 strategy_key: pm_wc_advance_lp
 
 current:
-  version_id: wc_advance_lp_v2
-  deployed_at: "2026-05-30T12:00:00Z"
-  note: "Fill handler module 4 — 60s limit exit, queue depletion, kill switch"
+  version_id: wc_advance_lp_v3
+  deployed_at: "2026-05-29T18:00:00Z"
+  note: "User-channel WS fill wiring — MATCHED maker trades → fill handler + ledger"
 
 legacy_version_ids:
+  - wc_advance_lp_v2
   - wc_advance_lp_v1
   - legacy_unversioned

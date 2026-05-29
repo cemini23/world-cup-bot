@@ -24,6 +24,7 @@ def _bool(name: str, default: bool) -> bool:
 class Settings:
     gamma_url: str
     clob_url: str
+    ws_user_url: str
     dry_run: bool
     min_hours_before_kickoff: float
     max_notional_per_market_usd: float
@@ -40,6 +41,10 @@ class Settings:
             ).rstrip("/"),
             clob_url=os.environ.get("POLYMARKET_CLOB_URL", "https://clob.polymarket.com").rstrip(
                 "/"
+            ),
+            ws_user_url=os.environ.get(
+                "POLYMARKET_WS_USER_URL",
+                "wss://ws-subscriptions-clob.polymarket.com/ws/user",
             ),
             dry_run=_bool("DRY_RUN", True),
             min_hours_before_kickoff=_float("MIN_HOURS_BEFORE_KICKOFF", 10.0),

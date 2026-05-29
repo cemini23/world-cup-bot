@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import logging
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from world_cup_bot import calendar_guard, conviction, fill_handler, ledger, quoter, scanner
+from world_cup_bot import calendar_guard, conviction, fill_handler, ledger, quoter, scanner, ws_user
+from world_cup_bot.clob_auth import MissingClobAuthError, load_clob_auth
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
@@ -243,6 +246,90 @@ def _cmd_fill(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_fill_result(result: fill_handler.FillHandlerResult) -> None:
+    fill = result.fill
+    print(
+        f"fill:         {fill.order_id} {fill.team} {fill.side} "
+        f"@ {fill.fill_price:.2f} x {fill.fill_shares:.1f}"
+    )
+    print(f"kill_switch:  {result.kill_switch}")
+    print(f"pull_quotes:  {result.pull_quotes}")
+    print(f"reason:       {result.reason}")
+    if result.exit_intent:
+        ex = result.exit_intent
+        print(
+            f"exit_intent:  {ex.order_id} {ex.side} @ {ex.price:.2f} x {ex.size_shares:.1f} "
+            f"due {ex.due_by.isoformat()}"
+        )
+    else:
+        print("exit_intent:  (none — kill switch active)")
+
+
+def _cmd_watch(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    operating = load_operating_config(Path(settings.operating_config))
+    print(version_spec.version_banner())
+
+    try:
+        auth = load_clob_auth()
+    except MissingClobAuthError as exc:
+        print(str(exc))
+        return 1
+
+    markets = _load_markets(settings)
+    if args.eligible_only:
+        markets = scanner.filter_lp_eligible(markets)
+    if not markets:
+        print("No advance markets to watch.")
+        return 1
+
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={m.condition_id: m for m in markets},
+        operating=operating,
+        version_spec=version_spec,
+        ledger_path=settings.ledger_path,
+        dry_run=settings.dry_run,
+        record=args.record,
+        on_result=_print_fill_result if args.verbose else None,
+    )
+
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper(), logging.INFO),
+        format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    )
+
+    condition_ids = sorted({m.condition_id for m in markets})
+    print(
+        f"watch: {len(markets)} teams, {len(condition_ids)} condition ids, "
+        f"record={'on' if args.record else 'off'}, dry_run={settings.dry_run}"
+    )
+    print("Ctrl+C to stop.")
+
+    try:
+        asyncio.run(
+            ws_user.watch_fills(
+                ws_url=settings.ws_user_url,
+                auth=auth,
+                markets=markets,
+                ctx=ctx,
+            )
+        )
+    except KeyboardInterrupt:
+        print("\nwatch stopped.")
+    except ImportError as exc:
+        print(str(exc))
+        return 1
+
+    stats = ctx.stats
+    print(
+        f"stats: messages={stats.messages} trades={stats.trades_seen} "
+        f"fills={stats.fills_processed} dedup_skips={stats.fills_skipped_dedup} "
+        f"unknown_market={stats.fills_skipped_unknown_market}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
@@ -326,6 +413,33 @@ def main(argv: list[str] | None = None) -> None:
     )
     fl.add_argument("--record", action="store_true", help="Append fill + exit rows to ledger")
     fl.set_defaults(func=_cmd_fill)
+
+    wch = sub.add_parser(
+        "watch",
+        help="Live user-channel WebSocket → fill handler (requires L2 API creds)",
+    )
+    wch.add_argument(
+        "--all",
+        dest="eligible_only",
+        action="store_false",
+        help="Subscribe to all discovered advance markets (not LP-filtered)",
+    )
+    wch.add_argument(
+        "--record",
+        action="store_true",
+        help="Append venue-confirmed fills + exit intents to ledger",
+    )
+    wch.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print each fill handler result to stdout",
+    )
+    wch.add_argument(
+        "--log-level",
+        default="INFO",
+        help="Logging level (default: INFO)",
+    )
+    wch.set_defaults(eligible_only=True, func=_cmd_watch)
 
     args = parser.parse_args(argv)
     if not args.command:
