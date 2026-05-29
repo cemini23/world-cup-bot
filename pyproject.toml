@@ -30,6 +30,9 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["world_cup_bot*"]
 
+[tool.setuptools.package-data]
+world_cup_bot = ["static/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

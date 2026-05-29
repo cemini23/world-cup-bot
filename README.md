@@ -15,6 +15,7 @@ Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets
 | **Conviction LP** | Resting limits on research-backed mid-tier teams; bilateral mode above ~90¢ |
 | **Fill handler** | Limit exit within ~60s; queue-depletion pull; **live fills via user-channel WS** |
 | **Optional advisor** | `context --json` or `plan --advisor` — LLM overlay; **off by default** (no API cost) |
+| **Optional UI** | `world-cup-bot ui` — read-only localhost dashboard (stdlib, port 8765) |
 | **Cross-venue scanner** | Polymarket vs Kalshi advance gaps — **alert-only** in v1 |
 | **Ledger** | Daily P&L from fills + rewards |
 
@@ -41,6 +42,7 @@ world-cup-bot scan --conviction # conviction tier + quote gate
 world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
 world-cup-bot plan --record     # append intents to versioned JSONL ledger
 world-cup-bot context --json    # decision bundle for external LLM (no API call)
+world-cup-bot ui                  # optional read-only dashboard → http://127.0.0.1:8765
 world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
 world-cup-bot watch --verbose   # user-channel WS → fill handler (needs L2 API creds)
 world-cup-bot pnl               # headline PnL (scope=current logic_version only)

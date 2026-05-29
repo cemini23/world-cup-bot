@@ -81,6 +81,19 @@ If `--advisor` is passed but `ADVISOR_BASE_URL` is unset, the bot **continues wi
 
 Prompt template: `prompts/advisor.md`. The advisor may only **skip, reduce, or flag** — never raise notional above YAML caps.
 
+## Optional localhost UI (read-only)
+
+No extra dependencies — stdlib HTTP server only. **Not started automatically.**
+
+```bash
+world-cup-bot ui
+# open http://127.0.0.1:8765
+```
+
+Tabs: **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds `127.0.0.1` by default.
+
+Override port: `world-cup-bot ui --port 8765`. CLI remains the path for `watch`, live fills, and recording.
+
 ## Disclaimer
 
 Prediction markets involve loss of capital. LP without cancel discipline around kickoff has burned operators. Read the code before live mode.

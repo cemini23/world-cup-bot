@@ -24,6 +24,7 @@ from world_cup_bot.clob_auth import MissingClobAuthError, load_clob_auth
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
+from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
 
 
 def _ledger_summary_dict(settings: Settings, version_spec) -> dict | None:
@@ -445,6 +446,13 @@ def _cmd_watch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ui(args: argparse.Namespace) -> int:
+    host = args.host or DEFAULT_HOST
+    port = args.port or DEFAULT_PORT
+    run_ui_server(host=host, port=port)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
@@ -588,6 +596,23 @@ def main(argv: list[str] | None = None) -> None:
         help="Logging level (default: INFO)",
     )
     wch.set_defaults(eligible_only=True, func=_cmd_watch)
+
+    ui = sub.add_parser(
+        "ui",
+        help="Optional read-only localhost dashboard (stdlib, no extra deps)",
+    )
+    ui.add_argument(
+        "--host",
+        default=DEFAULT_HOST,
+        help="Bind address (default: 127.0.0.1 — localhost only)",
+    )
+    ui.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_PORT,
+        help="Port (default: 8765)",
+    )
+    ui.set_defaults(func=_cmd_ui)
 
     args = parser.parse_args(argv)
     if not args.command:

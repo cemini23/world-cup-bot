@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>World Cup Bot — local dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --ok: #3dd68c;
+      --warn: #f5a524;
+      --bad: #f31260;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    .badge {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .badge.dry { border-color: var(--ok); color: var(--ok); }
+    .badge.live { border-color: var(--bad); color: var(--bad); }
+    .banner {
+      margin: 0;
+      padding: 8px 20px;
+      background: #1e2a1e;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    nav {
+      display: flex;
+      gap: 4px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    nav button {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    nav button.active, nav button:hover {
+      color: var(--text);
+      border-color: var(--border);
+      background: var(--panel);
+    }
+    main { padding: 16px 20px 40px; max-width: 1200px; }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .toolbar button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+    .toolbar button.secondary {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .status { color: var(--muted); font-size: 0.85rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; }
+    .y { color: var(--ok); }
+    .n { color: var(--bad); }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .card .label { color: var(--muted); font-size: 0.78rem; }
+    .card .value { font-size: 1.25rem; font-weight: 600; margin-top: 4px; }
+    pre {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      max-height: 480px;
+      font-size: 0.78rem;
+    }
+    .err {
+      background: #2a1518;
+      border: 1px solid var(--bad);
+      color: #ffb4c4;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>World Cup Bot</h1>
+    <span id="version-badge" class="badge">…</span>
+    <span id="dry-badge" class="badge dry">DRY RUN</span>
+    <span id="advisor-badge" class="badge">advisor off</span>
+  </header>
+  <p class="banner">Read-only localhost dashboard — refresh pulls live Gamma data. Orders are not posted from the browser.</p>
+
+  <nav id="tabs">
+    <button type="button" data-tab="markets" class="active">Markets</button>
+    <button type="button" data-tab="plan">Plan</button>
+    <button type="button" data-tab="calendar">Calendar</button>
+    <button type="button" data-tab="pnl">PnL</button>
+    <button type="button" data-tab="advisor">Advisor</button>
+  </nav>
+
+  <main>
+    <div class="toolbar">
+      <button type="button" id="refresh-btn">Refresh tab</button>
+      <button type="button" id="refresh-all-btn" class="secondary">Refresh all</button>
+      <span class="status" id="status">Loading…</span>
+    </div>
+    <div id="error" class="err" style="display:none"></div>
+
+    <section id="panel-markets" class="panel active">
+      <div class="cards" id="markets-cards"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th><th>Mid</th><th>Spread</th><th>Hrs</th><th>Mode</th><th>Quote</th><th>LP</th><th>Reason</th>
+          </tr>
+        </thead>
+        <tbody id="markets-body"></tbody>
+      </table>
+    </section>
+
+    <section id="panel-plan" class="panel">
+      <div class="cards" id="plan-cards"></div>
+      <table>
+        <thead>
+          <tr><th>Team</th><th>Side</th><th>Price</th><th>Shares</th><th>USD</th><th>Reason</th></tr>
+        </thead>
+        <tbody id="plan-body"></tbody>
+      </table>
+    </section>
+
+    <section id="panel-calendar" class="panel">
+      <div class="cards" id="calendar-cards"></div>
+      <table>
+        <thead><tr><th>Team</th><th>Hours to kickoff</th></tr></thead>
+        <tbody id="calendar-body"></tbody>
+      </table>
+    </section>
+
+    <section id="panel-pnl" class="panel">
+      <div class="cards" id="pnl-cards"></div>
+      <h3 style="font-size:0.95rem;color:var(--muted)">By logic version</h3>
+      <table>
+        <thead><tr><th>Version</th><th>Rows</th><th>Fills</th><th>Net USD</th></tr></thead>
+        <tbody id="pnl-body"></tbody>
+      </table>
+    </section>
+
+    <section id="panel-advisor" class="panel">
+      <p style="color:var(--muted);font-size:0.88rem">
+        Copy this JSON into Claude, ChatGPT, Cursor, or Ollama with <code>prompts/advisor.md</code>.
+        Set <code>ADVISOR_BASE_URL</code> to enable in-process advisor on CLI <code>plan --advisor</code>.
+      </p>
+      <button type="button" id="copy-advisor" class="secondary" style="margin-bottom:10px">Copy JSON</button>
+      <pre id="advisor-pre">Loading…</pre>
+    </section>
+  </main>
+
+  <script>
+    let activeTab = "markets";
+
+    function fmt(v, d = 3) {
+      if (v === null || v === undefined) return "—";
+      if (typeof v === "number") return v.toFixed(d);
+      return String(v);
+    }
+
+    function yn(b) {
+      return b ? '<span class="y">Y</span>' : '<span class="n">N</span>';
+    }
+
+    function card(label, value) {
+      return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("error");
+      if (!msg) { el.style.display = "none"; el.textContent = ""; return; }
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+
+    async function fetchJson(path) {
+      const res = await fetch(path);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || res.statusText);
+      return data;
+    }
+
+    async function loadMeta() {
+      const m = await fetchJson("/api/meta");
+      document.getElementById("version-badge").textContent = m.logic_version;
+      const dry = document.getElementById("dry-badge");
+      dry.textContent = m.dry_run ? "DRY RUN" : "LIVE MODE";
+      dry.className = "badge " + (m.dry_run ? "dry" : "live");
+      document.getElementById("advisor-badge").textContent =
+        m.advisor_configured ? "advisor env set" : "advisor off";
+    }
+
+    async function loadMarkets() {
+      const d = await fetchJson("/api/markets");
+      document.getElementById("markets-cards").innerHTML =
+        card("Markets", d.count) + card("Eligible filter", d.eligible_only ? "on" : "off");
+      const tbody = document.getElementById("markets-body");
+      tbody.innerHTML = d.markets.map(r => `<tr>
+        <td>${r.team}</td><td>${fmt(r.mid)}</td><td>${fmt(r.spread)}</td>
+        <td>${fmt(r.hours_to_kickoff, 1)}</td><td>${r.mode}</td>
+        <td>${yn(r.quote)}</td><td>${yn(r.lp_eligible)}</td><td>${r.reason}</td>
+      </tr>`).join("");
+    }
+
+    async function loadPlan() {
+      const d = await fetchJson("/api/plan");
+      document.getElementById("plan-cards").innerHTML =
+        card("Intents", d.intent_count) + card("Conviction rows", d.conviction_rows);
+      document.getElementById("plan-body").innerHTML = d.intents.map(i => `<tr>
+        <td>${i.team}</td><td>${i.side}</td><td>${fmt(i.price, 2)}</td>
+        <td>${fmt(i.size_shares, 1)}</td><td>${Math.round(i.notional_usd)}</td><td>${i.reason}</td>
+      </tr>`).join("") || "<tr><td colspan=6>No quote intents</td></tr>";
+    }
+
+    async function loadCalendar() {
+      const d = await fetchJson("/api/calendar");
+      document.getElementById("calendar-cards").innerHTML =
+        card("In cancel window", d.cancel_window_count) +
+        card("Threshold (h)", d.min_hours_before_kickoff);
+      document.getElementById("calendar-body").innerHTML = d.cancel_window.map(r => `<tr>
+        <td>${r.team}</td><td>${r.hours_to_kickoff}</td>
+      </tr>`).join("") || "<tr><td colspan=2>None in cancel window</td></tr>";
+    }
+
+    async function loadPnl() {
+      const d = await fetchJson("/api/pnl");
+      if (d.empty) {
+        document.getElementById("pnl-cards").innerHTML = card("Ledger", "empty");
+        document.getElementById("pnl-body").innerHTML = "";
+        return;
+      }
+      const s = d.summary;
+      document.getElementById("pnl-cards").innerHTML =
+        card("Net PnL", "$" + s.net_pnl_usd.toFixed(2)) +
+        card("Fills", s.fills) + card("Rows", s.row_count);
+      document.getElementById("pnl-body").innerHTML = d.by_version.map(v => `<tr>
+        <td>${v.logic_version}</td><td>${v.row_count}</td><td>${v.fills}</td>
+        <td>${v.net_pnl_usd.toFixed(2)}</td>
+      </tr>`).join("");
+    }
+
+    async function loadAdvisor() {
+      const d = await fetchJson("/api/advisor/context");
+      const text = JSON.stringify(d.context, null, 2);
+      document.getElementById("advisor-pre").textContent = text;
+    }
+
+    const loaders = {
+      markets: loadMarkets,
+      plan: loadPlan,
+      calendar: loadCalendar,
+      pnl: loadPnl,
+      advisor: loadAdvisor,
+    };
+
+    async function refreshTab(tab) {
+      document.getElementById("status").textContent = "Loading " + tab + "…";
+      showError("");
+      try {
+        await loaders[tab]();
+        document.getElementById("status").textContent = "Updated " + new Date().toLocaleTimeString();
+      } catch (e) {
+        showError(String(e.message || e));
+        document.getElementById("status").textContent = "Error";
+      }
+    }
+
+    document.getElementById("tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-tab]");
+      if (!btn) return;
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("panel-" + activeTab).classList.add("active");
+      refreshTab(activeTab);
+    });
+
+    document.getElementById("refresh-btn").addEventListener("click", () => refreshTab(activeTab));
+    document.getElementById("refresh-all-btn").addEventListener("click", async () => {
+      for (const t of Object.keys(loaders)) await refreshTab(t);
+    });
+    document.getElementById("copy-advisor").addEventListener("click", async () => {
+      const text = document.getElementById("advisor-pre").textContent;
+      await navigator.clipboard.writeText(text);
+      document.getElementById("status").textContent = "Advisor JSON copied";
+    });
+
+    (async () => {
+      try {
+        await loadMeta();
+        await refreshTab("markets");
+      } catch (e) {
+        showError(String(e.message || e));
+      }
+    })();
+  </script>
+</body>
+</html>
