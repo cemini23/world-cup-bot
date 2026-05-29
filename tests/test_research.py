@@ -25,6 +25,8 @@ def _settings() -> Settings:
         logic_version_config="config/strategy_logic_versions.yaml",
         ledger_path="data/local/ledger.jsonl",
         operating_config="config/operating.yaml",
+        cross_venue_config="config/cross_venue.yaml",
+        kalshi_base_url="https://api.elections.kalshi.com/trade-api/v2",
     )
 
 
@@ -52,6 +54,14 @@ def test_build_group_conviction_bundle():
     assert bundle.focus["group"] == "B"
     assert "Canada" in bundle.focus["fixture_teams"]
     assert len(bundle.instructions) > 100
+
+
+def test_build_module6_scanner_bundle():
+    with patch("world_cup_bot.research.scanner.discover_advance_markets", return_value=[]):
+        bundle = build_research_bundle(ResearchMode.MODULE6_SCANNER, _settings())
+    assert bundle.focus["implementation_status"] == "built"
+    assert bundle.focus["config_pairs"] >= 5
+    assert "cross-venue-scan" in bundle.focus["cli"]
 
 
 def test_build_cross_venue_bundle():

@@ -92,7 +92,7 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 
 ## What shadow mode does *not* prove
 
-- Cross-venue Kalshi gaps (Module 6 not shipped)
+- Cross-venue Kalshi gaps: `world-cup-bot cross-venue-scan` (alert-only; optional `--loop`)
 - Adverse selection under live match news flow
 - `$POLY` airdrop eligibility
 

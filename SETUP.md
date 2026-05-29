@@ -76,7 +76,18 @@ See [SHADOW.md](SHADOW.md) for the phased go-live checklist (≥3 dry-run days, 
 
 ## Kalshi (optional)
 
-Cross-venue scanner is **alert-only** in v1. Kalshi credentials optional.
+Module 6 cross-venue scanner is **alert-only** — read-only Gamma + Kalshi public APIs. No Kalshi credentials required for scanning.
+
+```bash
+world-cup-bot cross-venue-scan              # scan config pairs once
+world-cup-bot cross-venue-scan --discover-only   # new PM↔Kalshi pairs for YAML
+world-cup-bot cross-venue-scan --loop       # poll every poll_interval_sec (YAML)
+world-cup-bot cross-venue-scan --alert-only # stdout alerts + slug-change warnings only
+```
+
+When Polymarket slugs change or new WC markets appear, run `--discover-only`, review `rules_hash`, paste rows into `config/cross_venue.yaml`.
+
+Kalshi trading credentials remain optional (`.env` — not used by scanner v1).
 
 ## Deep research prompts
 

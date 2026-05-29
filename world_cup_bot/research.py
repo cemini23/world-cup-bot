@@ -13,6 +13,7 @@ from world_cup_bot import calendar_guard, conviction, scanner
 from world_cup_bot.calendar_guard import load_fixtures
 from world_cup_bot.config import Settings
 from world_cup_bot.conviction import ConvictionConfig, TeamMode, load_conviction_config
+from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.ledger import load_rows, summarize_pnl
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.shadow_checklist import ready_payload
@@ -284,13 +285,18 @@ def build_research_bundle(
             focus["pnl"] = None
 
     elif mode == ResearchMode.MODULE6_SCANNER:
+        cv_cfg = load_cross_venue_config(Path(settings.cross_venue_config))
         focus["fade_watch_teams"] = sorted(cfg.fade_watch)
-        focus["alert_threshold_pp"] = 5.0
+        focus["alert_threshold_pp"] = cv_cfg.alert_threshold_pp
+        focus["poll_interval_sec"] = cv_cfg.poll_interval_sec
+        focus["config_pairs"] = len(cv_cfg.pairs)
+        focus["discovery_prefixes"] = list(cv_cfg.discovery.kalshi_ticker_prefixes)
         focus["pm_contract_pattern"] = (
             "Will {Team} advance to the knockout stages at the 2026 FIFA World Cup?"
         )
-        focus["kalshi_pattern_hint"] = "World Cup Group {X} Qualifiers / advance markets"
-        focus["implementation_status"] = "not_built"
+        focus["kalshi_pattern_hint"] = "KXWCGROUPWIN / KXWCGROUPQUAL / KXWCROUND tickers"
+        focus["implementation_status"] = "built"
+        focus["cli"] = "world-cup-bot cross-venue-scan [--discover-only] [--loop]"
 
     return ResearchBundle(
         mode=mode.value,

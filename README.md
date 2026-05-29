@@ -18,7 +18,7 @@ Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets
 | **Gemini Deep Research** | `research gemini <mode>` — paste into gemini.google.com |
 | **Agent JSON research** | `research run <mode> --json` — Cursor/Claude prompts in `prompts/` |
 | **Optional UI** | `world-cup-bot ui` — read-only localhost dashboard (stdlib, port 8765) |
-| **Cross-venue scanner** | Polymarket vs Kalshi advance gaps — **alert-only** in v1 |
+| **Cross-venue scanner** | `cross-venue-scan` — PM vs Kalshi gaps, alert-only; auto-discovers new pairs |
 | **Ledger** | Daily P&L from fills + rewards |
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.

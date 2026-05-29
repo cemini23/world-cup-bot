@@ -17,7 +17,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 3 | Quoter | `quoter.py` | Dry-run default; live POST via `clob_live.py` |
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile |
 | 5 | Calendar guard | `calendar_guard.py`, `data/worldcup2026-fixtures.json` | Live — CC0 fixtures, not Polymarket |
-| 6 | Cross-venue | — | **Not built** — PM vs Kalshi alerts only in v1 spec |
+| 6 | Cross-venue | `cross_venue_scanner.py`, `kalshi_rest.py`, `pm_discovery.py`, `config/cross_venue.yaml` | Live — alert-only PM vs Kalshi |
 | 7 | Ledger / PnL | `ledger.py`, `logic_version.py` | Live — JSONL + version filter |
 | — | Preflight | `preflight.py`, `clob_rest.py`, `clob_signing.py` | Geoblock + auth checks |
 | — | Optional advisor | `advisor.py`, `prompts/advisor.md` | Off unless `ADVISOR_BASE_URL` set |
@@ -65,6 +65,7 @@ world-cup-bot watch [--verbose] [--record]
 world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot pnl [--scope current|legacy|all] [--by-version]
 world-cup-bot context --json
+world-cup-bot cross-venue-scan [--discover-only] [--loop] [--alert-only]
 world-cup-bot ui
 ```
 
@@ -116,7 +117,6 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 
 ## Open backlog (do not claim done)
 
-- Module 6 cross-venue alert scanner (Kalshi ticker map)
 - Formal shadow/MCPT gate checklist in CI (operator checklist: `SHADOW.md` + UI **Ready** tab)
 - Full REST `/orders` vs open-quote state diff (trades reconcile covers fills; quote drift is separate)
 

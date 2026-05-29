@@ -34,6 +34,8 @@ class Settings:
     logic_version_config: str
     ledger_path: str
     operating_config: str
+    cross_venue_config: str
+    kalshi_base_url: str
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -65,4 +67,12 @@ class Settings:
             operating_config=str(
                 resolve_project_path(os.environ.get("OPERATING_CONFIG", "config/operating.yaml"))
             ),
+            cross_venue_config=str(
+                resolve_project_path(
+                    os.environ.get("CROSS_VENUE_CONFIG", "config/cross_venue.yaml")
+                )
+            ),
+            kalshi_base_url=os.environ.get(
+                "KALSHI_BASE_URL", "https://api.elections.kalshi.com/trade-api/v2"
+            ).rstrip("/"),
         )

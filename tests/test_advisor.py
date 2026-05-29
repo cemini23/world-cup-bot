@@ -25,6 +25,8 @@ def _settings() -> Settings:
         logic_version_config="config/strategy_logic_versions.yaml",
         ledger_path="data/local/ledger.jsonl",
         operating_config="config/operating.yaml",
+        cross_venue_config="config/cross_venue.yaml",
+        kalshi_base_url="https://api.elections.kalshi.com/trade-api/v2",
     )
 
 

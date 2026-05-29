@@ -14,6 +14,7 @@ from world_cup_bot import (
     advisor,
     calendar_guard,
     conviction,
+    cross_venue_scanner,
     fill_handler,
     ledger,
     preflight,
@@ -29,6 +30,7 @@ from world_cup_bot.clob_auth import (
     load_poly_address,
 )
 from world_cup_bot.config import Settings
+from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
@@ -546,6 +548,108 @@ def _cmd_ui(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_cross_venue_scan(result: cross_venue_scanner.CrossVenueScanResult) -> None:
+    if result.blockers:
+        print("Config blockers:")
+        for b in result.blockers:
+            print(f"  - {b}")
+        print()
+
+    print(
+        f"PM markets: {result.pm_market_count}  Kalshi WC: {result.kalshi_market_count}  "
+        f"threshold: {result.alert_threshold_pp:.1f}pp"
+    )
+
+    slug_warn = result.slug_warnings
+    if slug_warn:
+        print(f"\nSlug changes ({len(slug_warn)}) — update config/cross_venue.yaml:")
+        for row in slug_warn:
+            print(f"  {row.team:20} {row.slug_change_detail}")
+
+    alerts = result.alerts
+    if alerts:
+        print(f"\nALERTS ({len(alerts)}):")
+        for row in alerts:
+            print(
+                f"  {row.team:20} {row.market_type:18} gap={row.gap_pp:.1f}pp  "
+                f"PM={row.pm_mid:.3f}  KAL={row.kalshi_mid:.3f}  {row.kalshi_ticker}"
+            )
+    else:
+        print("\nNo alerts at current threshold.")
+
+    print(f"\n{'TEAM':20} {'TYPE':18} {'GAP':>6} {'PM':>6} {'KAL':>6} {'ALERT':>5}  NOTES")
+    for row in result.rows:
+        gap = f"{row.gap_pp:.1f}" if row.gap_pp is not None else "   —"
+        pm = f"{row.pm_mid:.3f}" if row.pm_mid is not None else "   —"
+        kal = f"{row.kalshi_mid:.3f}" if row.kalshi_mid is not None else "   —"
+        flag = "YES" if row.alert else ("BLK" if row.blocked else "no")
+        note = row.block_reason or row.notes or ""
+        if len(note) > 40:
+            note = note[:37] + "..."
+        print(f"{row.team:20} {row.market_type:18} {gap:>6} {pm:>6} {kal:>6} {flag:>5}  {note}")
+
+
+def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    cfg = load_cross_venue_config(Path(settings.cross_venue_config))
+
+    def _once() -> cross_venue_scanner.CrossVenueScanResult:
+        return cross_venue_scanner.run_scan(
+            cfg,
+            gamma_url=settings.gamma_url,
+            kalshi_base_url=settings.kalshi_base_url,
+            team_filter=args.team,
+            include_discoveries=args.discover or args.discover_only,
+        )
+
+    if args.discover_only:
+        result = _once()
+        new = [d for d in result.discoveries if not d.in_config]
+        if args.json:
+            print(json.dumps([d.to_dict() for d in new], indent=2))
+            return 0
+        print(
+            f"Discovered {len(new)} pair(s) not in config "
+            f"({len(result.discoveries)} total matched):"
+        )
+        for d in new:
+            gap = f"{d.gap_pp:.1f}pp" if d.gap_pp is not None else "—"
+            blk = f" BLOCKED: {d.block_reason}" if d.blocked else ""
+            print(
+                f"  {d.team:20} {d.market_type:18} gap={gap}  "
+                f"pm={d.pm_slug[:32]}  kal={d.kalshi_ticker}{blk}"
+            )
+        print("\nPaste new rows into config/cross_venue.yaml after rules-hash review.")
+        return 0
+
+    import time
+
+    while True:
+        result = _once()
+        if args.json:
+            print(json.dumps(result.to_dict(), indent=2))
+        elif not args.alert_only:
+            _print_cross_venue_scan(result)
+        else:
+            for row in result.alerts:
+                print(
+                    f"ALERT {row.team} {row.market_type} gap={row.gap_pp:.1f}pp "
+                    f"PM={row.pm_mid:.3f} KAL={row.kalshi_mid:.3f}"
+                )
+            if result.slug_warnings:
+                for row in result.slug_warnings:
+                    print(f"SLUG_CHANGE {row.team}: {row.slug_change_detail}")
+            if args.discover:
+                new = [d for d in result.discoveries if not d.in_config]
+                if new:
+                    print(f"DISCOVER {len(new)} new pair(s) — run --discover-only for YAML rows")
+
+        if args.once or not args.loop:
+            return 2 if result.alerts else 0
+
+        time.sleep(cfg.poll_interval_sec)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
@@ -755,6 +859,39 @@ def main(argv: list[str] | None = None) -> None:
         help="Port (default: 8765)",
     )
     ui.set_defaults(func=_cmd_ui)
+
+    cv = sub.add_parser(
+        "cross-venue-scan",
+        help="Module 6 — PM vs Kalshi gap alerts (read-only, no auto-trade)",
+    )
+    cv.add_argument("--team", help="Filter to one team (e.g. USA, Switzerland)")
+    cv.add_argument("--json", action="store_true", help="Print full scan result as JSON")
+    cv.add_argument(
+        "--alert-only",
+        action="store_true",
+        help="Print only threshold alerts (+ slug warnings)",
+    )
+    cv.add_argument(
+        "--once",
+        action="store_true",
+        help="Single poll (default; use --loop for continuous)",
+    )
+    cv.add_argument(
+        "--loop",
+        action="store_true",
+        help="Poll continuously (interval from cross_venue.yaml poll_interval_sec)",
+    )
+    cv.add_argument(
+        "--discover",
+        action="store_true",
+        help="Also report auto-discovered pairs not yet in config",
+    )
+    cv.add_argument(
+        "--discover-only",
+        action="store_true",
+        help="List discovered PM↔Kalshi pairs for config/cross_venue.yaml (no config scan)",
+    )
+    cv.set_defaults(func=_cmd_cross_venue_scan, once=True, loop=False)
 
     args = parser.parse_args(argv)
     if not args.command:

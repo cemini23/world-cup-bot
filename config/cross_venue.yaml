@@ -12,7 +12,7 @@ fee_kalshi_profit_pct: 7.0
 pairs:
   - team: USA
     market_type: group_winner
-    polymarket_hint: "Will USA win Group D?"
+    polymarket_hint: "Will USA win Group D in the 2026 FIFA World Cup?"
     kalshi_event_ticker: KXWCGROUPWIN-26D
     kalshi_market_ticker: KXWCGROUPWIN-26D-USA
     rules_hash: group_winner_fifa_tiebreak_v1
@@ -22,7 +22,7 @@ pairs:
 
   - team: Switzerland
     market_type: group_winner
-    polymarket_hint: "Will Switzerland win Group B?"
+    polymarket_hint: "Will Switzerland win Group B in the 2026 FIFA World Cup?"
     kalshi_event_ticker: KXWCGROUPWIN-26B
     kalshi_market_ticker: KXWCGROUPWIN-26B-SUI
     rules_hash: group_winner_fifa_tiebreak_v1
@@ -32,7 +32,7 @@ pairs:
 
   - team: England
     market_type: group_winner
-    polymarket_hint: "Will England win Group L?"
+    polymarket_hint: "Will England win Group L in the 2026 FIFA World Cup?"
     kalshi_event_ticker: KXWCGROUPWIN-26L
     kalshi_market_ticker: KXWCGROUPWIN-26L-ENG
     rules_hash: group_winner_fifa_tiebreak_v1
@@ -42,7 +42,7 @@ pairs:
 
   - team: Croatia
     market_type: group_winner
-    polymarket_hint: "Will Croatia win Group L?"
+    polymarket_hint: "Will Croatia win Group L in the 2026 FIFA World Cup?"
     kalshi_event_ticker: KXWCGROUPWIN-26L
     kalshi_market_ticker: KXWCGROUPWIN-26L-CRO
     rules_hash: group_winner_fifa_tiebreak_v1
@@ -52,7 +52,7 @@ pairs:
 
   - team: Mexico
     market_type: group_winner
-    polymarket_hint: "Will Mexico win Group A?"
+    polymarket_hint: "Will Mexico win Group A in the 2026 FIFA World Cup?"
     kalshi_event_ticker: KXWCGROUPWIN-26A
     kalshi_market_ticker: KXWCGROUPWIN-26A-MEX
     rules_hash: group_winner_fifa_tiebreak_v1
@@ -64,3 +64,26 @@ blockers:
   - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
+
+# Runtime discovery — auto-pair new PM/Kalshi markets as slugs proliferate
+discovery:
+  kalshi_ticker_prefixes:
+    - KXWCGROUPWIN
+    - KXWCGROUPQUAL
+    - KXWCROUND
+    - KXWCGAME
+  polymarket_search_queries:
+    - "win Group"
+    - "world cup group winner"
+    - "world cup advance knockout"
+    - "2026 FIFA World Cup"
+  rules_hash_by_market_type:
+    group_winner: group_winner_fifa_tiebreak_v1
+    advance_to_knockout: advance_knockout_v1
+    group_qualify: group_qualify_v1
+    round_of_16_qualify: round_of_16_qualify_v1
+  blocked_market_types:
+    - group_qualify
+    - round_of_16_qualify
+    - match_winner
+    - unknown
