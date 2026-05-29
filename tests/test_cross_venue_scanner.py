@@ -16,7 +16,11 @@ from world_cup_bot.cross_venue_scanner import (
     scan_config_pair,
 )
 from world_cup_bot.kalshi_rest import KalshiMarketSnapshot, parse_kalshi_market
-from world_cup_bot.pm_discovery import PolymarketSnapshot, parse_group_winner_market
+from world_cup_bot.pm_discovery import (
+    PolymarketSnapshot,
+    index_polymarket_markets,
+    parse_group_winner_market,
+)
 
 
 def _sample_config() -> CrossVenueConfig:
@@ -242,9 +246,57 @@ def test_discover_candidate_pairs():
     assert proposals[0].in_config is False
 
 
+def test_match_polymarket_prefers_config_slug():
+    from world_cup_bot.pm_discovery import index_polymarket_by_slug, match_polymarket_for_pair
+
+    stub = PolymarketSnapshot(
+        team="England",
+        market_type="group_winner",
+        group="C",
+        question="Will England win Group C?",
+        slug="will-england-win-group-c",
+        condition_id="0xstub",
+        mid=0.5,
+        best_bid=0.49,
+        best_ask=0.51,
+        volume=1,
+        liquidity=1,
+        accepting_orders=True,
+    )
+    fifa = PolymarketSnapshot(
+        team="England",
+        market_type="group_winner",
+        group="L",
+        question="Will England win Group L in the 2026 FIFA World Cup?",
+        slug="will-england-win-group-l-in-the-2026-fifa-world-cup",
+        condition_id="0xfifa",
+        mid=0.705,
+        best_bid=0.69,
+        best_ask=0.72,
+        volume=1000,
+        liquidity=5000,
+        accepting_orders=True,
+    )
+    markets = [stub, fifa]
+    catalog = index_polymarket_markets(markets)
+    slug_index = index_polymarket_by_slug(markets)
+    matched = match_polymarket_for_pair(
+        team="England",
+        market_type="group_winner",
+        hint=fifa.question,
+        catalog=catalog,
+        markets=markets,
+        polymarket_slug=fifa.slug,
+        slug_index=slug_index,
+    )
+    assert matched is not None
+    assert matched.slug == fifa.slug
+    assert matched.mid == pytest.approx(0.705)
+
+
 def test_load_cross_venue_config_from_disk():
     cfg = load_cross_venue_config()
     assert cfg.alert_threshold_pp == 5.0
-    assert len(cfg.pairs) >= 5
+    assert len(cfg.pairs) >= 15
     assert cfg.discovery.kalshi_ticker_prefixes
     assert "group_winner" in cfg.discovery.rules_hash_by_market_type

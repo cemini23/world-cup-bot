@@ -60,7 +60,7 @@ def test_build_module6_scanner_bundle():
     with patch("world_cup_bot.research.scanner.discover_advance_markets", return_value=[]):
         bundle = build_research_bundle(ResearchMode.MODULE6_SCANNER, _settings())
     assert bundle.focus["implementation_status"] == "built"
-    assert bundle.focus["config_pairs"] >= 5
+    assert bundle.focus["config_pairs"] >= 15
     assert "cross-venue-scan" in bundle.focus["cli"]
 
 

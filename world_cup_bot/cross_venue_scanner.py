@@ -16,6 +16,7 @@ from world_cup_bot.kalshi_rest import KalshiMarketSnapshot, discover_wc_markets,
 from world_cup_bot.pm_discovery import (
     PolymarketSnapshot,
     discover_polymarket_markets,
+    index_polymarket_by_slug,
     index_polymarket_markets,
     match_polymarket_for_pair,
 )
@@ -148,6 +149,7 @@ def scan_config_pairs(
     opener: Any | None = None,
 ) -> list[CrossVenueScanRow]:
     catalog = index_polymarket_markets(pm_markets)
+    slug_index = index_polymarket_by_slug(pm_markets)
     rows: list[CrossVenueScanRow] = []
 
     for pair in config.pairs:
@@ -160,6 +162,8 @@ def scan_config_pairs(
             hint=pair.polymarket_hint,
             catalog=catalog,
             markets=pm_markets,
+            polymarket_slug=pair.polymarket_slug,
+            slug_index=slug_index,
         )
 
         kalshi: KalshiMarketSnapshot | None = None

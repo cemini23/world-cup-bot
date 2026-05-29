@@ -185,6 +185,10 @@ def index_polymarket_markets(markets: list[PolymarketSnapshot]) -> dict[str, Pol
     return idx
 
 
+def index_polymarket_by_slug(markets: list[PolymarketSnapshot]) -> dict[str, PolymarketSnapshot]:
+    return {m.slug: m for m in markets if m.slug}
+
+
 def match_polymarket_for_pair(
     *,
     team: str,
@@ -192,11 +196,17 @@ def match_polymarket_for_pair(
     hint: str,
     catalog: dict[str, PolymarketSnapshot],
     markets: list[PolymarketSnapshot],
+    polymarket_slug: str | None = None,
+    slug_index: dict[str, PolymarketSnapshot] | None = None,
 ) -> PolymarketSnapshot | None:
-    """Resolve PM market for a config pair — key lookup, then hint, then fuzzy team."""
-    key = f"{market_type}:{team_names.normalize_team(team)}"
-    if key in catalog:
-        return catalog[key]
+    """Resolve PM market for a config pair — slug, hint, then team key."""
+    if polymarket_slug and slug_index and polymarket_slug in slug_index:
+        return slug_index[polymarket_slug]
+
+    if polymarket_slug:
+        for m in markets:
+            if m.slug == polymarket_slug:
+                return m
 
     hint_lower = hint.lower().strip()
     if hint_lower:
@@ -206,6 +216,10 @@ def match_polymarket_for_pair(
         for m in markets:
             if hint_lower in m.question.lower():
                 return m
+
+    key = f"{market_type}:{team_names.normalize_team(team)}"
+    if key in catalog:
+        return catalog[key]
 
     norm = team_names.normalize_team(team)
     for m in markets:

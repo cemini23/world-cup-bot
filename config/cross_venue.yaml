@@ -1,71 +1,188 @@
 # Module 6 — alert-only cross-venue scanner config (v1)
-# Source: Gemini DR World Cup 2026 Market Gap Analysis (2026-05-29 live verification)
-# Semantic note: ONLY group-winner pairs verified equivalent May 29. Advance-to-knockout
-# PM slugs were TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
+# Source: Gemini DR + live discover cohort triage (2026-05-29)
+# Semantic note: ONLY group-winner pairs with rules_hash match. Advance-to-knockout
+# PM slugs TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
+# Bosnia fade_watch: SKIP until PM posts non-playoff group-winner slug.
 
 version: 1
 alert_threshold_pp: 5.0
 poll_interval_sec: 120
 fee_kalshi_profit_pct: 7.0
 
-# fade_watch cohort — group winner markets only (May 29 verified)
 pairs:
+  # --- fade_watch (group winner) ---
   - team: USA
     market_type: group_winner
     polymarket_hint: "Will USA win Group D in the 2026 FIFA World Cup?"
+    polymarket_slug: will-usa-win-group-d-in-the-2026-fifa-world-cup
     kalshi_event_ticker: KXWCGROUPWIN-26D
     kalshi_market_ticker: KXWCGROUPWIN-26D-USA
     rules_hash: group_winner_fifa_tiebreak_v1
     enabled: true
     last_verified: "2026-05-29"
-    notes: "Live gap 1.0pp — no alert"
+    notes: "Cohort triage — ~1pp gap"
 
   - team: Switzerland
     market_type: group_winner
     polymarket_hint: "Will Switzerland win Group B in the 2026 FIFA World Cup?"
+    polymarket_slug: will-switzerland-win-group-a-in-the-2026-fifa-world-cup
     kalshi_event_ticker: KXWCGROUPWIN-26B
     kalshi_market_ticker: KXWCGROUPWIN-26B-SUI
     rules_hash: group_winner_fifa_tiebreak_v1
     enabled: true
     last_verified: "2026-05-29"
-    notes: "Live gap 1.5pp — no alert; advance PM unavailable"
+    notes: "PM slug says group-a; question + Kalshi are Group B"
 
   - team: England
     market_type: group_winner
     polymarket_hint: "Will England win Group L in the 2026 FIFA World Cup?"
+    polymarket_slug: will-england-win-group-l-in-the-2026-fifa-world-cup
     kalshi_event_ticker: KXWCGROUPWIN-26L
     kalshi_market_ticker: KXWCGROUPWIN-26L-ENG
     rules_hash: group_winner_fifa_tiebreak_v1
     enabled: true
     last_verified: "2026-05-29"
-    notes: "Live gap 1.0pp — no alert"
+    notes: "Refreshed FIFA slug — legacy 50¢ stub ignored"
 
   - team: Croatia
     market_type: group_winner
     polymarket_hint: "Will Croatia win Group L in the 2026 FIFA World Cup?"
+    polymarket_slug: will-croatia-win-group-l-in-the-2026-fifa-world-cup
     kalshi_event_ticker: KXWCGROUPWIN-26L
     kalshi_market_ticker: KXWCGROUPWIN-26L-CRO
     rules_hash: group_winner_fifa_tiebreak_v1
     enabled: true
     last_verified: "2026-05-29"
-    notes: "Largest gap 2.0pp; Kalshi vol $266 — stale-book risk"
+    notes: "Refreshed FIFA slug; Kalshi book thin — stale-book risk"
 
   - team: Mexico
     market_type: group_winner
     polymarket_hint: "Will Mexico win Group A in the 2026 FIFA World Cup?"
+    polymarket_slug: will-mexico-win-group-a-in-the-2026-fifa-world-cup
     kalshi_event_ticker: KXWCGROUPWIN-26A
     kalshi_market_ticker: KXWCGROUPWIN-26A-MEX
     rules_hash: group_winner_fifa_tiebreak_v1
     enabled: true
     last_verified: "2026-05-29"
-    notes: "Live gap 0.0pp"
+    notes: "Cohort triage — ~1pp gap"
+
+  - team: Qatar
+    market_type: group_winner
+    polymarket_hint: "Will Qatar win Group B in the 2026 FIFA World Cup?"
+    polymarket_slug: will-qatar-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26B
+    kalshi_market_ticker: KXWCGROUPWIN-26B-QAT
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "fade_watch add; PM slug typo group-a vs question Group B"
+
+  # --- bilateral_only (group winner cross-venue monitor) ---
+  - team: Argentina
+    market_type: group_winner
+    polymarket_hint: "Will Argentina win Group J in the 2026 FIFA World Cup?"
+    polymarket_slug: will-argentina-win-group-j-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26J
+    kalshi_market_ticker: KXWCGROUPWIN-26J-ARG
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — tight book"
+
+  - team: Belgium
+    market_type: group_winner
+    polymarket_hint: "Will Belgium win Group G in the 2026 FIFA World Cup?"
+    polymarket_slug: will-belgium-win-group-g-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26G
+    kalshi_market_ticker: KXWCGROUPWIN-26G-BEL
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — tight book"
+
+  - team: Brazil
+    market_type: group_winner
+    polymarket_hint: "Will Brazil win Group C in the 2026 FIFA World Cup?"
+    polymarket_slug: will-brazil-win-group-c-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26C
+    kalshi_market_ticker: KXWCGROUPWIN-26C-BRA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — ~2pp"
+
+  - team: France
+    market_type: group_winner
+    polymarket_hint: "Will France win Group I in the 2026 FIFA World Cup?"
+    polymarket_slug: will-france-win-group-i-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26I
+    kalshi_market_ticker: KXWCGROUPWIN-26I-FRA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — use Group I FIFA slug"
+
+  - team: Germany
+    market_type: group_winner
+    polymarket_hint: "Will Germany win Group E in the 2026 FIFA World Cup?"
+    polymarket_slug: will-germany-win-group-e-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26E
+    kalshi_market_ticker: KXWCGROUPWIN-26E-GER
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — ~2.5pp"
+
+  - team: Netherlands
+    market_type: group_winner
+    polymarket_hint: "Will Netherlands win Group F in the 2026 FIFA World Cup?"
+    polymarket_slug: will-netherlands-win-group-f-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26F
+    kalshi_market_ticker: KXWCGROUPWIN-26F-NED
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — Group F (not legacy Group D stub)"
+
+  - team: Portugal
+    market_type: group_winner
+    polymarket_hint: "Will Portugal win Group K in the 2026 FIFA World Cup?"
+    polymarket_slug: will-portugal-win-group-k-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26K
+    kalshi_market_ticker: KXWCGROUPWIN-26K-POR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add"
+
+  - team: Spain
+    market_type: group_winner
+    polymarket_hint: "Will Spain win Group H in the 2026 FIFA World Cup?"
+    polymarket_slug: will-spain-win-group-h-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26H
+    kalshi_market_ticker: KXWCGROUPWIN-26H-ESP
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add — Group H FIFA slug"
+
+  - team: Uruguay
+    market_type: group_winner
+    polymarket_hint: "Will Uruguay win Group H in the 2026 FIFA World Cup?"
+    polymarket_slug: will-uruguay-win-group-h-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26H
+    kalshi_market_ticker: KXWCGROUPWIN-26H-URU
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-05-29"
+    notes: "Cohort triage add"
 
 blockers:
   - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
+  - "Bosnia & Herzegovina fade_watch — PM slug is UEFA playoff conditional; skip until direct market"
 
-# Runtime discovery — auto-pair new PM/Kalshi markets as slugs proliferate
 discovery:
   kalshi_ticker_prefixes:
     - KXWCGROUPWIN
