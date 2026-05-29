@@ -1,0 +1,11 @@
+[Unit]
+Description=World Cup Bot conviction scan (Gamma)
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/cemini
+EnvironmentFile=-/opt/cemini/.env
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '/opt/cemini/scripts/wc_run.sh scan --conviction >> /opt/cemini/logs/cron_wc_scan.log 2>&1'
+User=root

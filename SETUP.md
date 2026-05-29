@@ -151,6 +151,16 @@ Config paths resolve against the **repo root** automatically — you can run `wo
 
 Override port: `world-cup-bot ui --port 8765`. CLI remains the path for `watch`, live fills, and recording.
 
+## Cemini operator (24/7 VPS)
+
+For CeminiSuite hosts (`cemini-prod` + `cemini-egress-fi`), systemd units and `wc_run.sh` live in **`deploy/cemini/`**:
+
+```bash
+sudo bash deploy/cemini/install-systemd.sh --host prod --enable
+```
+
+See [deploy/cemini/README.md](deploy/cemini/README.md) for the two-host split, SHADOW phase enable matrix, and log paths. Public forks do not need this — use `.env` on your own machine.
+
 ## Disclaimer
 
 Prediction markets involve loss of capital. LP without cancel discipline around kickoff has burned operators. Read the code before live mode.

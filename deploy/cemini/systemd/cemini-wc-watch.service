@@ -1,0 +1,18 @@
+[Unit]
+Description=World Cup Bot fill watch (WS + REST reconcile)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cemini
+EnvironmentFile=-/opt/cemini/.env
+EnvironmentFile=-/opt/cemini/.env-polymarket
+Environment=WC_DRY_RUN=true
+Environment=WC_LEDGER_PATH=/opt/cemini/logs/wc_ledger.jsonl
+ExecStart=/opt/cemini/scripts/wc_run.sh watch --verbose --record
+Restart=always
+RestartSec=60
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=World Cup Bot cross-venue discover-only (new PM↔Kalshi pairs)
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/cemini
+EnvironmentFile=-/opt/cemini/.env
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '/opt/cemini/scripts/wc_run.sh cross-venue-scan --discover-only >> /opt/cemini/logs/cron_wc_discover.log 2>&1'
+User=root

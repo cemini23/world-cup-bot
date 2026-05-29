@@ -1,0 +1,12 @@
+[Unit]
+Description=World Cup Bot shadow plan --record (DRY_RUN)
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/cemini
+EnvironmentFile=-/opt/cemini/.env
+Environment=WC_DRY_RUN=true
+Environment=WC_LEDGER_PATH=/opt/cemini/logs/wc_shadow_ledger.jsonl
+ExecStart=/bin/bash -c '/opt/cemini/scripts/wc_run.sh plan --record >> /opt/cemini/logs/cron_wc_shadow_plan.log 2>&1'
+User=root

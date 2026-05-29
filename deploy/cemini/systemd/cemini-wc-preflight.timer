@@ -1,0 +1,10 @@
+[Unit]
+Description=World Cup Bot preflight every 6 hours (egress-fi)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

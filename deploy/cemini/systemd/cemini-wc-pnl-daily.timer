@@ -1,0 +1,9 @@
+[Unit]
+Description=World Cup Bot daily PnL at 07:15 UTC
+
+[Timer]
+OnCalendar=*-*-* 07:15:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
