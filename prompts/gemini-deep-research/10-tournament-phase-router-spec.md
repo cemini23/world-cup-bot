@@ -33,7 +33,11 @@ Design **Module 1b / Phase Router** so one codebase switches strategy by tournam
 
 ## Output format
 
-Return **only** this JSON (plus optional 1-page prose summary before it):
+Return a **1–2 page prose executive summary first**, then the JSON appendix below. Do **not** return JSON only — Gemini DR quality degrades without narrative sections, tables, and cited sources.
+
+Optional middle sections: state-machine diagram (text), per-phase operating override table, migration checklist.
+
+**Appendix JSON** (machine-readable — may be partial if prose covers gaps):
 
 ```json
 {

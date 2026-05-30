@@ -1,36 +1,101 @@
-# Tournament phases — market scanner config (stub v1)
-# Populated after Gemini DR 08-knockout-market-map.md — do not hand-edit slugs without DR.
+# Tournament phases — market scanner config
+# Populated from Gemini DR 08 (2026-05-30). DR 10 phase router pending.
 # Bot v1 active phase: group_advance only.
 
 version: 1
 
 active_phase: group_advance
 
+# Calendar anchors (FIFA 2026 48-team) — for phase router auto-detect (DR 10)
+calendar:
+  group_stage_end: "2026-06-27"
+  round_of_32_start: "2026-06-28"
+  round_of_16_start: "2026-07-04"
+  quarterfinal_start: "2026-07-09"
+  semifinal_start: "2026-07-14"
+  final: "2026-07-19"
+
 phases:
   group_advance:
-    description: "Will {team} advance to knockout stages (group stage LP)"
+    description: "Will {team} advance to knockout stages (= Reach Round of 32 in 48-team format)"
     gamma_search: "world cup advance knockout"
     title_regex: "^Will (.+?) advance to the knockout stages at the 2026 FIFA World Cup\\?$"
+    resolution_class: milestone_elimination
     lp_eligible: true
+    scanner_priority: 1
     conviction_config: config/conviction.yaml
     calendar_source: data/worldcup2026-fixtures.json
+    status: active
+
+  reach_round_of_16:
+    description: "Nation to reach Round of 16 (post-R32 milestone)"
+    gamma_search: "world cup reach round of 16"
+    title_regex: "^Will (.+?) reach the (?:Round of 16|round of 16).*2026 FIFA World Cup"
+    resolution_class: milestone_elimination
+    lp_eligible: true
+    scanner_priority: 2
+    conviction_config: null
+    status: research
+
+  reach_quarterfinal:
+    description: "Nation to reach World Cup quarterfinal"
+    gamma_search: "world cup reach quarterfinal"
+    title_regex: "^Will (.+?) reach the (?:Quarterfinal|quarterfinal).*2026 FIFA World Cup"
+    resolution_class: milestone_elimination
+    lp_eligible: true
+    scanner_priority: 3
+    conviction_config: null
+    status: research
+
+  reach_semifinal:
+    description: "Nation to reach World Cup semifinal"
+    gamma_search: "world cup reach semifinal"
+    title_regex: "^Will (.+?) reach the (?:Semifinal|semifinal).*2026 FIFA World Cup"
+    resolution_class: milestone_elimination
+    lp_eligible: true
+    scanner_priority: 4
+    conviction_config: null
+    status: research
 
   reach_final:
     description: "Nation to reach 2026 FIFA World Cup final"
     gamma_search: "world cup reach final"
     title_regex: "^Will (.+?) reach the 2026 FIFA World Cup final\\?$"
+    resolution_class: milestone_elimination
     lp_eligible: true
-    conviction_config: null  # TBD — separate conviction_knockout.yaml after DR
+    scanner_priority: 5
+    conviction_config: null
+    status: research
+
+  knockout_match_90min:
+    description: "Match winner at end of 90 minutes (Draw includes ET not played yet)"
+    resolution_class: regulation_90
+    lp_eligible: false
+    status: out_of_scope_v1
+
+  knockout_match_advance:
+    description: "Team to advance in knockout tie (includes ET and penalties)"
+    resolution_class: includes_et_pens
+    lp_eligible: false
     status: research
 
   wc_winner:
     description: "2026 FIFA World Cup winner — resolves on elimination"
-    lp_eligible: false  # immediate No on KO exit; not LP-safe per pitfalls research
+    resolution_class: immediate_no_on_ko_exit
+    lp_eligible: false
     status: out_of_scope_v1
 
-  knockout_match:
-    description: "Single-match win/advance markets (R32+)"
-    lp_eligible: false  # v2 — in-play toxic flow
-    status: research
+kalshi_cross_venue:
+  stage_of_elimination:
+    series: "KXWCSTAGEOFELIM"
+    note: "Inverse of PM Reach markets — eliminated IN round X = Yes"
+  match_game:
+    series: "KXWCGAME"
+  group_winner:
+    series: "KXWCGROUPWINNER"
 
-  # Phase router (DR 10) will set active_phase + overrides per calendar date.
+# Cancel-window overrides by phase (DR 09 — enforce in phase router, not v1 global)
+cancel_hours_by_phase:
+  group_advance: 10
+  final_group_md3: 12
+  knockout: 24
