@@ -18,6 +18,7 @@ from world_cup_bot import (
     conviction_patch,
     conviction_staleness,
     cross_venue_alerts,
+    cross_venue_fills,
     cross_venue_paper,
     cross_venue_scanner,
     event_log,
@@ -1358,6 +1359,116 @@ def _cmd_cross_venue_pnl(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_cross_venue_fill(args: argparse.Namespace) -> int:
+    ledger_path = cross_venue_paper.default_cross_venue_ledger_path()
+
+    if args.fill_command == "record":
+        fill = cross_venue_fills.ManualFillInput(
+            team=args.team,
+            market_type=args.market_type,
+            pm_fill_price=args.pm_price,
+            kalshi_fill_price=args.kalshi_price,
+            notional_usd=args.notional,
+            pm_leg=args.pm_leg,
+            kalshi_leg=args.kalshi_leg,
+            fees_usd=args.fees_usd,
+            notes=args.notes,
+            correlation_id=args.correlation_id,
+            order_id_pm=args.order_id_pm,
+            order_id_kalshi=args.order_id_kalshi,
+        )
+        result = cross_venue_fills.record_manual_fill(ledger_path, fill)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "intent_key": result.intent_key,
+                        "realized_pnl_usd": result.realized_pnl_usd,
+                        "pm_leg": result.pm_leg,
+                        "kalshi_leg": result.kalshi_leg,
+                        "ledger_path": str(ledger_path),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(cross_venue_paper.PAPER_ARB_SPEC.version_banner())
+            print(f"Recorded manual fill → {ledger_path}")
+            print(
+                f"{args.team} {args.market_type}: {result.pm_leg} PM @ {args.pm_price:.3f}, "
+                f"{result.kalshi_leg} KAL @ {args.kalshi_price:.3f}  "
+                f"realized ${result.realized_pnl_usd:.2f}"
+            )
+        return 0
+
+    if args.fill_command == "import-csv":
+        result = cross_venue_fills.import_fills_csv(
+            ledger_path,
+            Path(args.csv_path),
+            dry_run=args.dry_run,
+        )
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        **result.__dict__,
+                        "ledger_path": str(ledger_path),
+                        "dry_run": args.dry_run,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            mode = "dry-run" if args.dry_run else "imported"
+            print(f"CSV {mode}: {result.imported} row(s), skipped {result.skipped}")
+            if result.errors:
+                print("Errors:")
+                for err in result.errors:
+                    print(f"  - {err}")
+                return 1
+        return 0 if not result.errors else 1
+
+    if args.fill_command == "reconcile":
+        rows = ledger.load_rows(ledger_path)
+        report = cross_venue_fills.build_reconcile_report(rows)
+        if args.json:
+            print(json.dumps({**report.to_dict(), "ledger_path": str(ledger_path)}, indent=2))
+            return 0
+
+        print(cross_venue_paper.PAPER_ARB_SPEC.version_banner())
+        print(f"Ledger: {ledger_path}")
+        print(
+            f"Intents: {report.intent_pairs}  fills: {report.fill_pairs}  "
+            f"matched: {report.matched}  intent-only: {report.intent_only}  "
+            f"fill-only: {report.fill_only}"
+        )
+        print(
+            f"Theoretical (intents): ${report.total_entry_profit_usd:.2f}  "
+            f"Realized (fills): ${report.total_realized_pnl_usd:.2f}"
+        )
+        if not report.rows:
+            print("No intents or fills in ledger.")
+            return 0
+
+        print(f"\n{'TEAM':20} {'TYPE':18} {'STATUS':12} {'ENTRY':>8} {'REAL':>8} {'DELTA':>8}")
+        for row in report.rows:
+            entry = f"${row.entry_profit_usd:.2f}" if row.entry_profit_usd is not None else "     —"
+            real = f"${row.realized_pnl_usd:.2f}" if row.realized_pnl_usd is not None else "     —"
+            delta = f"${row.delta_usd:+.2f}" if row.delta_usd is not None else "     —"
+            print(
+                f"{row.team:20} {row.market_type:18} {row.status:12} "
+                f"{entry:>8} {real:>8} {delta:>8}"
+            )
+        return 0
+
+    if args.fill_command == "csv-template":
+        for line in cross_venue_fills.csv_template_lines():
+            print(line)
+        return 0
+
+    return 1
+
+
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     if phase_router_enabled():
@@ -1906,6 +2017,69 @@ def main(argv: list[str] | None = None) -> None:
     )
     cvpnl.add_argument("--json", action="store_true", help="Machine-readable output")
     cvpnl.set_defaults(func=_cmd_cross_venue_pnl)
+
+    cvfill = sub.add_parser(
+        "cross-venue-fill",
+        help="Phase B — manual fills, CSV import, reconcile vs paper intents",
+    )
+    cvfill_sub = cvfill.add_subparsers(dest="fill_command", required=True)
+
+    cvrec = cvfill_sub.add_parser("record", help="Record a manual dual-leg fill after an alert")
+    cvrec.add_argument("--team", required=True, help="Team name (e.g. USA)")
+    cvrec.add_argument(
+        "--market-type",
+        required=True,
+        help="Market type slug (e.g. group_winner)",
+    )
+    cvrec.add_argument("--pm-price", type=float, required=True, help="PM fill price (0–1)")
+    cvrec.add_argument(
+        "--kalshi-price",
+        type=float,
+        required=True,
+        help="Kalshi fill price (0–1)",
+    )
+    cvrec.add_argument(
+        "--notional",
+        type=float,
+        default=500.0,
+        help="USD notional per leg (default 500)",
+    )
+    cvrec.add_argument("--pm-leg", choices=["BUY", "SELL"], help="Override PM leg direction")
+    cvrec.add_argument(
+        "--kalshi-leg",
+        choices=["BUY", "SELL"],
+        help="Override Kalshi leg direction",
+    )
+    cvrec.add_argument("--fees-usd", type=float, default=0.0, help="Total fees both venues")
+    cvrec.add_argument("--notes", help="Operator notes")
+    cvrec.add_argument("--correlation-id", help="Link to paper intent correlation_id")
+    cvrec.add_argument("--order-id-pm", help="PM order id")
+    cvrec.add_argument("--order-id-kalshi", help="Kalshi order id")
+    cvrec.add_argument("--json", action="store_true")
+    cvrec.set_defaults(func=_cmd_cross_venue_fill)
+
+    cvimp = cvfill_sub.add_parser("import-csv", help="Import combined-fill rows from CSV")
+    cvimp.add_argument("csv_path", help="Path to CSV (see cross-venue-fill csv-template)")
+    cvimp.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate rows without appending to ledger",
+    )
+    cvimp.add_argument("--json", action="store_true")
+    cvimp.set_defaults(func=_cmd_cross_venue_fill)
+
+    cvrecon = cvfill_sub.add_parser(
+        "reconcile",
+        help="Match paper intents vs recorded fills",
+    )
+    cvrecon.add_argument("--json", action="store_true")
+    cvrecon.set_defaults(func=_cmd_cross_venue_fill)
+
+    cvtmpl = cvfill_sub.add_parser(
+        "csv-template",
+        help="Print example CSV header + row",
+    )
+    cvtmpl.set_defaults(func=_cmd_cross_venue_fill)
 
     args = parser.parse_args(argv)
     if not args.command:

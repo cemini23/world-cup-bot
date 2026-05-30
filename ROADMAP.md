@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 146 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 150 pytest (CI on push)
 
 ---
 
@@ -34,7 +34,7 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **Cross-venue pair refresh** | Ongoing | `discover` timer + manual `cross-venue-scan --discover-only` when PM advance slugs firm |
 | **Paper arb ledger (Phase A)** | **2026-05-30** | `cross-venue-scan --record` + `cross-venue-pnl --refresh` — no execution |
 | **Prod cross-venue `--record`** | After pull | Patch cross-venue unit: add `--record`, set `WC_CROSS_VENUE_LEDGER_PATH`; see prod brief |
-| **Cross-venue Phase B** | Backlog | Manual fill bridge: record alert→fill from operator, CSV import, reconcile vs PM/Kalshi exports |
+| **Cross-venue Phase B** | **2026-05-30** | `cross-venue-fill record|import-csv|reconcile` — manual dual-leg bridge |
 | **Cross-venue Phase C** | Backlog | Kalshi order module + dual-leg coordinator, orphan leg handling, capital caps |
 | **Phase router PR3** | Backlog | Replay tests on 2022/2023 JSONL, per-phase `bilateral_threshold`, FIFA match-integer gates |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
@@ -69,7 +69,7 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 | Phase | Status | Scope |
 |-------|--------|-------|
 | **A — Paper ledger** | **Shipped** | On `ALERT`, append `cross_venue_arb_intent_paper` to JSONL; `cross-venue-pnl --refresh` MTM vs live gap |
-| **B — Manual bridge** | Planned | CLI to log manual fills from alerts; CSV import; weekly reconcile vs venue exports |
+| **B — Manual bridge** | **Shipped** | `cross-venue-fill record`, CSV import, reconcile vs paper intents |
 | **C — Auto dual-leg** | Planned | Kalshi order placement + PM hedge coordinator; orphan handling; pilot notional caps |
 
 Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record` on monitor host only.
@@ -85,6 +85,7 @@ Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record
 | 2026-05-30 | `c143072` | `conviction.yaml` v4 LP safety gates (Spain, Brazil, Morocco) |
 | 2026-05-30 | `922a171` | Phase router PR2: multi-phase scanner, settlement gate, SIGUSR1 reload |
 | 2026-05-30 | `9f17058` | Paper cross-venue arb ledger (Phase A); systemd cross-venue `--record` |
+| 2026-05-30 | (Phase B) | Manual fill bridge: `cross-venue-fill record|import-csv|reconcile` |
 
 ## Sources
 

@@ -75,6 +75,8 @@ world-cup-bot cancel --cancel-window
 world-cup-bot orders
 world-cup-bot cross-venue-scan --once --record   # paper arb intents on alerts
 world-cup-bot cross-venue-pnl --refresh          # MTM vs live gaps
+world-cup-bot cross-venue-fill record --team USA --market-type group_winner --pm-price 0.68 --kalshi-price 0.64
+world-cup-bot cross-venue-fill reconcile         # match intents vs manual fills
 world-cup-bot ui                         # http://127.0.0.1:8765
 ```
 
@@ -105,7 +107,7 @@ world-cup-bot cross-venue-pnl --refresh    # mark-to-market vs current gaps
 world-cup-bot cross-venue-pnl --json       # scriptable summary
 ```
 
-Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). Phase B/C (manual fills, auto dual-leg) are backlog — see [ROADMAP.md](ROADMAP.md).
+Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. Phase C (auto dual-leg) is backlog — see [ROADMAP.md](ROADMAP.md).
 
 ## 24/7 on a VPS
 
