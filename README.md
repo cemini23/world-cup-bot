@@ -5,7 +5,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`.
+**Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`. See [ROADMAP.md](ROADMAP.md) for open operator items.
 
 ## What it does (v1)
 
@@ -14,10 +14,11 @@
 | **Scanner (1)** | Gamma discovery; live mids, spreads, reward params |
 | **Conviction LP (2)** | YAML tiers; resting limits on research-backed teams; bilateral mode above ~90¢ |
 | **Quoter (3)** | Post-only GTC limits; cancel-replace before submit; calendar auto-cancel |
-| **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull; exit within ~60s |
+| **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull + vol cooldown; exit within ~60s |
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
-| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); optional webhook |
-| **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** |
+| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); optional webhook; `last_verified` staleness |
+| **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
+| **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; auto-clear `human_review` when configured |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
 | **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
 | **Research CLI** | Gemini Deep Research + agent JSON bundles in `prompts/` |
@@ -29,6 +30,7 @@ Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — not
 - Auto-cancel resting quotes when teams enter the pre-kickoff window (`plan`, `watch`, calendar timer)
 - Cancel-replace stale quotes before new posts
 - Kill-switch on cancel-window fills → halt team + pull quotes
+- Queue depletion + volatility pull in fill watch (configurable in `operating.yaml`)
 - Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack JSON POST)
 
 ## What it is not
@@ -49,16 +51,22 @@ pip install -e ".[live]" # watch + live POST (websockets, py-clob-client)
 
 # Phase 0 — connectivity
 world-cup-bot preflight
-world-cup-bot shadow-status --min-phase 0
+world-cup-bot shadow-status --min-phase 0   # prints ledger path + step progress
 
 # Discover + plan (shadow)
-world-cup-bot scan --conviction
+world-cup-bot scan --conviction --liquidity  # conviction + CLOB depth column
+world-cup-bot liquidity-scan                  # depth-only vs operating.yaml
 world-cup-bot calendar --cancel-window
-world-cup-bot plan --record          # DRY_RUN=true default; ledger audit when --record
+world-cup-bot plan --record --liquidity-gate  # DRY_RUN=true default; ledger audit when --record
+
+# Operator automation (optional)
+world-cup-bot conviction-staleness --notify
+world-cup-bot fixture-check --notify
+world-cup-bot conviction-patch dr-output.md --stage
 
 # Fills + PnL
 world-cup-bot watch --verbose --record   # needs L2 API creds
-world-cup-bot rewards sync --record      # CLOB liquidity rewards → ledger
+world-cup-bot rewards sync --record      # CLOB liquidity rewards → ledger (L2 required)
 world-cup-bot pnl --scope current
 
 # Operator
@@ -78,12 +86,12 @@ Requires a Polymarket account with CLOB API access. Kalshi alerts need separate 
 
 Follow [SHADOW.md](SHADOW.md):
 
-1. **≥3 days** of `plan --record` with `DRY_RUN=true`
+1. **≥3 days** of `plan --record --liquidity-gate` with `DRY_RUN=true`
 2. `watch --record` with L2 creds
 3. Non-US egress preflight (`geoblock` PASS)
 4. Live pilot — small size, manual enable only
 
-Gate check: `world-cup-bot shadow-status --min-phase 1` (exit 1 if steps pending).
+Gate check: `world-cup-bot shadow-status --min-phase 1` (exit 1 if steps pending; prints resolved ledger path).
 
 ## 24/7 on a VPS
 
@@ -91,14 +99,16 @@ Optional [systemd units](deploy/systemd/README.md):
 
 | Profile | Host | Runs |
 |---------|------|------|
-| **monitor** | US OK | cross-venue alerts, shadow plan, scan, calendar, discover, daily rewards+PnL |
+| **monitor** | US OK | cross-venue alerts, shadow plan (`--liquidity-gate`), scan, calendar, discover, daily PnL, conviction-staleness, fixture-check |
 | **trading** | Non-US only | preflight, watch, live plan (Phase 4 — manual enable) |
+
+**PnL vs rewards:** `pnl-daily.timer` runs `pnl --scope current` on the shadow ledger (no L2). `rewards-sync.timer` is installed but **not** auto-enabled — enable after Phase 2 when L2 creds exist.
 
 ```bash
 sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --profile monitor --enable
 ```
 
-See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md).
+See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md) · **Open items:** [ROADMAP.md](ROADMAP.md).
 
 ## Security
 

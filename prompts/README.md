@@ -52,7 +52,7 @@ Never paste private keys or prod hostnames into research sessions.
 | Mode | Feeds module |
 |------|----------------|
 | `group-conviction` | Module 2 conviction YAML |
-| `cross-venue` | Module 6 alert scanner (future) |
+| `cross-venue` | Module 6 alert scanner |
 | `team-lp-risk` | Module 3 quoter + Module 4 fill handler |
 | `third-place-gd` | Module 2 + calendar guard awareness |
 | `conviction-staleness` | Module 2 refresh after news |

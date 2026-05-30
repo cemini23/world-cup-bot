@@ -62,9 +62,38 @@ world-cup-bot calendar --team Turkey
 world-cup-bot calendar --cancel-window --min-hours 10
 world-cup-bot cancel --cancel-window   # pull resting quotes for teams near kickoff
 world-cup-bot orders                   # list open WC advance orders (L2 auth)
+world-cup-bot fixture-check --notify   # diff vendored fixtures vs openfootball upstream
 ```
 
-Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`.
+Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`. Use `fixture-check --apply` only after reviewing diffs.
+
+## Liquidity gate (CLOB /book)
+
+Public order-book depth vs `config/operating.yaml` — no auth required:
+
+```bash
+world-cup-bot liquidity-scan              # all eligible advance markets
+world-cup-bot liquidity-scan --team Morocco
+world-cup-bot scan --conviction --liquidity   # conviction table + PASS/FAIL depth column
+world-cup-bot plan --liquidity-gate         # block/auto-clear human_review from depth
+```
+
+Defaults (WC advance tuning): bid band ≥ **$50**, ask band ≥ **$15**, combined book ≥ **$150**. When `auto_clear_human_review: true`, depth-only pass can clear `human_review` in conviction YAML; injury/thesis gates remain.
+
+## Shadow gate
+
+```bash
+world-cup-bot shadow-status --min-phase 1
+```
+
+Prints `Ledger path: …`, step progress, and ledger stats. Exit code **1** if any step through `min_phase` is `pending` or `blocked`. Use `--json` for automation.
+
+## Conviction maintenance
+
+```bash
+world-cup-bot conviction-staleness --notify   # mid drift vs conviction tiers; optional webhook
+world-cup-bot conviction-patch dr.md --stage  # DR JSON → staged YAML snippet (manual merge)
+```
 
 ## Modes
 
@@ -158,11 +187,14 @@ Override port: `world-cup-bot ui --port 8765`. CLI remains the path for `watch`,
 Run on **your own Linux VPS** so the bot stays up when your laptop is off. Example units live in **`deploy/systemd/`**:
 
 ```bash
-sudo bash deploy/systemd/install-systemd.sh --profile monitor --enable
+sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --profile monitor --enable
 ```
 
-- **`monitor`** — cross-venue alerts, shadow plan, scan, calendar (works from US IP; read-only)
+- **`monitor`** — cross-venue alerts, shadow plan (`--liquidity-gate`), scan, calendar, discover, **pnl-daily** (shadow ledger only), conviction-staleness, fixture-check
 - **`trading`** — fill watch + live plan on a **non-US** VPS (order POST is geo-blocked from the US)
+- **`rewards-sync.timer`** — installed with monitor profile but **not** auto-enabled; enable after Phase 2 when L2 creds exist
+
+Shadow ledger on VPS: `WC_LEDGER_PATH=/opt/world-cup-bot/data/local/shadow_ledger.jsonl` (set in unit files).
 
 See [deploy/systemd/README.md](deploy/systemd/README.md) for install root, two-VPS split, and SHADOW phase gates. Default path: `/opt/world-cup-bot` — change with `--install-root`.
 

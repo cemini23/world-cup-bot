@@ -10,7 +10,7 @@ cp .env.example .env          # fill keys locally — never commit
 pip install -e ".[dev]"
 pip install -e ".[live]"        # websockets + py-clob-client (watch / live POST)
 world-cup-bot preflight         # geoblock WARN ok in shadow from US
-world-cup-bot scan --conviction
+world-cup-bot scan --conviction --liquidity
 world-cup-bot ui                # optional dashboard → http://127.0.0.1:8765
 ```
 
@@ -21,18 +21,20 @@ world-cup-bot ui                # optional dashboard → http://127.0.0.1:8765
 ## Phase 1 — Dry-run quote loop (≥3 sessions)
 
 ```bash
-world-cup-bot plan              # inspect intents — no POST
-world-cup-bot plan --record     # append quote intents to ledger JSONL
-world-cup-bot pnl               # confirm quote_intents rows under current logic_version
+world-cup-bot plan --liquidity-gate   # inspect intents — no POST
+world-cup-bot plan --record --liquidity-gate   # append quote intents to ledger JSONL
+world-cup-bot pnl --scope current     # confirm quote_intents rows under current logic_version
+world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … + step progress
 ```
 
 **Pass criteria:**
 
 - [ ] At least **3 separate days** with `plan --record` while `DRY_RUN=true`
-- [ ] Conviction rows match your research (Group B: Canada, Bosnia listed; Qatar skipped)
+- [ ] Conviction rows match your research; `human_review` teams only quote when CLOB depth passes (if `auto_clear_human_review` in `operating.yaml`)
 - [ ] No teams inside **cancel window** get quote intents (`calendar --cancel-window`)
 - [ ] `cancel --cancel-window` runs on timer / before each `plan` (auto-pull resting quotes)
 - [ ] Review `config/conviction.yaml` caps vs bankroll
+- [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 
@@ -42,6 +44,7 @@ Requires L2 API creds in `.env` (derive once via py-clob-client).
 world-cup-bot watch --verbose --record
 # Ctrl+C after a session; check stats line (messages, trades, fills)
 world-cup-bot pnl --scope all --by-version
+world-cup-bot rewards sync --record   # optional; requires L2 — enable rewards-sync.timer on VPS
 ```
 
 **Pass criteria:**
@@ -49,6 +52,7 @@ world-cup-bot pnl --scope all --by-version
 - [ ] WS connects; reconcile loop runs (debug log every 30s if no recovered fills)
 - [ ] If you have resting orders elsewhere, fills land in ledger with dedup
 - [ ] Understand fill → exit intent path (`fill --team …` dry-run for manual test)
+- [ ] Queue depletion / vol pull behavior understood (`config/operating.yaml` fill_handler section)
 
 ## Phase 3 — Non-US egress preflight
 
@@ -57,7 +61,7 @@ Order **POST** is geo-blocked from the US. Run from your trading VPS (e.g. EU/Fi
 ```bash
 # on egress host with DRY_RUN still true first:
 world-cup-bot preflight         # geoblock must PASS
-world-cup-bot preflight           # L2 GET /data/orders auth probe passes
+world-cup-bot preflight         # L2 GET /data/orders auth probe passes
 ```
 
 **Pass criteria:**
@@ -73,7 +77,7 @@ Only after Phases 0–3. Start with **$500–1K** single-market pilot per bot sp
 ```bash
 export DRY_RUN=false            # only on egress host
 world-cup-bot preflight         # all PASS
-world-cup-bot plan --record     # posts post-only GTC limits
+world-cup-bot plan --record --liquidity-gate   # posts post-only GTC limits
 world-cup-bot watch --record    # fills + REST reconcile + exit POST
 ```
 
@@ -89,12 +93,15 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 |-------|---------|
 | Geoblock | `world-cup-bot preflight` |
 | Conviction gate | `world-cup-bot scan --conviction` |
+| CLOB depth | `world-cup-bot liquidity-scan` or `scan --liquidity` |
 | Cancel window | `world-cup-bot calendar --cancel-window` |
 | Cancel orders | `world-cup-bot cancel --cancel-window` |
 | Open orders | `world-cup-bot orders` |
 | Shadow ledger | `world-cup-bot pnl --scope current` |
-| Rewards sync | `world-cup-bot rewards sync --record` |
-| Shadow gate (CI) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked) |
+| Rewards sync | `world-cup-bot rewards sync --record` (Phase 2+; separate systemd timer) |
+| Shadow gate (CI) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked; prints ledger path) |
+| Conviction drift | `world-cup-bot conviction-staleness --notify` |
+| Fixture drift | `world-cup-bot fixture-check --notify` |
 | UI readiness | `world-cup-bot ui` → **Ready** tab |
 
 ## What shadow mode does *not* prove
@@ -103,4 +110,4 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 - Adverse selection under live match news flow
 - `$POLY` airdrop eligibility
 
-See [SETUP.md](SETUP.md) and [CLAUDE.md](CLAUDE.md) for module map and agent rules.
+See [SETUP.md](SETUP.md), [ROADMAP.md](ROADMAP.md), and [CLAUDE.md](CLAUDE.md) for module map and agent rules.

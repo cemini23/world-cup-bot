@@ -10,7 +10,8 @@ Run the bot **24/7 on your own VPS** — laptop not required. All paths are conf
 | `/opt/world-cup-bot/venv/` | `pip install -e ".[live]"` |
 | `/opt/world-cup-bot/.env` | Your secrets (`cp .env.example .env`) |
 | `/opt/world-cup-bot/bin/wc_run.sh` | Wrapper installed by `install-systemd.sh` |
-| `/opt/world-cup-bot/data/local/` | Ledger JSONL |
+| `/opt/world-cup-bot/data/local/shadow_ledger.jsonl` | Shadow plan + pnl-daily ledger (systemd default) |
+| `/opt/world-cup-bot/data/local/ledger.jsonl` | Optional live ledger path |
 | `/opt/world-cup-bot/logs/` | Timer stdout + cross-venue alerts |
 
 Change the root with `--install-root` (e.g. `/home/you/world-cup-bot`).
@@ -53,8 +54,8 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | Phase | Monitor VPS | Trading VPS |
 |-------|-------------|-------------|
 | 0 | cross-venue, scan, calendar timers | preflight timer |
-| 1 | + shadow-plan timer | — |
-| 2 | — | `world-cup-bot-watch.service` |
+| 1 | + shadow-plan timer (`--liquidity-gate` → shadow ledger) | — |
+| 2 | + optional rewards-sync timer (L2 creds) | `world-cup-bot-watch.service` |
 | 3 | — | preflight must PASS |
 | 4 | — | `world-cup-bot-live-plan.timer` (manual) |
 
