@@ -346,7 +346,7 @@ def build_research_bundle(
     elif mode == ResearchMode.INPLAY_PREGAME_RISKS:
         focus["operating"] = {
             "cancel_hours": settings.min_hours_before_kickoff,
-            "prefer_hours": operating.prefer_hours_before_kickoff,
+            "prefer_hours": operating.calendar.prefer_hours_before_kickoff,
             "exit_within_seconds": operating.fill_handler.exit_within_seconds,
         }
         focus["policy_v1"] = "no_in_play_quotes"
