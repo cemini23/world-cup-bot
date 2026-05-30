@@ -15,6 +15,9 @@ world-cup-bot research gemini third-place-gd
 world-cup-bot research gemini conviction-staleness
 world-cup-bot research gemini shadow-weekly
 world-cup-bot research gemini module6-scanner
+world-cup-bot research gemini knockout-market-map
+world-cup-bot research gemini inplay-pregame-risks
+world-cup-bot research gemini tournament-phase-router
 
 # Save to file
 world-cup-bot research gemini group-conviction --group B > /tmp/gemini-group-b.txt
@@ -33,12 +36,14 @@ Then:
 | File | When to run | Bot module |
 |------|-------------|------------|
 | [01-group-conviction.md](01-group-conviction.md) | Before quoting a new group; weekly during group stage | Module 2 conviction |
-| [02-cross-venue-polymarket-kalshi.md](02-cross-venue-polymarket-kalshi.md) | When fade_watch teams look mispriced vs Kalshi | Module 6 (future) |
+| [02-cross-venue-polymarket-kalshi.md](02-cross-venue-polymarket-kalshi.md) | When fade_watch teams look mispriced vs Kalshi | Module 6 (live alert-only) |
 | [03-team-lp-risk.md](03-team-lp-risk.md) | Before sizing up one team; injury news | Modules 3–4 |
 | [04-third-place-gd-math.md](04-third-place-gd-math.md) | Borderline 3rd-place paths (Scotland, Iran, Panama, …) | Module 2 |
 | [05-conviction-staleness-audit.md](05-conviction-staleness-audit.md) | Weekly refresh of entire YAML | Module 2 |
 | [06-shadow-weekly-review.md](06-shadow-weekly-review.md) | Shadow checklist / go-live gate (paste ledger context) | Ops |
-| [07-module6-scanner-spec.md](07-module6-scanner-spec.md) | Before building cross-venue scanner code | Module 6 spec |
+| [10-tournament-phase-router-spec.md](10-tournament-phase-router-spec.md) | Architecture before knockout v2 | Phase router spec |
+| [08-knockout-market-map.md](08-knockout-market-map.md) | **Pre-launch** — map PM/Kalshi KO markets | Future scanner |
+| [09-inplay-pregame-lp-risks.md](09-inplay-pregame-lp-risks.md) | **Pre-launch** — goals, XI, injuries | Ops + v2 gates |
 
 ## Manual path (no CLI)
 

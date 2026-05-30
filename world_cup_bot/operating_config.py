@@ -43,11 +43,17 @@ class LiquidityOps:
 
 
 @dataclass(frozen=True)
+class RiskOps:
+    max_daily_adverse_fill_usd: float
+
+
+@dataclass(frozen=True)
 class OperatingConfig:
     calendar: CalendarOps
     bilateral: BilateralOps
     fill_handler: FillHandlerOps
     liquidity: LiquidityOps
+    risk: RiskOps
 
 
 def load_operating_config(path: Path | None = None) -> OperatingConfig:
@@ -59,6 +65,7 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
     bil = raw.get("bilateral") or {}
     fh = raw.get("fill_handler") or {}
     liq = raw.get("liquidity") or {}
+    risk = raw.get("risk") or {}
 
     return OperatingConfig(
         calendar=CalendarOps(
@@ -91,5 +98,8 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
                 float(liq["max_spread_cents"]) if liq.get("max_spread_cents") is not None else None
             ),
             auto_clear_human_review=bool(liq.get("auto_clear_human_review", False)),
+        ),
+        risk=RiskOps(
+            max_daily_adverse_fill_usd=float(risk.get("max_daily_adverse_fill_usd", 500)),
         ),
     )

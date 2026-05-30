@@ -1,0 +1,36 @@
+# Tournament phases — market scanner config (stub v1)
+# Populated after Gemini DR 08-knockout-market-map.md — do not hand-edit slugs without DR.
+# Bot v1 active phase: group_advance only.
+
+version: 1
+
+active_phase: group_advance
+
+phases:
+  group_advance:
+    description: "Will {team} advance to knockout stages (group stage LP)"
+    gamma_search: "world cup advance knockout"
+    title_regex: "^Will (.+?) advance to the knockout stages at the 2026 FIFA World Cup\\?$"
+    lp_eligible: true
+    conviction_config: config/conviction.yaml
+    calendar_source: data/worldcup2026-fixtures.json
+
+  reach_final:
+    description: "Nation to reach 2026 FIFA World Cup final"
+    gamma_search: "world cup reach final"
+    title_regex: "^Will (.+?) reach the 2026 FIFA World Cup final\\?$"
+    lp_eligible: true
+    conviction_config: null  # TBD — separate conviction_knockout.yaml after DR
+    status: research
+
+  wc_winner:
+    description: "2026 FIFA World Cup winner — resolves on elimination"
+    lp_eligible: false  # immediate No on KO exit; not LP-safe per pitfalls research
+    status: out_of_scope_v1
+
+  knockout_match:
+    description: "Single-match win/advance markets (R32+)"
+    lp_eligible: false  # v2 — in-play toxic flow
+    status: research
+
+  # Phase router (DR 10) will set active_phase + overrides per calendar date.

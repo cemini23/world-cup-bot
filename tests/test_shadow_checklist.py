@@ -38,7 +38,7 @@ def _fake_preflight(*_args, **_kwargs) -> PreflightReport:
 def test_build_shadow_steps_dry_run(monkeypatch):
     monkeypatch.setattr("world_cup_bot.shadow_checklist.run_preflight", _fake_preflight)
     steps = build_shadow_steps(_settings(), test_auth=False)
-    assert len(steps) == 5
+    assert len(steps) == 6
     assert steps[0].id == "install"
     assert steps[0].status in {StepStatus.DONE, StepStatus.WARN}
     assert steps[-1].id == "live_ready"

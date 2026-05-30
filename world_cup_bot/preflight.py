@@ -7,7 +7,12 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from world_cup_bot.clob_auth import ClobAuth, MissingClobAuthError, load_clob_auth
-from world_cup_bot.clob_rest import fetch_clob_time, fetch_geoblock, fetch_open_orders
+from world_cup_bot.clob_rest import (
+    fetch_clob_time,
+    fetch_geoblock,
+    fetch_open_orders,
+    probe_clob_burst,
+)
 from world_cup_bot.config import Settings
 from world_cup_bot.scanner import fetch_search_payload
 
@@ -128,6 +133,36 @@ def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightRep
         )
     except Exception as exc:
         report.add(PreflightCheck("clob_time", CheckStatus.WARN, f"CLOB /time failed: {exc}"))
+
+    # Burst probe — shadow-to-live 429 preflight (clob-rate-limit-mitigation wiki)
+    try:
+        burst = probe_clob_burst(settings.clob_url, count=5)
+        if burst.rate_limited > 0:
+            status = CheckStatus.FAIL if not settings.dry_run else CheckStatus.WARN
+            report.add(
+                PreflightCheck(
+                    "clob_rate_limit",
+                    status,
+                    f"CLOB burst probe: {burst.rate_limited}/{burst.requests} returned 429",
+                )
+            )
+        else:
+            hdr = f" headers={burst.sample_headers}" if burst.sample_headers else ""
+            report.add(
+                PreflightCheck(
+                    "clob_rate_limit",
+                    CheckStatus.PASS,
+                    f"CLOB burst probe OK ({burst.successes}/{burst.requests} OK){hdr}",
+                )
+            )
+    except Exception as exc:
+        report.add(
+            PreflightCheck(
+                "clob_rate_limit",
+                CheckStatus.WARN,
+                f"CLOB burst probe failed: {exc}",
+            )
+        )
 
     # Private key for live POST
     pk = os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip()

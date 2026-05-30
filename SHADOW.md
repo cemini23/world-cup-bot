@@ -34,7 +34,22 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] No teams inside **cancel window** get quote intents (`calendar --cancel-window`)
 - [ ] `cancel --cancel-window` runs on timer / before each `plan` (auto-pull resting quotes)
 - [ ] Review `config/conviction.yaml` caps vs bankroll
+- [ ] Daily adverse-fill budget understood (`config/operating.yaml` → `risk.max_daily_adverse_fill_usd`; default $500)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
+
+## Production blind spots (Cemini steal-from)
+
+Before trusting shadow PnL, scan the Cemini **production blind spots** checklist (OSINT wiki: `concepts/production-trading-blind-spots.md`):
+
+| # | Check | WCB mitigation |
+|---|-------|----------------|
+| 1 | PnL logic versioned | `logic_version` on every ledger row; `pnl --scope current` |
+| 2 | Bot journal ≠ venue CSV | **Manual:** export Polymarket trades → compare ≥20 rows to ledger before Phase 4 |
+| 3 | Phantom fills | Reconcile polls order status; never infer fill from timeout |
+| 4 | Duplicate fills | Ledger dedup by `order_id` |
+| 5 | Silent state drift | WS + 30s REST reconcile in `watch` |
+| 6 | Zero intents, no reason | `plan` logs `event=plan_abort abort_reason=…` |
+| 7 | 429 rate limit death | `preflight` → `clob_rate_limit` burst probe |
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 
@@ -86,6 +101,27 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 - [ ] Kill switch fires on cancel-window fills (test with `calendar --team …`)
 - [ ] Exit intents post within 60s of fill
 - [ ] Daily `pnl` review; bump `logic_version` on material logic changes
+- [ ] **Venue CSV reconcile:** Polymarket account export vs bot ledger (≥20 trades) — journal WR must match venue
+- [ ] Shadow net PnL ≥ 0 when fills exist (`shadow-status` → shadow_pnl step WARN = review before live)
+
+## Emergency halt (out-of-process)
+
+Cemini prod uses Redis `emergency_stop`; this OSS bot uses **systemd + cancel**:
+
+```bash
+# Immediate stop — any host
+sudo systemctl stop world-cup-bot-live-plan.timer world-cup-bot-live-plan.service
+sudo systemctl stop world-cup-bot-watch.service
+
+# Pull resting quotes (egress host, L2 required)
+world-cup-bot cancel --cancel-window --record
+world-cup-bot cancel --all-wc --record   # nuclear — review open orders first
+
+# Confirm flat
+world-cup-bot orders
+```
+
+Set `WC_ALERT_WEBHOOK_URL` for Discord/Slack on kill-switch and cross-venue alerts.
 
 ## Quick reference
 
@@ -99,7 +135,9 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 | Open orders | `world-cup-bot orders` |
 | Shadow ledger | `world-cup-bot pnl --scope current` |
 | Rewards sync | `world-cup-bot rewards sync --record` (Phase 2+; separate systemd timer) |
-| Shadow gate (CI) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked; prints ledger path) |
+| Shadow gate (CI + local) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked; prints ledger path) |
+| Daily risk cap | `config/operating.yaml` → `risk.max_daily_adverse_fill_usd` |
+| Rate-limit preflight | `world-cup-bot preflight` → `clob_rate_limit` |
 | Conviction drift | `world-cup-bot conviction-staleness --notify` |
 | Fixture drift | `world-cup-bot fixture-check --notify` |
 | UI readiness | `world-cup-bot ui` → **Ready** tab |
@@ -111,3 +149,9 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 - `$POLY` airdrop eligibility
 
 See [SETUP.md](SETUP.md), [ROADMAP.md](ROADMAP.md), and [CLAUDE.md](CLAUDE.md) for module map and agent rules.
+
+## Sources
+
+- [Source: https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md]
+- [Source: OSINT wiki concepts/production-trading-blind-spots.md — Cemini steal-from checklist]
+- [Source: OSINT wiki concepts/polymarket-sports-lp-operating-rules.md]

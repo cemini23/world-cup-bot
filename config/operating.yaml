@@ -16,6 +16,11 @@ fill_handler:
   vol_cooldown_minutes: 30  # min between vol-pull cancels per team
   exit_loss_ticks: 1
 
+# Portfolio-style event cap — blocks plan when today's adverse fill loss exceeds budget.
+# @concepts/production-trading-blind-spots.md · Cemini risk_manager daily loss (adapted)
+risk:
+  max_daily_adverse_fill_usd: 500  # 0 = disable gate
+
 # CLOB GET /book depth gates (public API — no auth). Gamma `liquidity` is aggregate only.
 # WC advance markets are thinner than politics — thresholds tuned below major-market defaults.
 liquidity:

@@ -60,7 +60,7 @@ limits:
   bilateral_mid: 0.90
   default_max_notional_usd: 2000
   yes_size_ratio: 0.70
-  min_reward_shares: 500
+  min_reward_shares: 50  # WC advance markets: Gamma rewardsMinSize=50 (not politics 500+)
 
 per_team:
   Turkey:

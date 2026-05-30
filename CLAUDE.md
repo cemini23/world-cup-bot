@@ -132,8 +132,8 @@ reconcile loop (30s): GET /data/trades → same fill path (WS silent-fill blind 
 
 ## Open backlog (do not claim done)
 
-- CeminiSuite module import (private prod brief)
-- Formal shadow gate in GitHub Actions (operator checklist: `SHADOW.md` + `shadow-status` + UI **Ready** tab)
+- CeminiSuite module import — OSINT `briefs/2026-05-29_world-cup-bot-cemini-import.md`; skill_audit before prod scp
+- ~~Formal shadow gate in GitHub Actions~~ — **Done:** `tests/test_shadow_fixture_gate.py` + TruffleHog/vet in CI
 
 ## Related
 

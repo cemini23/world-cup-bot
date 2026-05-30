@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · **Tests:** 128 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · **Tests:** 132 pytest (CI on push)
 
 ---
 
@@ -32,7 +32,21 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **LP safety DR re-run** | **2026-06-06** | Weekly cadence — see OSINT wiki `wc-lp-safety-cadence`; update `conviction.yaml` if verdicts change |
 | **Cross-venue pair refresh** | Ongoing | `discover` timer + manual `cross-venue-scan --discover-only` when PM advance slugs firm |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
-| **CeminiSuite import** | Post shadow gate | Private prod brief — not in this public repo |
+| **CeminiSuite import** | Post shadow gate | `briefs/2026-05-29_world-cup-bot-cemini-import.md` (OSINT) — skill_audit before scp |
+
+### Steal-from audit (2026-05-29) — shipped
+
+| Fix | Artifact |
+|-----|----------|
+| Blind-spot checklist + halt playbook | `SHADOW.md` |
+| Daily adverse-fill cap | `config/operating.yaml` → `risk`, `world_cup_bot/risk.py` |
+| `plan_abort` event logging | `world_cup_bot/event_log.py` |
+| CLOB 429 burst preflight | `preflight.py` → `clob_rate_limit` |
+| Shadow fixture CI gate | `tests/test_shadow_fixture_gate.py` |
+| TruffleHog + vet CI | `.github/workflows/ci.yml` |
+| Module 6 doc drift | `prompts/` |
+
+See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 
 ---
 
@@ -48,6 +62,12 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 
 | Date | Commit | Notes |
 |------|--------|-------|
+| 2026-05-29 | (steal-from) | K85 Cemini audit: risk cap, 429 preflight, event log, CI TruffleHog/vet, shadow fixture gate |
 | 2026-05-30 | `17708e1` | Liquidity scanner, asymmetric ask threshold, shadow ledger path in gate, split pnl/rewards systemd, fill-handler automation |
 | 2026-05-30 | `c143072` | `conviction.yaml` v4 LP safety gates (Spain, Brazil, Morocco) |
 | 2026-05-29/30 | `581411b` | Modules 1–7 feature-complete v1, cross-venue, rewards sync, shadow-status |
+
+## Sources
+
+- [Source: https://github.com/cemini23/world-cup-bot]
+- [Source: OSINT briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md]

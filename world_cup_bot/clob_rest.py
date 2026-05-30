@@ -10,7 +10,7 @@ from typing import Any
 
 from world_cup_bot.clob_auth import ClobAuth
 from world_cup_bot.clob_signing import create_level_2_headers
-from world_cup_bot.http_client import USER_AGENT, urlopen_get
+from world_cup_bot.http_client import USER_AGENT, urlopen_get, urlopen_get_status
 
 END_CURSOR = "LTE="
 PATH_ORDERS = "/data/orders"
@@ -46,6 +46,40 @@ def fetch_clob_time(clob_url: str) -> int:
     if isinstance(payload, dict):
         return int(payload.get("timestamp") or payload.get("time") or 0)
     return int(payload)
+
+
+@dataclass(frozen=True)
+class ClobBurstProbe:
+    requests: int
+    successes: int
+    rate_limited: int
+    sample_headers: dict[str, str]
+
+
+def probe_clob_burst(clob_url: str, *, count: int = 5) -> ClobBurstProbe:
+    """Sequential public GET /time — detect 429 before live cutover."""
+    url = f"{clob_url.rstrip('/')}/time"
+    successes = 0
+    rate_limited = 0
+    sample_headers: dict[str, str] = {}
+    for _ in range(max(1, count)):
+        status, headers = urlopen_get_status(url, timeout=10)
+        if status == 429:
+            rate_limited += 1
+        elif 200 <= status < 300:
+            successes += 1
+        if headers and not sample_headers:
+            sample_headers = {
+                k: headers[k]
+                for k in headers
+                if k.startswith("x-ratelimit") or k in {"retry-after"}
+            }
+    return ClobBurstProbe(
+        requests=count,
+        successes=successes,
+        rate_limited=rate_limited,
+        sample_headers=sample_headers,
+    )
 
 
 def fetch_book(clob_url: str, token_id: str, *, timeout: float = 15) -> dict[str, Any]:

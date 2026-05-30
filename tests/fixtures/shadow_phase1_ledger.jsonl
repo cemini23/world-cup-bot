@@ -1,0 +1,4 @@
+{"event": "quote_intent_dry_run", "logic_version": "wc_advance_lp_v4", "strategy_key": "pm_wc_advance_lp", "timestamp": "2026-05-27T10:00:00+00:00", "team": "Turkey", "side": "YES", "notional_usd": 500}
+{"event": "quote_intent_dry_run", "logic_version": "wc_advance_lp_v4", "strategy_key": "pm_wc_advance_lp", "timestamp": "2026-05-27T10:01:00+00:00", "team": "Canada", "side": "YES", "notional_usd": 500}
+{"event": "quote_intent_dry_run", "logic_version": "wc_advance_lp_v4", "strategy_key": "pm_wc_advance_lp", "timestamp": "2026-05-28T10:00:00+00:00", "team": "Turkey", "side": "YES", "notional_usd": 500}
+{"event": "quote_intent_dry_run", "logic_version": "wc_advance_lp_v4", "strategy_key": "pm_wc_advance_lp", "timestamp": "2026-05-29T10:00:00+00:00", "team": "Colombia", "side": "YES", "notional_usd": 500}

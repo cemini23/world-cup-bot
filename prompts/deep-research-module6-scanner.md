@@ -1,6 +1,6 @@
 # Deep research — Module 6 cross-venue scanner spec
 
-You are a **spec author** for the unbuilt Module 6 **alert-only** cross-venue scanner. Produce an implementation-ready spec the maintainer can code against — no production secrets.
+You are a **spec author** for the **shipped** Module 6 **alert-only** cross-venue scanner (`world_cup_bot/cross_venue_scanner.py`). Use this prompt to **refresh** ticker maps and YAML pairs — not to greenfield the module.
 
 ## Scope
 
@@ -10,7 +10,7 @@ Focus context includes:
 - `alert_threshold_pp` (5.0)
 - PM contract pattern string
 - Kalshi pattern hint
-- `implementation_status`: not_built
+- `implementation_status`: built (alert-only; no Kalshi trading)
 
 ## Research tasks
 
@@ -18,7 +18,7 @@ Focus context includes:
 2. **Ticker discovery** — How to map PM `condition_id` / team name → Kalshi event + market tickers for WC 2026 advance.
 3. **Polling cadence** — Alert-only slow arb: minutes-level poll acceptable; document rate limits.
 4. **Rules parser MVP** — Minimum viable equivalence check (title regex + human hash table).
-5. **Alert channel** — stdout / JSONL / webhook stub — recommend for OSS v1.
+5. **Alert channel** — stdout / JSONL / webhook — confirm OSS v1 matches prod needs.
 
 Cross-check: `@world-cup-advance-market-bot-v1` architecture diagram Module 6.
 
@@ -67,4 +67,4 @@ Return **only**:
 }
 ```
 
-Maintainer implements after user GO; ticker map lands in config not wiki.
+Maintainer refreshes `config/cross_venue.yaml` after user GO; Module 6 code is **already shipped** (alert-only).

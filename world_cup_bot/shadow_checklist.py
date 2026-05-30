@@ -11,6 +11,23 @@ from world_cup_bot.config import Settings
 from world_cup_bot.ledger import load_rows
 from world_cup_bot.logic_version import load_strategy_version
 from world_cup_bot.preflight import CheckStatus, run_preflight
+from world_cup_bot.risk import shadow_net_pnl_ok
+
+
+def _shadow_pnl_detail(settings: Settings, stats: dict[str, int]) -> str:
+    if stats["fills"] == 0:
+        return "No fills yet — gate applies after watch --record"
+    spec = load_strategy_version(Path(settings.logic_version_config))
+    _ok, detail = shadow_net_pnl_ok(Path(settings.ledger_path), spec)
+    return detail
+
+
+def _shadow_pnl_status(settings: Settings, stats: dict[str, int]) -> StepStatus:
+    if stats["fills"] == 0:
+        return StepStatus.DONE
+    spec = load_strategy_version(Path(settings.logic_version_config))
+    ok, _detail = shadow_net_pnl_ok(Path(settings.ledger_path), spec)
+    return StepStatus.DONE if ok else StepStatus.WARN
 
 
 class StepStatus(StrEnum):
@@ -98,6 +115,14 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
                 else StepStatus.PENDING
             ),
             cli="world-cup-bot plan --record",
+        ),
+        ShadowStep(
+            id="shadow_pnl",
+            phase=1,
+            title="Shadow net PnL floor",
+            detail=_shadow_pnl_detail(settings, stats),
+            status=_shadow_pnl_status(settings, stats),
+            cli="world-cup-bot pnl --scope current",
         ),
         ShadowStep(
             id="watch",

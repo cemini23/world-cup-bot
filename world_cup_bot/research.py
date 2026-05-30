@@ -57,6 +57,9 @@ class ResearchMode(StrEnum):
     CONVICTION_STALENESS = "conviction-staleness"
     SHADOW_WEEKLY = "shadow-weekly"
     MODULE6_SCANNER = "module6-scanner"
+    KNOCKOUT_MARKET_MAP = "knockout-market-map"
+    INPLAY_PREGAME_RISKS = "inplay-pregame-risks"
+    TOURNAMENT_PHASE_ROUTER = "tournament-phase-router"
 
 
 MODE_PROMPT_FILES: dict[ResearchMode, str] = {
@@ -67,6 +70,9 @@ MODE_PROMPT_FILES: dict[ResearchMode, str] = {
     ResearchMode.CONVICTION_STALENESS: "deep-research-conviction-staleness.md",
     ResearchMode.SHADOW_WEEKLY: "deep-research-shadow-weekly.md",
     ResearchMode.MODULE6_SCANNER: "deep-research-module6-scanner.md",
+    ResearchMode.KNOCKOUT_MARKET_MAP: "deep-research-knockout-market-map.md",
+    ResearchMode.INPLAY_PREGAME_RISKS: "deep-research-inplay-pregame-risks.md",
+    ResearchMode.TOURNAMENT_PHASE_ROUTER: "deep-research-tournament-phase-router.md",
 }
 
 GEMINI_PROMPT_FILES: dict[ResearchMode, str] = {
@@ -77,6 +83,9 @@ GEMINI_PROMPT_FILES: dict[ResearchMode, str] = {
     ResearchMode.CONVICTION_STALENESS: "05-conviction-staleness-audit.md",
     ResearchMode.SHADOW_WEEKLY: "06-shadow-weekly-review.md",
     ResearchMode.MODULE6_SCANNER: "07-module6-scanner-spec.md",
+    ResearchMode.KNOCKOUT_MARKET_MAP: "08-knockout-market-map.md",
+    ResearchMode.INPLAY_PREGAME_RISKS: "09-inplay-pregame-lp-risks.md",
+    ResearchMode.TOURNAMENT_PHASE_ROUTER: "10-tournament-phase-router-spec.md",
 }
 
 
@@ -181,6 +190,7 @@ def build_research_bundle(
     prompt_file, instructions = _load_prompt(mode)
     spec = load_strategy_version(Path(settings.logic_version_config))
     cfg = load_conviction_config(Path(settings.conviction_config))
+    operating = load_operating_config(Path(settings.operating_config))
     markets, by_team = _markets_by_team(settings)
     schedule = calendar_guard.build_team_schedule()
     now = datetime.now(UTC)
@@ -321,6 +331,31 @@ def build_research_bundle(
         focus["implementation_status"] = "built"
         focus["cli"] = "world-cup-bot cross-venue-scan [--discover-only] [--loop]"
 
+    elif mode == ResearchMode.KNOCKOUT_MARKET_MAP:
+        focus["active_phase"] = "group_advance"
+        focus["market_phases_stub"] = "config/market_phases.yaml"
+        focus["known_pm_events"] = [
+            "world-cup-team-to-advance-to-knockout-stages",
+            "world-cup-nation-to-reach-final",
+            "2026-fifa-world-cup-winner",
+        ]
+        focus["scanner_regex_today"] = (
+            "Will {Team} advance to the knockout stages at the 2026 FIFA World Cup?"
+        )
+
+    elif mode == ResearchMode.INPLAY_PREGAME_RISKS:
+        focus["operating"] = {
+            "cancel_hours": settings.min_hours_before_kickoff,
+            "prefer_hours": operating.prefer_hours_before_kickoff,
+            "exit_within_seconds": operating.fill_handler.exit_within_seconds,
+        }
+        focus["policy_v1"] = "no_in_play_quotes"
+
+    elif mode == ResearchMode.TOURNAMENT_PHASE_ROUTER:
+        focus["logic_version"] = spec.version_id
+        focus["market_phases_stub"] = "config/market_phases.yaml"
+        focus["modules_to_extend"] = ["scanner", "conviction", "calendar_guard", "ledger"]
+
     return ResearchBundle(
         mode=mode.value,
         generated_at=now.isoformat(),
@@ -341,6 +376,9 @@ def _output_schema_hint(mode: ResearchMode) -> str:
         ResearchMode.CONVICTION_STALENESS: "ConvictionStalenessPatch JSON",
         ResearchMode.SHADOW_WEEKLY: "ShadowWeeklyReview JSON object",
         ResearchMode.MODULE6_SCANNER: "Module6ScannerSpec JSON object",
+        ResearchMode.KNOCKOUT_MARKET_MAP: "MarketPhases YAML appendix JSON",
+        ResearchMode.INPLAY_PREGAME_RISKS: "InplayPregameRisk JSON object",
+        ResearchMode.TOURNAMENT_PHASE_ROUTER: "TournamentPhaseRouterSpec JSON object",
     }
     return hints[mode]
 

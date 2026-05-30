@@ -201,3 +201,8 @@ See [deploy/systemd/README.md](deploy/systemd/README.md) for install root, two-V
 ## Disclaimer
 
 Prediction markets involve loss of capital. LP without cancel discipline around kickoff has burned operators. Read the code before live mode.
+
+## Sources
+
+- [Source: https://github.com/cemini23/world-cup-bot/blob/main/SETUP.md]
+- [Source: https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md]

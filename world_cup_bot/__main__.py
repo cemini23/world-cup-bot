@@ -19,6 +19,7 @@ from world_cup_bot import (
     conviction_staleness,
     cross_venue_alerts,
     cross_venue_scanner,
+    event_log,
     fill_handler,
     fixture_watch,
     ledger,
@@ -29,6 +30,7 @@ from world_cup_bot import (
     quoter,
     research,
     rewards_sync,
+    risk,
     scanner,
     shadow_checklist,
     ws_user,
@@ -402,10 +404,30 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     return 0
 
 
+def _plan_abort(settings: Settings, reason: str, detail: str, *, exit_code: int = 1) -> int:
+    event_log.log_event(
+        "plan_abort",
+        abort_reason=reason,
+        detail=detail,
+        dry_run=settings.dry_run,
+    )
+    print(detail)
+    return exit_code
+
+
 def _cmd_plan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     version_spec = load_strategy_version(Path(settings.logic_version_config))
     print(version_spec.version_banner())
+
+    operating = load_operating_config(Path(settings.operating_config))
+    risk_ok, risk_detail = risk.check_daily_adverse_budget(
+        Path(settings.ledger_path),
+        operating,
+        version_spec,
+    )
+    if not risk_ok:
+        return _plan_abort(settings, "daily_adverse_cap", risk_detail)
 
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     markets = _load_markets(settings)
@@ -426,8 +448,11 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     )
 
     if not results:
-        print("No conviction targets (try --all to see skips).")
-        return 1
+        return _plan_abort(
+            settings,
+            "no_conviction_targets",
+            "No conviction targets (try --all to see skips).",
+        )
 
     gate = advisor.AdvisorGate.OFF
     multipliers: dict[str, float] = {}
@@ -467,8 +492,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                     return 1
 
     if not results:
-        print("No targets after advisor gate.")
-        return 1
+        return _plan_abort(settings, "advisor_gate_empty", "No targets after advisor gate.")
 
     # Calendar guard: cancel resting quotes for teams entering kickoff window
     cancel_result = order_manager.cancel_for_cancel_window(
@@ -487,14 +511,24 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     # Drop conviction rows inside cancel window (must_cancel)
     results = [r for r in results if r.quote and not r.market.must_cancel]
     if not results:
-        print("No targets outside cancel window.")
-        return 1
+        return _plan_abort(
+            settings,
+            "cancel_window",
+            "No targets outside cancel window.",
+        )
 
     intents: list[quoter.QuoteIntent] = []
     for result in results:
         if result.quote:
             mult = multipliers.get(result.market.team, 1.0)
             intents.extend(quoter.build_quotes(result, cfg, settings, notional_multiplier=mult))
+
+    if not intents:
+        return _plan_abort(
+            settings,
+            "zero_quote_intents",
+            "Conviction rows matched but 0 quote intents built.",
+        )
 
     quoter.submit_quotes(
         intents,
@@ -522,6 +556,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     mode = "DRY_RUN" if settings.dry_run else "LIVE"
     print(f"\n{len(intents)} quote intents ({mode}) from {len(results)} conviction rows")
+    event_log.log_event(
+        "plan_complete",
+        intents=len(intents),
+        conviction_rows=len(results),
+        dry_run=settings.dry_run,
+        recorded=bool(args.record),
+    )
     return 0
 
 
@@ -1127,6 +1168,7 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
         description="World Cup 2026 advance-market LP bot (early build)",
