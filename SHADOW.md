@@ -31,6 +31,7 @@ world-cup-bot pnl               # confirm quote_intents rows under current logic
 - [ ] At least **3 separate days** with `plan --record` while `DRY_RUN=true`
 - [ ] Conviction rows match your research (Group B: Canada, Bosnia listed; Qatar skipped)
 - [ ] No teams inside **cancel window** get quote intents (`calendar --cancel-window`)
+- [ ] `cancel --cancel-window` runs on timer / before each `plan` (auto-pull resting quotes)
 - [ ] Review `config/conviction.yaml` caps vs bankroll
 
 ## Phase 2 — Fill watch (venue reads, still dry)
@@ -89,6 +90,8 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 | Geoblock | `world-cup-bot preflight` |
 | Conviction gate | `world-cup-bot scan --conviction` |
 | Cancel window | `world-cup-bot calendar --cancel-window` |
+| Cancel orders | `world-cup-bot cancel --cancel-window` |
+| Open orders | `world-cup-bot orders` |
 | Shadow ledger | `world-cup-bot pnl --scope current` |
 | UI readiness | `world-cup-bot ui` → **Ready** tab |
 

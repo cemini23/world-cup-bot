@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from world_cup_bot.config import Settings
 from world_cup_bot.conviction import ConvictionConfig, ConvictionResult, TeamMode
 from world_cup_bot.scanner import AdvanceMarket
+
+if TYPE_CHECKING:
+    from world_cup_bot.order_manager import TradingHalt
+
+logger = logging.getLogger(__name__)
 
 Side = Literal["YES", "NO"]
 
@@ -167,10 +173,38 @@ def build_quotes(
     return intents
 
 
-def submit_quotes(intents: list[QuoteIntent], settings: Settings) -> list[QuoteIntent]:
-    """Post to CLOB when DRY_RUN=false (requires py-clob-client + non-US egress)."""
-    if settings.dry_run:
+def submit_quotes(
+    intents: list[QuoteIntent],
+    settings: Settings,
+    *,
+    markets: list[AdvanceMarket] | None = None,
+    halt: TradingHalt | None = None,
+) -> list[QuoteIntent]:
+    """Post to CLOB when DRY_RUN=false; cancel-replace stale orders first."""
+    if not intents:
         return intents
+
+    from world_cup_bot.order_manager import cancel_replace_before_submit
+
+    if halt is not None:
+        intents = [i for i in intents if not halt.is_halted(i.team)]
+        if not intents:
+            return []
+
+    if markets is not None:
+        cancel_replace_before_submit(settings, markets, intents)
+
+    if settings.dry_run:
+        for intent in intents:
+            logger.info(
+                "QUOTE_DRY %s %s @ %.2f x %.1f",
+                intent.team,
+                intent.side,
+                intent.price,
+                intent.size_shares,
+            )
+        return intents
+
     from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_quote_intent
 
     client = build_clob_client(settings)

@@ -60,6 +60,8 @@ Kickoff times from bundled CC0 fixtures (`data/worldcup2026-fixtures.json`), not
 ```bash
 world-cup-bot calendar --team Turkey
 world-cup-bot calendar --cancel-window --min-hours 10
+world-cup-bot cancel --cancel-window   # pull resting quotes for teams near kickoff
+world-cup-bot orders                   # list open WC advance orders (L2 auth)
 ```
 
 Refresh if FIFA reschedules — see `data/DATA_ATTRIBUTION.md`.

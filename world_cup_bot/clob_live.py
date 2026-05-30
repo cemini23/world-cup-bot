@@ -108,3 +108,31 @@ def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
     if resp.get("error") or resp.get("success") is False:
         raise LiveClobPostError(str(resp.get("error") or resp))
     return resp
+
+
+def cancel_order_id(client: Any, order_id: str) -> dict[str, Any]:
+    """Cancel one resting order by id."""
+    resp = client.cancel(order_id)
+    if isinstance(resp, dict) and (resp.get("error") or resp.get("success") is False):
+        raise LiveClobPostError(str(resp.get("error") or resp))
+    return resp if isinstance(resp, dict) else {"response": resp}
+
+
+def cancel_order_ids(client: Any, order_ids: list[str]) -> list[dict[str, Any]]:
+    """Cancel multiple orders (batch when supported)."""
+    if not order_ids:
+        return []
+    if len(order_ids) == 1:
+        return [cancel_order_id(client, order_ids[0])]
+    resp = client.cancel_orders(order_ids)
+    if isinstance(resp, dict) and (resp.get("error") or resp.get("success") is False):
+        raise LiveClobPostError(str(resp.get("error") or resp))
+    return resp if isinstance(resp, list) else [resp]
+
+
+def cancel_market_asset(client: Any, *, condition_id: str, asset_id: str) -> dict[str, Any]:
+    """Cancel all open orders for a market asset."""
+    resp = client.cancel_market_orders(market=condition_id, asset_id=asset_id)
+    if isinstance(resp, dict) and (resp.get("error") or resp.get("success") is False):
+        raise LiveClobPostError(str(resp.get("error") or resp))
+    return resp if isinstance(resp, dict) else {"response": resp}

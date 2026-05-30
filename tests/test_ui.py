@@ -40,7 +40,7 @@ def test_index_html_exists():
 def test_meta_payload():
     payload = meta_payload(_settings())
     assert payload["dry_run"] is True
-    assert payload["logic_version"] == "wc_advance_lp_v3"
+    assert payload["logic_version"] == "wc_advance_lp_v4"
 
 
 def test_calendar_payload_offline():

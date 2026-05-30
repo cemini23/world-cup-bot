@@ -40,6 +40,7 @@ class FillWatchContext:
     """Runtime state for one watch session."""
 
     markets_by_condition: dict[str, AdvanceMarket]
+    markets: list[AdvanceMarket]
     operating: OperatingConfig
     version_spec: StrategyVersionSpec
     ledger_path: str
@@ -53,7 +54,14 @@ class FillWatchContext:
     reconcile_state: ReconcileState = field(default_factory=ReconcileState)
     seen_fill_keys: set[str] = field(default_factory=set)
     stats: WatchStats = field(default_factory=WatchStats)
+    halt: Any = field(default_factory=lambda: _trading_halt())
     on_result: Callable[[FillHandlerResult], None] | None = None
+
+
+def _trading_halt():
+    from world_cup_bot.order_manager import TradingHalt
+
+    return TradingHalt()
 
 
 def build_user_subscription(auth: ClobAuth, condition_ids: list[str]) -> dict[str, Any]:
@@ -221,6 +229,19 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
         if result.exit_intent:
             submit_exit(result.exit_intent, dry_run=ctx.dry_run, settings=ctx.settings)
 
+        if ctx.settings is not None and (result.kill_switch or result.pull_quotes):
+            from world_cup_bot.order_manager import apply_fill_safety_actions
+
+            apply_fill_safety_actions(
+                ctx.settings,
+                ctx.markets,
+                team=fill.team,
+                kill_switch=result.kill_switch,
+                pull_quotes=result.pull_quotes,
+                halt=ctx.halt,
+                dry_run=ctx.dry_run,
+            )
+
         if ctx.on_result:
             ctx.on_result(result)
         results.append(result)
@@ -271,6 +292,10 @@ async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> 
                     stats.trades_fetched,
                     stats.fills_skipped,
                 )
+            if ctx.settings is not None:
+                from world_cup_bot.order_manager import cancel_for_cancel_window
+
+                cancel_for_cancel_window(ctx.settings, ctx.markets, dry_run=ctx.dry_run)
 
 
 async def _ping_loop(ws: Any, *, stop: asyncio.Event) -> None:

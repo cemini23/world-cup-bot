@@ -9,7 +9,7 @@ from world_cup_bot.logic_version import (
 def test_load_registry():
     spec = load_strategy_version()
     assert spec.strategy_key == "pm_wc_advance_lp"
-    assert spec.version_id == "wc_advance_lp_v3"
+    assert spec.version_id == "wc_advance_lp_v4"
     assert LEGACY_UNVERSIONED in spec.legacy_version_ids
 
 
@@ -17,7 +17,7 @@ def test_version_banner():
     spec = load_strategy_version()
     banner = spec.version_banner()
     assert "pm_wc_advance_lp" in banner
-    assert "wc_advance_lp_v3" in banner
+    assert "wc_advance_lp_v4" in banner
 
 
 def test_scope_legacy():

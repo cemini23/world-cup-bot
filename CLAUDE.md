@@ -63,6 +63,8 @@ world-cup-bot plan [--record] [--advisor]
 world-cup-bot preflight [--skip-auth]
 world-cup-bot watch [--verbose] [--record]
 world-cup-bot calendar --team NAME | --cancel-window
+world-cup-bot cancel --cancel-window | --team NAME | --all-wc
+world-cup-bot orders
 world-cup-bot pnl [--scope current|legacy|all] [--by-version]
 world-cup-bot context --json
 world-cup-bot cross-venue-scan [--discover-only] [--loop] [--alert-only]
@@ -118,7 +120,7 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 ## Open backlog (do not claim done)
 
 - Formal shadow/MCPT gate checklist in CI (operator checklist: `SHADOW.md` + UI **Ready** tab)
-- Full REST `/orders` vs open-quote state diff (trades reconcile covers fills; quote drift is separate)
+- Rewards accrual into ledger (`rewards_usd` field unused)
 
 ## Related
 

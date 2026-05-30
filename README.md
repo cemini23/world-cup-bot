@@ -50,6 +50,8 @@ world-cup-bot research run group-conviction --group B --json
 world-cup-bot ui                  # optional read-only dashboard → http://127.0.0.1:8765
 world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
 world-cup-bot preflight         # geoblock + Gamma + CLOB auth before live LP
+world-cup-bot cancel --cancel-window   # pull resting quotes before kickoff
+world-cup-bot orders            # list open WC advance orders
 world-cup-bot watch --verbose   # user-channel WS → fill handler (needs L2 API creds)
 world-cup-bot pnl               # headline PnL (scope=current logic_version only)
 world-cup-bot fill --team Turkey --side YES --order-id ord-1 --price 0.44 --shares 500 --record

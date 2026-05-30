@@ -61,6 +61,7 @@ def test_process_trade_message_dedup():
     )
     ctx = ws_user.FillWatchContext(
         markets_by_condition={"0x1": market},
+        markets=[market],
         operating=load_operating_config(),
         version_spec=load_strategy_version(),
         ledger_path="data/local/test-ledger.jsonl",
@@ -80,6 +81,7 @@ def test_process_trade_message_dedup():
 def test_process_trade_unknown_market_increments_skip():
     ctx = ws_user.FillWatchContext(
         markets_by_condition={},
+        markets=[],
         operating=load_operating_config(),
         version_spec=load_strategy_version(),
         ledger_path="data/local/test-ledger.jsonl",

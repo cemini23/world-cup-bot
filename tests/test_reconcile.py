@@ -36,6 +36,7 @@ def test_run_reconcile_pass_processes_missed_fill(monkeypatch):
     )
     ctx = ws_user.FillWatchContext(
         markets_by_condition={"0x1": market},
+        markets=[market],
         operating=load_operating_config(),
         version_spec=load_strategy_version(),
         ledger_path="data/local/test-ledger.jsonl",

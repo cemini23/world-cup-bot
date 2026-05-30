@@ -7,5 +7,5 @@ Type=oneshot
 WorkingDirectory=@INSTALL_ROOT@
 EnvironmentFile=-@INSTALL_ROOT@/.env
 Environment=WC_DRY_RUN=true
-ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh calendar --cancel-window --min-hours 10 >> @INSTALL_ROOT@/logs/cron_calendar.log 2>&1'
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh cancel --cancel-window --min-hours 10 >> @INSTALL_ROOT@/logs/cron_calendar.log 2>&1; @INSTALL_ROOT@/bin/wc_run.sh calendar --cancel-window --min-hours 10 >> @INSTALL_ROOT@/logs/cron_calendar.log 2>&1'
 User=root

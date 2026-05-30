@@ -17,6 +17,7 @@ from world_cup_bot import (
     cross_venue_scanner,
     fill_handler,
     ledger,
+    order_manager,
     preflight,
     quoter,
     research,
@@ -212,13 +213,28 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         print("No targets after advisor gate.")
         return 1
 
+    # Calendar guard: cancel resting quotes for teams entering kickoff window
+    cancel_result = order_manager.cancel_for_cancel_window(settings, markets)
+    if cancel_result.order_ids:
+        mode = "DRY" if cancel_result.dry_run else "LIVE"
+        print(
+            f"Calendar cancel ({mode}): {len(cancel_result.order_ids)} order(s) — "
+            f"{cancel_result.reason}"
+        )
+
+    # Drop conviction rows inside cancel window (must_cancel)
+    results = [r for r in results if r.quote and not r.market.must_cancel]
+    if not results:
+        print("No targets outside cancel window.")
+        return 1
+
     intents: list[quoter.QuoteIntent] = []
     for result in results:
         if result.quote:
             mult = multipliers.get(result.market.team, 1.0)
             intents.extend(quoter.build_quotes(result, cfg, settings, notional_multiplier=mult))
 
-    quoter.submit_quotes(intents, settings)
+    quoter.submit_quotes(intents, settings, markets=markets)
 
     if args.record:
         n = ledger.record_quote_intents(
@@ -424,6 +440,16 @@ def _cmd_fill(args: argparse.Namespace) -> int:
     print(f"pull_quotes:  {result.pull_quotes}")
     print(f"reason:       {result.reason}")
 
+    markets = _load_markets(settings)
+    order_manager.apply_fill_safety_actions(
+        settings,
+        markets,
+        team=fill.team,
+        kill_switch=result.kill_switch,
+        pull_quotes=result.pull_quotes,
+        dry_run=settings.dry_run,
+    )
+
     if result.exit_intent:
         ex = result.exit_intent
         fill_handler.submit_exit(ex, dry_run=settings.dry_run)
@@ -454,6 +480,66 @@ def _print_fill_result(result: fill_handler.FillHandlerResult) -> None:
         )
     else:
         print("exit_intent:  (none — kill switch active)")
+
+
+def _cmd_cancel(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
+
+    dry_run = settings.dry_run if args.live is False else False
+    if args.live:
+        dry_run = False
+
+    if args.cancel_window:
+        result = order_manager.cancel_for_cancel_window(
+            settings,
+            markets,
+            min_hours=args.min_hours,
+            dry_run=dry_run,
+        )
+    elif args.team:
+        result = order_manager.cancel_for_teams(
+            settings,
+            markets,
+            {args.team},
+            reason=f"manual cancel — {args.team}",
+            dry_run=dry_run,
+        )
+    elif args.all_wc:
+        result = order_manager.cancel_all_wc_orders(settings, markets, dry_run=dry_run)
+    else:
+        print("Specify --cancel-window, --team NAME, or --all-wc")
+        return 1
+
+    mode = "DRY_RUN" if result.dry_run else "LIVE"
+    if not result.order_ids:
+        print(f"No open WC orders to cancel ({mode}).")
+        return 0
+    print(f"Cancelled {len(result.order_ids)} order(s) ({mode}) — {result.reason}")
+    for oid in result.order_ids:
+        print(f"  {oid}")
+    return 0
+
+
+def _cmd_orders(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
+    try:
+        open_orders = order_manager.fetch_wc_open_orders(settings, markets)
+    except Exception as exc:
+        print(f"Could not fetch open orders: {exc}")
+        return 1
+
+    if args.cancel_window:
+        rows = calendar_guard.teams_in_cancel_window(
+            min_hours_before_kickoff=settings.min_hours_before_kickoff,
+        )
+        in_window = {team for team, _ in rows}
+        open_orders = [o for o in open_orders if o.team in in_window]
+
+    print(order_manager.format_orders_table(open_orders))
+    print(f"\n{len(open_orders)} open WC advance order(s)")
+    return 0
 
 
 def _cmd_preflight(args: argparse.Namespace) -> int:
@@ -492,6 +578,7 @@ def _cmd_watch(args: argparse.Namespace) -> int:
 
     ctx = ws_user.FillWatchContext(
         markets_by_condition={m.condition_id: m for m in markets},
+        markets=markets,
         operating=operating,
         version_spec=version_spec,
         ledger_path=settings.ledger_path,
@@ -671,6 +758,42 @@ def main(argv: list[str] | None = None) -> None:
         help="Cancel if next kickoff is sooner than this (default: 10)",
     )
     cal.set_defaults(func=_cmd_calendar)
+
+    cn = sub.add_parser(
+        "cancel",
+        help="Cancel resting WC advance orders (calendar guard / manual)",
+    )
+    cn.add_argument(
+        "--cancel-window",
+        action="store_true",
+        help="Cancel all open orders for teams inside pre-kickoff window",
+    )
+    cn.add_argument("--team", help="Cancel open orders for one team")
+    cn.add_argument(
+        "--all-wc",
+        action="store_true",
+        help="Cancel every open WC advance order",
+    )
+    cn.add_argument(
+        "--min-hours",
+        type=float,
+        default=None,
+        help="Cancel window threshold (default: MIN_HOURS_BEFORE_KICKOFF env)",
+    )
+    cn.add_argument(
+        "--live",
+        action="store_true",
+        help="Force live cancel even when DRY_RUN=true",
+    )
+    cn.set_defaults(func=_cmd_cancel)
+
+    od = sub.add_parser("orders", help="List open WC advance orders (L2 auth required)")
+    od.add_argument(
+        "--cancel-window",
+        action="store_true",
+        help="Show only orders for teams inside cancel window",
+    )
+    od.set_defaults(func=_cmd_orders)
 
     sc = sub.add_parser("scan", help="Discover advance markets via Gamma (live prices)")
     sc.add_argument(
