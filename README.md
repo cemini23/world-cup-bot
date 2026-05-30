@@ -5,23 +5,31 @@
 
 Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets on [Polymarket](https://polymarket.com).
 
-**Status:** early build — shadow mode first. Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03).
+**Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`.
 
 ## What it does (v1)
 
 | Module | Scope |
 |--------|--------|
-| **Scanner** | Discovers WC advance markets via Gamma; reads reward params at runtime |
-| **Conviction LP** | Resting limits on research-backed mid-tier teams; bilateral mode above ~90¢ |
-| **Fill handler** | Limit exit within ~60s; queue-depletion pull; **live fills via user-channel WS** |
-| **Optional advisor** | `context --json` or `plan --advisor` — LLM overlay; **off by default** |
-| **Gemini Deep Research** | `research gemini <mode>` — paste into gemini.google.com |
-| **Agent JSON research** | `research run <mode> --json` — Cursor/Claude prompts in `prompts/` |
-| **Optional UI** | `world-cup-bot ui` — read-only localhost dashboard (stdlib, port 8765) |
-| **Cross-venue scanner** | `cross-venue-scan` — PM vs Kalshi gaps, alert-only; auto-discovers new pairs |
-| **Ledger** | Daily P&L from fills + rewards |
+| **Scanner (1)** | Gamma discovery; live mids, spreads, reward params |
+| **Conviction LP (2)** | YAML tiers; resting limits on research-backed teams; bilateral mode above ~90¢ |
+| **Quoter (3)** | Post-only GTC limits; cancel-replace before submit; calendar auto-cancel |
+| **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull; exit within ~60s |
+| **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
+| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); optional webhook |
+| **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** |
+| **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
+| **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
+| **Research CLI** | Gemini Deep Research + agent JSON bundles in `prompts/` |
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
+
+### Go-live safety
+
+- Auto-cancel resting quotes when teams enter the pre-kickoff window (`plan`, `watch`, calendar timer)
+- Cancel-replace stale quotes before new posts
+- Kill-switch on cancel-window fills → halt team + pull quotes
+- Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack JSON POST)
 
 ## What it is not
 
@@ -37,36 +45,60 @@ git clone https://github.com/cemini23/world-cup-bot.git
 cd world-cup-bot
 cp .env.example .env   # fill in your own Polymarket keys
 pip install -e ".[dev]"
-world-cup-bot calendar --team Mexico
-world-cup-bot calendar --cancel-window --min-hours 10
-world-cup-bot scan              # live Gamma mids + LP eligibility
-world-cup-bot scan --conviction # conviction tier + quote gate
-world-cup-bot plan              # dry-run quote intents (DRY_RUN=true default)
-world-cup-bot plan --record     # append intents to versioned JSONL ledger
-world-cup-bot context --json    # decision bundle for external LLM (no API call)
-world-cup-bot research list     # research modes
-world-cup-bot research gemini group-conviction --group B   # paste → Gemini Deep Research
-world-cup-bot research run group-conviction --group B --json
-world-cup-bot ui                  # optional read-only dashboard → http://127.0.0.1:8765
-world-cup-bot plan --advisor    # optional LLM gate (needs ADVISOR_BASE_URL)
-world-cup-bot preflight         # geoblock + Gamma + CLOB auth before live LP
-world-cup-bot cancel --cancel-window   # pull resting quotes before kickoff
-world-cup-bot orders            # list open WC advance orders
-world-cup-bot watch --verbose   # user-channel WS → fill handler (needs L2 API creds)
-world-cup-bot pnl               # headline PnL (scope=current logic_version only)
-world-cup-bot fill --team Turkey --side YES --order-id ord-1 --price 0.44 --shares 500 --record
-world-cup-bot pnl --scope all --by-version  # forensics breakdown
+pip install -e ".[live]" # watch + live POST (websockets, py-clob-client)
+
+# Phase 0 — connectivity
+world-cup-bot preflight
+world-cup-bot shadow-status --min-phase 0
+
+# Discover + plan (shadow)
+world-cup-bot scan --conviction
+world-cup-bot calendar --cancel-window
+world-cup-bot plan --record          # DRY_RUN=true default; ledger audit when --record
+
+# Fills + PnL
+world-cup-bot watch --verbose --record   # needs L2 API creds
+world-cup-bot rewards sync --record      # CLOB liquidity rewards → ledger
+world-cup-bot pnl --scope current
+
+# Operator
+world-cup-bot cancel --cancel-window
+world-cup-bot orders
+world-cup-bot cross-venue-scan --once    # optional Kalshi creds
+world-cup-bot ui                         # http://127.0.0.1:8765
 ```
+
+More commands: `world-cup-bot --help` · research modes: `world-cup-bot research list`
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).
 
 **Calendar guard (Module 5)** uses vendored [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) fixtures (`data/worldcup2026-fixtures.json`, CC0) — not live prices. See `data/DATA_ATTRIBUTION.md`.
 
-See [SETUP.md](SETUP.md) for environment variables and geoblock notes.
+## Shadow → live
 
-**24/7 on a VPS:** optional [systemd units](deploy/systemd/README.md) (`monitor` + `trading` profiles).
+Follow [SHADOW.md](SHADOW.md):
 
-**Shadow → live:** [SHADOW.md](SHADOW.md) phased checklist. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md).
+1. **≥3 days** of `plan --record` with `DRY_RUN=true`
+2. `watch --record` with L2 creds
+3. Non-US egress preflight (`geoblock` PASS)
+4. Live pilot — small size, manual enable only
+
+Gate check: `world-cup-bot shadow-status --min-phase 1` (exit 1 if steps pending).
+
+## 24/7 on a VPS
+
+Optional [systemd units](deploy/systemd/README.md):
+
+| Profile | Host | Runs |
+|---------|------|------|
+| **monitor** | US OK | cross-venue alerts, shadow plan, scan, calendar, discover, daily rewards+PnL |
+| **trading** | Non-US only | preflight, watch, live plan (Phase 4 — manual enable) |
+
+```bash
+sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --profile monitor --enable
+```
+
+See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md).
 
 ## Security
 
