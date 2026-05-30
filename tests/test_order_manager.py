@@ -151,7 +151,7 @@ def test_cancel_replace_before_submit(monkeypatch):
 
     cancelled: list[list[str]] = []
 
-    def fake_cancel(settings, orders, *, reason, dry_run=None):
+    def fake_cancel(settings, orders, *, reason, dry_run=None, **kwargs):
         cancelled.append([o.order_id for o in orders])
         return order_manager.CancelResult(
             order_ids=[o.order_id for o in orders],

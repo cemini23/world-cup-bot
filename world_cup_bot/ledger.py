@@ -83,6 +83,14 @@ def fill_order_ids(path: Path) -> set[str]:
     }
 
 
+def reward_accrual_keys(path: Path) -> set[str]:
+    return {
+        str(r["reward_key"])
+        for r in load_rows(path)
+        if r.get("event") == "reward_accrual" and r.get("reward_key")
+    }
+
+
 def append_row(path: Path, row: LedgerRow) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
@@ -238,6 +246,42 @@ def record_order_cancel(
             },
         ),
     )
+
+
+def record_reward_accrual(
+    spec: StrategyVersionSpec,
+    *,
+    path: Path,
+    team: str,
+    rewards_usd: float,
+    reward_key: str,
+    earn_date: str,
+    condition_id: str,
+    extra: dict[str, Any] | None = None,
+) -> bool:
+    """Append reward_accrual row; return False if reward_key already recorded."""
+    if reward_key in reward_accrual_keys(path):
+        return False
+    payload = {
+        "reward_key": reward_key,
+        "earn_date": earn_date,
+        "condition_id": condition_id,
+    }
+    if extra:
+        payload.update(extra)
+    append_row(
+        path,
+        LedgerRow(
+            event="reward_accrual",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            team=team,
+            rewards_usd=rewards_usd,
+            extra=payload,
+        ),
+    )
+    return True
 
 
 @dataclass(frozen=True)

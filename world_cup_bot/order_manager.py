@@ -329,6 +329,8 @@ def cancel_replace_before_submit(
     *,
     price_tolerance: float = 0.005,
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> list[CancelResult]:
     """Cancel stale resting quotes before posting new intents (same asset, price drift)."""
     if not intents:
@@ -351,6 +353,8 @@ def cancel_replace_before_submit(
                     stale,
                     reason=f"cancel-replace stale {intent.team} {intent.side}",
                     dry_run=dry_run,
+                    ledger_path=ledger_path,
+                    version_spec=version_spec,
                 )
             )
         # Always cancel same-price duplicates before post to avoid double exposure
@@ -366,6 +370,8 @@ def cancel_replace_before_submit(
                     dupes,
                     reason=f"cancel-replace refresh {intent.team} {intent.side}",
                     dry_run=dry_run,
+                    ledger_path=ledger_path,
+                    version_spec=version_spec,
                 )
             )
     return results

@@ -15,6 +15,7 @@ from world_cup_bot.http_client import USER_AGENT, urlopen_get
 END_CURSOR = "LTE="
 PATH_ORDERS = "/data/orders"
 PATH_TRADES = "/data/trades"
+PATH_REWARDS_USER = "/rewards/user"
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,33 @@ def fetch_trades(
         if after is not None:
             query["after"] = str(after)
         payload = _authenticated_get(clob_url, PATH_TRADES, auth, address, query)
+        results.extend(payload.get("data") or [])
+        cursor = str(payload.get("next_cursor") or END_CURSOR)
+        pages += 1
+    return results
+
+
+def fetch_user_rewards_for_date(
+    clob_url: str,
+    auth: ClobAuth,
+    address: str,
+    *,
+    date: str,
+    maker_address: str | None = None,
+    signature_type: int | None = None,
+    max_pages: int = 10,
+) -> list[dict[str, Any]]:
+    """Paginated GET /rewards/user — earnings per market for YYYY-MM-DD."""
+    results: list[dict[str, Any]] = []
+    cursor = "MA=="
+    pages = 0
+    while cursor != END_CURSOR and pages < max_pages:
+        query: dict[str, str] = {"date": date, "next_cursor": cursor}
+        if maker_address:
+            query["maker_address"] = maker_address
+        if signature_type is not None:
+            query["signature_type"] = str(signature_type)
+        payload = _authenticated_get(clob_url, PATH_REWARDS_USER, auth, address, query)
         results.extend(payload.get("data") or [])
         cursor = str(payload.get("next_cursor") or END_CURSOR)
         pages += 1

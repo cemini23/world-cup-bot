@@ -12,6 +12,7 @@ from world_cup_bot.conviction import ConvictionConfig, ConvictionResult, TeamMod
 from world_cup_bot.scanner import AdvanceMarket
 
 if TYPE_CHECKING:
+    from world_cup_bot.logic_version import StrategyVersionSpec
     from world_cup_bot.order_manager import TradingHalt
 
 logger = logging.getLogger(__name__)
@@ -179,12 +180,12 @@ def submit_quotes(
     *,
     markets: list[AdvanceMarket] | None = None,
     halt: TradingHalt | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> list[QuoteIntent]:
     """Post to CLOB when DRY_RUN=false; cancel-replace stale orders first."""
     if not intents:
         return intents
-
-    from world_cup_bot.order_manager import cancel_replace_before_submit
 
     if halt is not None:
         intents = [i for i in intents if not halt.is_halted(i.team)]
@@ -192,7 +193,15 @@ def submit_quotes(
             return []
 
     if markets is not None:
-        cancel_replace_before_submit(settings, markets, intents)
+        from world_cup_bot.order_manager import cancel_replace_before_submit
+
+        cancel_replace_before_submit(
+            settings,
+            markets,
+            intents,
+            ledger_path=ledger_path,
+            version_spec=version_spec,
+        )
 
     if settings.dry_run:
         for intent in intents:

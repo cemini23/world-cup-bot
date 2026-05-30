@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from world_cup_bot import (
@@ -22,6 +22,7 @@ from world_cup_bot import (
     preflight,
     quoter,
     research,
+    rewards_sync,
     scanner,
     shadow_checklist,
     ws_user,
@@ -241,7 +242,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             mult = multipliers.get(result.market.team, 1.0)
             intents.extend(quoter.build_quotes(result, cfg, settings, notional_multiplier=mult))
 
-    quoter.submit_quotes(intents, settings, markets=markets)
+    quoter.submit_quotes(
+        intents,
+        settings,
+        markets=markets,
+        ledger_path=settings.ledger_path if args.record else None,
+        version_spec=version_spec if args.record else None,
+    )
 
     if args.record:
         n = ledger.record_quote_intents(
@@ -386,6 +393,81 @@ def _cmd_pnl(args: argparse.Namespace) -> int:
                 f"  {block['logic_version']:24} rows={block['row_count']:4} "
                 f"fills={block['fills']:3} net={block['net_pnl_usd']:+.2f}"
             )
+    return 0
+
+
+def _cmd_rewards_sync(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    markets = _load_markets(settings)
+
+    if args.date:
+        dates = [args.date]
+    else:
+        today = datetime.now(UTC).date()
+        dates = [
+            (today - timedelta(days=offset)).isoformat()
+            for offset in range(1, args.days + 1)
+        ]
+
+    try:
+        results = rewards_sync.sync_rewards_range(
+            settings,
+            markets,
+            version_spec,
+            dates=dates,
+            record=args.record,
+            ledger_path=settings.ledger_path,
+        )
+    except MissingClobAuthError as exc:
+        print(f"Rewards sync requires L2 creds: {exc}")
+        return 1
+    except ValueError as exc:
+        print(str(exc))
+        return 1
+    except Exception as exc:
+        print(f"Rewards sync failed: {exc}")
+        return 1
+
+    if args.json:
+        payload = [
+            {
+                "date": r.date,
+                "fetched": r.fetched,
+                "wc_matched": r.wc_matched,
+                "recorded": r.recorded,
+                "skipped_existing": r.skipped_existing,
+                "rows": [
+                    {
+                        "team": row.team,
+                        "rewards_usd": row.rewards_usd,
+                        "reward_key": row.reward_key,
+                    }
+                    for row in r.rows
+                ],
+            }
+            for r in results
+        ]
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    total_recorded = 0
+    total_usd = 0.0
+    for result in results:
+        print(
+            f"{result.date}: fetched={result.fetched} wc={result.wc_matched} "
+            f"recorded={result.recorded} skipped={result.skipped_existing}"
+        )
+        for row in result.rows:
+            print(f"  {row.team:20} ${row.rewards_usd:.4f}")
+            total_usd += row.rewards_usd
+        total_recorded += result.recorded
+
+    if args.record:
+        print(f"\nRecorded {total_recorded} reward row(s) → {settings.ledger_path}")
+    else:
+        print("\nDry preview — pass --record to append reward_accrual rows")
+    print(f"WC rewards total (preview): ${total_usd:.2f}")
     return 0
 
 
@@ -973,6 +1055,20 @@ def main(argv: list[str] | None = None) -> None:
         help="Print breakdown grouped by logic_version",
     )
     pn.set_defaults(func=_cmd_pnl)
+
+    rw = sub.add_parser("rewards", help="Polymarket liquidity rewards (CLOB /rewards/user)")
+    rw_sub = rw.add_subparsers(dest="rewards_cmd", required=True)
+    rw_sync = rw_sub.add_parser("sync", help="Sync WC advance-market rewards into ledger")
+    rw_sync.add_argument("--date", help="Single day YYYY-MM-DD (default: last N days)")
+    rw_sync.add_argument(
+        "--days",
+        type=int,
+        default=1,
+        help="Backfill days ending today UTC when --date omitted (default: 1 = yesterday)",
+    )
+    rw_sync.add_argument("--record", action="store_true", help="Append reward_accrual rows")
+    rw_sync.add_argument("--json", action="store_true", help="Machine-readable output")
+    rw_sync.set_defaults(func=_cmd_rewards_sync)
 
     fl = sub.add_parser("fill", help="Handle a venue-confirmed fill → exit intent (Module 4)")
     fl.add_argument("--team", required=True, help="Team name (must match Gamma market)")

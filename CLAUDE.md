@@ -120,7 +120,7 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 ## Open backlog (do not claim done)
 
 - Formal shadow/MCPT gate checklist in CI (operator checklist: `SHADOW.md` + UI **Ready** tab)
-- Rewards accrual into ledger (`rewards_usd` field unused)
+- Rewards accrual: `world-cup-bot rewards sync --record` (CLOB GET `/rewards/user`)
 
 ## Related
 
