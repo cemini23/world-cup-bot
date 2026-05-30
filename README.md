@@ -1,12 +1,12 @@
 # World Cup Bot
 
 [![CI](https://img.shields.io/github/actions/workflow/status/cemini23/world-cup-bot/ci.yml?branch=main&label=CI)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
-<!-- ci-badge-updated:2026-05-30T19:26:08Z -->
+<!-- ci-badge-updated:2026-05-30T19:29:16Z -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`. See [ROADMAP.md](ROADMAP.md) for open operator items.
+**CI:** failing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`. See [ROADMAP.md](ROADMAP.md) for open operator items.
 
 ## What it does (v1)
 
