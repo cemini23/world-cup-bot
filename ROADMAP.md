@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · **Tests:** 132 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 146 pytest (CI on push)
 
 ---
 
@@ -15,7 +15,7 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **Liquidity gate** | CLOB `GET /book` depth scan; asymmetric bid ($50) / ask ($15) band floors in `config/operating.yaml`; optional auto-clear of `human_review` when depth passes |
 | **Shadow gate** | `shadow-status --min-phase N` prints **ledger path** + step progress (exit 1 on pending/blocked) |
 | **Operator automation** | `conviction-staleness`, `fixture-check`, `conviction-patch --stage`, cross-venue webhooks + `last_verified` staleness |
-| **systemd monitor** | cross-venue, shadow-plan (`--liquidity-gate`), scan, calendar, discover, conviction-staleness, fixture-check |
+| **systemd monitor** | cross-venue (`--record` paper arb), shadow-plan (`--liquidity-gate`), scan, calendar, discover, conviction-staleness, fixture-check |
 | **systemd split cron** | `pnl-daily` = PnL only (shadow ledger, no L2); `rewards-sync` = separate unit (opt-in after Phase 2) |
 | Rewards CLI | `rewards sync --record` → CLOB `/rewards/user` |
 | Research | Gemini DR + agent JSON bundles in `prompts/` |
@@ -33,6 +33,10 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **Phase router (Module 1b)** | **2026-05-30** | PR1+PR2 on `main` — FSM, multi-phase scanner, settlement gate, SIGUSR1 reload; flags default OFF |
 | **Cross-venue pair refresh** | Ongoing | `discover` timer + manual `cross-venue-scan --discover-only` when PM advance slugs firm |
 | **Paper arb ledger (Phase A)** | **2026-05-30** | `cross-venue-scan --record` + `cross-venue-pnl --refresh` — no execution |
+| **Prod cross-venue `--record`** | After pull | Patch cross-venue unit: add `--record`, set `WC_CROSS_VENUE_LEDGER_PATH`; see prod brief |
+| **Cross-venue Phase B** | Backlog | Manual fill bridge: record alert→fill from operator, CSV import, reconcile vs PM/Kalshi exports |
+| **Cross-venue Phase C** | Backlog | Kalshi order module + dual-leg coordinator, orphan leg handling, capital caps |
+| **Phase router PR3** | Backlog | Replay tests on 2022/2023 JSONL, per-phase `bilateral_threshold`, FIFA match-integer gates |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
 | **CeminiSuite import** | Post shadow gate | `briefs/2026-05-29_world-cup-bot-cemini-import.md` (OSINT) — skill_audit before scp |
 
@@ -54,9 +58,21 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 
 ## Out of scope (v1)
 
-- Kalshi auto-trading (alert-only cross-venue)
+- Kalshi auto-trading (alert-only cross-venue; paper ledger records intent only)
 - Hosted/managed service
 - Guaranteed edge / financial advice
+
+---
+
+## Cross-venue arb phases
+
+| Phase | Status | Scope |
+|-------|--------|-------|
+| **A — Paper ledger** | **Shipped** | On `ALERT`, append `cross_venue_arb_intent_paper` to JSONL; `cross-venue-pnl --refresh` MTM vs live gap |
+| **B — Manual bridge** | Planned | CLI to log manual fills from alerts; CSV import; weekly reconcile vs venue exports |
+| **C — Auto dual-leg** | Planned | Kalshi order placement + PM hedge coordinator; orphan handling; pilot notional caps |
+
+Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record` on monitor host only.
 
 ---
 
@@ -67,7 +83,8 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 | 2026-05-29 | (steal-from) | K85 Cemini audit: risk cap, 429 preflight, event log, CI TruffleHog/vet, shadow fixture gate |
 | 2026-05-30 | `17708e1` | Liquidity scanner, asymmetric ask threshold, shadow ledger path in gate, split pnl/rewards systemd, fill-handler automation |
 | 2026-05-30 | `c143072` | `conviction.yaml` v4 LP safety gates (Spain, Brazil, Morocco) |
-| 2026-05-29/30 | `581411b` | Modules 1–7 feature-complete v1, cross-venue, rewards sync, shadow-status |
+| 2026-05-30 | `922a171` | Phase router PR2: multi-phase scanner, settlement gate, SIGUSR1 reload |
+| 2026-05-30 | `9f17058` | Paper cross-venue arb ledger (Phase A); systemd cross-venue `--record` |
 
 ## Sources
 

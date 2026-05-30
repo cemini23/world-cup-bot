@@ -11,6 +11,7 @@ Run the bot **24/7 on your own VPS** — laptop not required. All paths are conf
 | `/opt/world-cup-bot/.env` | Your secrets (`cp .env.example .env`) |
 | `/opt/world-cup-bot/bin/wc_run.sh` | Wrapper installed by `install-systemd.sh` |
 | `/opt/world-cup-bot/data/local/shadow_ledger.jsonl` | Shadow plan + pnl-daily ledger (systemd default) |
+| `/opt/world-cup-bot/data/local/cross_venue_arb_ledger.jsonl` | Paper cross-venue arb intents (`--record`) |
 | `/opt/world-cup-bot/data/local/ledger.jsonl` | Optional live ledger path |
 | `/opt/world-cup-bot/logs/` | Timer stdout + cross-venue alerts |
 
@@ -22,7 +23,7 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
-| **Monitor** | US or any region | `monitor` | Cross-venue alerts, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
+| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
 | **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
@@ -71,7 +72,8 @@ PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB 
 ## Operator commands
 
 ```bash
-/opt/world-cup-bot/bin/wc_run.sh cross-venue-scan --once
+/opt/world-cup-bot/bin/wc_run.sh cross-venue-scan --once --record
+/opt/world-cup-bot/bin/wc_run.sh cross-venue-pnl --refresh
 /opt/world-cup-bot/bin/wc_run.sh shadow-status --min-phase 1
 /opt/world-cup-bot/bin/wc_run.sh scan --conviction
 /opt/world-cup-bot/bin/wc_run.sh plan --record --liquidity-gate

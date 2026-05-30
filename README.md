@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** failing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`. See [ROADMAP.md](ROADMAP.md) for open operator items.
+**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1`. See [ROADMAP.md](ROADMAP.md) for open operator items.
 
 ## What it does (v1)
 
@@ -17,7 +17,7 @@
 | **Quoter (3)** | Post-only GTC limits; cancel-replace before submit; calendar auto-cancel |
 | **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull + vol cooldown; exit within ~60s |
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
-| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); optional webhook; `last_verified` staleness |
+| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); **paper arb ledger** (`--record`, `cross-venue-pnl`); optional webhook |
 | **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
 | **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; auto-clear `human_review` when configured |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
@@ -73,7 +73,8 @@ world-cup-bot pnl --scope current
 # Operator
 world-cup-bot cancel --cancel-window
 world-cup-bot orders
-world-cup-bot cross-venue-scan --once    # optional Kalshi creds
+world-cup-bot cross-venue-scan --once --record   # paper arb intents on alerts
+world-cup-bot cross-venue-pnl --refresh          # MTM vs live gaps
 world-cup-bot ui                         # http://127.0.0.1:8765
 ```
 
@@ -94,13 +95,25 @@ Follow [SHADOW.md](SHADOW.md):
 
 Gate check: `world-cup-bot shadow-status --min-phase 1` (exit 1 if steps pending; prints resolved ledger path).
 
+### Cross-venue paper arb (Phase A)
+
+When a PM↔Kalshi gap crosses the alert threshold, `--record` appends a **paper intent** to `data/local/cross_venue_arb_ledger.jsonl` (override with `WC_CROSS_VENUE_LEDGER_PATH`). No orders are placed.
+
+```bash
+world-cup-bot cross-venue-scan --once --record
+world-cup-bot cross-venue-pnl --refresh    # mark-to-market vs current gaps
+world-cup-bot cross-venue-pnl --json       # scriptable summary
+```
+
+Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). Phase B/C (manual fills, auto dual-leg) are backlog — see [ROADMAP.md](ROADMAP.md).
+
 ## 24/7 on a VPS
 
 Optional [systemd units](deploy/systemd/README.md):
 
 | Profile | Host | Runs |
 |---------|------|------|
-| **monitor** | US OK | cross-venue alerts, shadow plan (`--liquidity-gate`), scan, calendar, discover, daily PnL, conviction-staleness, fixture-check |
+| **monitor** | US OK | cross-venue alerts + **paper arb `--record`**, shadow plan (`--liquidity-gate`), scan, calendar, discover, daily PnL, conviction-staleness, fixture-check |
 | **trading** | Non-US only | preflight, watch, live plan (Phase 4 — manual enable) |
 
 **PnL vs rewards:** `pnl-daily.timer` runs `pnl --scope current` on the shadow ledger (no L2). `rewards-sync.timer` is installed but **not** auto-enabled — enable after Phase 2 when L2 creds exist.

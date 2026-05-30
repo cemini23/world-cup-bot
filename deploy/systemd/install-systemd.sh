@@ -86,6 +86,7 @@ for unit in "${UNITS[@]}"; do
 done
 
 touch "$INSTALL_ROOT/logs/cross_venue_alerts.jsonl"
+touch "$INSTALL_ROOT/data/local/cross_venue_arb_ledger.jsonl"
 touch "$INSTALL_ROOT/logs/cron_pnl.log"
 touch "$INSTALL_ROOT/logs/cron_rewards.log"
 touch "$INSTALL_ROOT/data/local/shadow_ledger.jsonl"
