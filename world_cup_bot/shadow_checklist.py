@@ -38,11 +38,12 @@ def _ledger_stats(settings: Settings) -> dict[str, int]:
     spec = load_strategy_version(Path(settings.logic_version_config))
     rows = load_rows(path)
     scoped = [r for r in rows if r.get("logic_version") == spec.version_id]
-    quote_intents = sum(1 for r in scoped if r.get("type") == "quote_intent")
-    fills = sum(1 for r in scoped if r.get("type") == "fill")
+    quote_events = frozenset({"quote_intent", "quote_intent_dry_run"})
+    quote_intents = sum(1 for r in scoped if r.get("event") in quote_events)
+    fills = sum(1 for r in scoped if r.get("event") == "order_fill")
     days: set[str] = set()
     for r in scoped:
-        ts = str(r.get("ts") or r.get("recorded_at") or "")
+        ts = str(r.get("timestamp") or r.get("ts") or r.get("recorded_at") or "")
         if len(ts) >= 10:
             days.add(ts[:10])
     return {

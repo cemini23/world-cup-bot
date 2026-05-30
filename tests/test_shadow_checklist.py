@@ -43,3 +43,48 @@ def test_build_shadow_steps_dry_run(monkeypatch):
     assert steps[0].status in {StepStatus.DONE, StepStatus.WARN}
     assert steps[-1].id == "live_ready"
     assert steps[-1].status == StepStatus.BLOCKED
+
+
+def test_ledger_stats_uses_event_field(tmp_path, monkeypatch):
+    from datetime import UTC, datetime
+
+    from world_cup_bot import ledger
+    from world_cup_bot.logic_version import StrategyVersionSpec
+    from world_cup_bot.shadow_checklist import _ledger_stats
+
+    path = tmp_path / "ledger.jsonl"
+    spec = StrategyVersionSpec(
+        strategy_key="pm_wc_advance_lp",
+        version_id="wc_advance_lp_v4",
+        deployed_at=datetime.now(UTC),
+        note="",
+        legacy_version_ids=frozenset(),
+    )
+    ledger.append_row(
+        path,
+        ledger.LedgerRow(
+            event="quote_intent_dry_run",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp="2026-05-27T12:00:00+00:00",
+        ),
+    )
+    ledger.append_row(
+        path,
+        ledger.LedgerRow(
+            event="order_fill",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp="2026-05-28T12:00:00+00:00",
+        ),
+    )
+
+    settings = _settings(ledger_path=str(path))
+    monkeypatch.setattr(
+        "world_cup_bot.shadow_checklist.load_strategy_version",
+        lambda *_: spec,
+    )
+    stats = _ledger_stats(settings)
+    assert stats["quote_intents"] == 1
+    assert stats["fills"] == 1
+    assert stats["distinct_days"] == 2

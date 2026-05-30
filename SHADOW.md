@@ -93,6 +93,7 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 | Cancel orders | `world-cup-bot cancel --cancel-window` |
 | Open orders | `world-cup-bot orders` |
 | Shadow ledger | `world-cup-bot pnl --scope current` |
+| Shadow gate (CI) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked) |
 | UI readiness | `world-cup-bot ui` → **Ready** tab |
 
 ## What shadow mode does *not* prove

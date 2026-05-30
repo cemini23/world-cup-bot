@@ -523,7 +523,12 @@ def _cmd_cancel(args: argparse.Namespace) -> int:
             **ledger_kw,
         )
     elif args.all_wc:
-        result = order_manager.cancel_all_wc_orders(settings, markets, dry_run=dry_run)
+        result = order_manager.cancel_all_wc_orders(
+            settings,
+            markets,
+            dry_run=dry_run,
+            **ledger_kw,
+        )
     else:
         print("Specify --cancel-window, --team NAME, or --all-wc")
         return 1

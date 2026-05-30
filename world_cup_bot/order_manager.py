@@ -292,9 +292,18 @@ def cancel_all_wc_orders(
     *,
     reason: str = "cancel all WC advance orders",
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> CancelResult:
     open_orders = fetch_wc_open_orders(settings, markets)
-    return cancel_orders(settings, open_orders, reason=reason, dry_run=dry_run)
+    return cancel_orders(
+        settings,
+        open_orders,
+        reason=reason,
+        dry_run=dry_run,
+        ledger_path=ledger_path,
+        version_spec=version_spec,
+    )
 
 
 def cancel_open_orders_for_assets(
