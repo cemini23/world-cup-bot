@@ -117,12 +117,18 @@ def record_quote_intents(
     path: Path,
     correlation_id: str | None = None,
     dry_run: bool = True,
+    tournament_phase: str | None = None,
+    market_phase_id: str | None = None,
 ) -> int:
     """Log quote intents as quote_intent events (DRY_RUN or live submit)."""
     event = "quote_intent_dry_run" if dry_run else "quote_intent"
     cid = correlation_id or f"plan-{_now_iso()}"
     for intent in intents:
         extra = {"token_id": intent.token_id, **_snapshot_fields(intent.snapshot)}
+        if tournament_phase:
+            extra["tournament_phase"] = tournament_phase
+        if market_phase_id:
+            extra["market_phase_id"] = market_phase_id
         append_row(
             path,
             LedgerRow(

@@ -1,8 +1,7 @@
-# Tournament phases — market scanner config
-# Populated from Gemini DR 08 (2026-05-30). DR 10 phase router pending.
-# Bot v1 active phase: group_advance only.
+# Tournament phases — market scanner + phase router FSM (DR 08 + DR 10)
+# Bot v1 active LP: group_advance only until WC_PHASE_ROUTER_LP_GATE=1
 
-version: 1
+version: 2
 
 active_phase: group_advance
 
@@ -99,3 +98,105 @@ cancel_hours_by_phase:
   group_advance: 10
   final_group_md3: 12
   knockout: 24
+
+# Module 1b FSM — calendar windows are UTC; overlapping transition days pick last match
+tournament_states:
+  pre_tournament:
+    calendar_start: "2026-05-01"
+    calendar_end: "2026-06-11"
+    scanner_phase_ids: [group_advance]
+    lp_active_phases: [group_advance]
+    operating_overrides:
+      cancel_hours: 10
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: false
+
+  group_stage:
+    calendar_start: "2026-06-11"
+    calendar_end: "2026-06-27"
+    scanner_phase_ids: [group_advance]
+    lp_active_phases: [group_advance]
+    operating_overrides:
+      cancel_hours: 10
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: false
+
+  group_to_knockout_transition:
+    calendar_start: "2026-06-27"
+    calendar_end: "2026-06-28"
+    scanner_phase_ids: [group_advance, reach_round_of_16]
+    lp_active_phases: [group_advance]
+    operating_overrides:
+      cancel_hours: 12
+    cross_venue_enabled: false
+    require_full_settlement_to_exit: true
+
+  round_of_32:
+    calendar_start: "2026-06-28"
+    calendar_end: "2026-07-04"
+    scanner_phase_ids: [reach_round_of_16]
+    lp_active_phases: [reach_round_of_16]
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: true
+
+  round_of_16:
+    calendar_start: "2026-07-04"
+    calendar_end: "2026-07-09"
+    scanner_phase_ids: [reach_quarterfinal]
+    lp_active_phases: [reach_quarterfinal]
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: true
+
+  quarterfinal:
+    calendar_start: "2026-07-09"
+    calendar_end: "2026-07-14"
+    scanner_phase_ids: [reach_semifinal]
+    lp_active_phases: [reach_semifinal]
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: true
+
+  semifinal:
+    calendar_start: "2026-07-14"
+    calendar_end: "2026-07-18"
+    scanner_phase_ids: [reach_final]
+    lp_active_phases: [reach_final]
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: true
+    require_full_settlement_to_exit: true
+
+  third_place:
+    calendar_start: "2026-07-18"
+    calendar_end: "2026-07-19"
+    scanner_phase_ids: [knockout_match_advance]
+    lp_active_phases: []
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: false
+    require_full_settlement_to_exit: false
+
+  final:
+    calendar_start: "2026-07-18"
+    calendar_end: "2026-07-20"
+    scanner_phase_ids: [reach_final, wc_winner]
+    lp_active_phases: []
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: false
+    require_full_settlement_to_exit: true
+
+  post_tournament:
+    calendar_start: "2026-07-20"
+    calendar_end: "2027-01-01"
+    scanner_phase_ids: []
+    lp_active_phases: []
+    operating_overrides:
+      cancel_hours: 24
+    cross_venue_enabled: false
+    require_full_settlement_to_exit: false

@@ -138,6 +138,7 @@ def test_market_safety_vol_pull_respects_cooldown(monkeypatch):
         operating_config="config/operating.yaml",
         cross_venue_config="config/cross_venue.yaml",
         kalshi_base_url="https://api.elections.kalshi.com/trade-api/v2",
+        market_phases_config="config/market_phases.yaml",
     )
     ctx = ws_user.FillWatchContext(
         markets_by_condition={"0x1": market},

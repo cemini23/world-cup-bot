@@ -26,6 +26,7 @@ from world_cup_bot import (
     liquidity_scanner,
     operating_config,
     order_manager,
+    phase_router,
     preflight,
     quoter,
     research,
@@ -41,9 +42,10 @@ from world_cup_bot.clob_auth import (
     load_maker_address,
     load_poly_address,
 )
-from world_cup_bot.config import Settings
+from world_cup_bot.config import Settings, phase_router_enabled, phase_router_lp_gate
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.market_phases import load_market_phases_config
 from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
 
@@ -415,10 +417,21 @@ def _plan_abort(settings: Settings, reason: str, detail: str, *, exit_code: int 
     return exit_code
 
 
+def _resolve_phase_context(settings: Settings):
+    return phase_router.resolve_phase_router(
+        Path(settings.market_phases_config),
+        enabled=phase_router_enabled(),
+    )
+
+
 def _cmd_plan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     version_spec = load_strategy_version(Path(settings.logic_version_config))
     print(version_spec.version_banner())
+
+    phase_ctx = _resolve_phase_context(settings)
+    if phase_router_enabled():
+        event_log.log_event("phase_router", **phase_ctx.to_status_dict())
 
     operating = load_operating_config(Path(settings.operating_config))
     risk_ok, risk_detail = risk.check_daily_adverse_budget(
@@ -453,6 +466,15 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             "no_conviction_targets",
             "No conviction targets (try --all to see skips).",
         )
+
+    if phase_router_enabled() and phase_router_lp_gate():
+        if not phase_router.lp_quoting_allowed(phase_ctx):
+            return _plan_abort(
+                settings,
+                "phase_router_lp_gate",
+                f"LP not active for tournament_phase={phase_ctx.tournament_phase} "
+                f"market_phase={phase_ctx.market_phase_id}",
+            )
 
     gate = advisor.AdvisorGate.OFF
     multipliers: dict[str, float] = {}
@@ -544,6 +566,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             version_spec,
             path=Path(settings.ledger_path),
             dry_run=settings.dry_run,
+            tournament_phase=phase_ctx.tournament_phase if phase_router_enabled() else None,
+            market_phase_id=phase_ctx.market_phase_id if phase_router_enabled() else None,
         )
         print(f"Recorded {n} rows → {settings.ledger_path}")
 
@@ -562,8 +586,77 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         conviction_rows=len(results),
         dry_run=settings.dry_run,
         recorded=bool(args.record),
+        tournament_phase=phase_ctx.tournament_phase if phase_router_enabled() else None,
+        market_phase_id=phase_ctx.market_phase_id if phase_router_enabled() else None,
     )
     return 0
+
+
+def _cmd_phase_status(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    ctx = phase_router.resolve_phase_router(
+        Path(settings.market_phases_config),
+        enabled=True,
+    )
+    payload = {
+        "enabled_env": phase_router_enabled(),
+        "lp_gate_env": phase_router_lp_gate(),
+        "config": settings.market_phases_config,
+        "override_path": str(phase_router.default_override_path()),
+        **ctx.to_status_dict(),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"tournament_phase: {ctx.tournament_phase} (source={ctx.source})")
+        print(f"market_phase_id:  {ctx.market_phase_id}")
+        print(f"scanner_phases:  {', '.join(ctx.scanner_phase_ids) or '(none)'}")
+        print(f"lp_active:        {', '.join(ctx.lp_active_phases) or '(none)'}")
+        print(f"cross_venue:      {ctx.cross_venue_enabled}")
+        if ctx.operating_overrides:
+            print(f"overrides:        {ctx.operating_overrides}")
+        print(f"router_enabled:   {phase_router_enabled()}  lp_gate: {phase_router_lp_gate()}")
+    return 0
+
+
+def _cmd_phase_set(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    config = load_market_phases_config(Path(settings.market_phases_config))
+    state = args.phase_id.strip()
+    if state not in config.tournament_states and state != "auto":
+        valid = ", ".join(sorted(config.tournament_states))
+        print(f"Unknown phase {state!r}. Valid: auto, {valid}")
+        return 1
+    ovr = phase_router.default_override_path()
+    if state == "auto":
+        phase_router.clear_forced_state(ovr)
+        print(f"Cleared phase override → auto-detect ({ovr})")
+    else:
+        phase_router.write_forced_state(ovr, state)
+        print(f"Forced tournament_phase={state} ({ovr})")
+    return 0
+
+
+def _cmd_phase_purge(args: argparse.Namespace) -> int:
+    """Conviction carry-forward: cancel all open orders for one team (DR 10)."""
+    cancel_args = argparse.Namespace(
+        team=args.team,
+        cancel_window=False,
+        all_wc=False,
+        live=args.live,
+        min_hours=None,
+    )
+    settings = Settings.from_env()
+    rc = _cmd_cancel(cancel_args)
+    if rc == 0:
+        ctx = _resolve_phase_context(settings)
+        event_log.log_event(
+            "phase_purge",
+            team=args.team,
+            tournament_phase=ctx.tournament_phase,
+            dry_run=settings.dry_run,
+        )
+    return rc
 
 
 def _cmd_research_list(_args: argparse.Namespace) -> int:
@@ -1519,6 +1612,26 @@ def main(argv: list[str] | None = None) -> None:
         help="Skip L2 auth probe when evaluating checklist",
     )
     ss.set_defaults(func=_cmd_shadow_status)
+
+    ph = sub.add_parser("phase", help="Module 1b — tournament phase router (DR 10)")
+    ph_sub = ph.add_subparsers(dest="phase_cmd", required=True)
+
+    ph_status = ph_sub.add_parser("status", help="Show active FSM state + scanner/LP profile")
+    ph_status.add_argument("--json", action="store_true", help="JSON output")
+    ph_status.set_defaults(func=_cmd_phase_status)
+
+    ph_set = ph_sub.add_parser("set", help="Force tournament phase (or 'auto' to clear)")
+    ph_set.add_argument("phase_id", help="State id from market_phases.yaml tournament_states")
+    ph_set.set_defaults(func=_cmd_phase_set)
+
+    ph_purge = ph_sub.add_parser("purge", help="Cancel all open orders for one team across phases")
+    ph_purge.add_argument("--team", required=True, help="Team name (e.g. Brazil)")
+    ph_purge.add_argument(
+        "--live",
+        action="store_true",
+        help="Live cancel on CLOB (default: respect DRY_RUN)",
+    )
+    ph_purge.set_defaults(func=_cmd_phase_purge)
 
     ui = sub.add_parser(
         "ui",

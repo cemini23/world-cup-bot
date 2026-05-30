@@ -19,6 +19,7 @@ def _settings(**kwargs) -> Settings:
         "operating_config": "config/operating.yaml",
         "cross_venue_config": "config/cross_venue.yaml",
         "kalshi_base_url": "https://api.elections.kalshi.com/trade-api/v2",
+        "market_phases_config": "config/market_phases.yaml",
     }
     base.update(kwargs)
     return Settings(**base)

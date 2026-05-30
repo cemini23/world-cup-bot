@@ -36,6 +36,7 @@ class Settings:
     operating_config: str
     cross_venue_config: str
     kalshi_base_url: str
+    market_phases_config: str
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -75,4 +76,18 @@ class Settings:
             kalshi_base_url=os.environ.get(
                 "KALSHI_BASE_URL", "https://api.elections.kalshi.com/trade-api/v2"
             ).rstrip("/"),
+            market_phases_config=str(
+                resolve_project_path(
+                    os.environ.get("MARKET_PHASES_CONFIG", "config/market_phases.yaml")
+                )
+            ),
         )
+
+
+def phase_router_enabled() -> bool:
+    return _bool("WC_PHASE_ROUTER_ENABLED", False)
+
+
+def phase_router_lp_gate() -> bool:
+    """When true with router enabled, plan skips LP unless market phase is lp_active."""
+    return _bool("WC_PHASE_ROUTER_LP_GATE", False)

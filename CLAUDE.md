@@ -13,6 +13,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | # | Module | Package file(s) | Status |
 |---|--------|-----------------|--------|
 | 1 | Scanner | `scanner.py`, `http_client.py` | Live — Gamma `public-search` |
+| 1b | Phase router | `phase_router.py`, `market_phases.py`, `config/market_phases.yaml` | FSM skeleton — `WC_PHASE_ROUTER_ENABLED=0` default |
 | 2 | Conviction | `conviction.py`, `config/conviction.yaml` | Live — team tiers, quote gate |
 | 3 | Quoter | `quoter.py` | Dry-run default; live POST via `clob_live.py` |
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile; queue depletion + vol cooldown |
@@ -69,6 +70,9 @@ world-cup-bot liquidity-scan [--team TEAM]
 world-cup-bot plan [--record] [--advisor] [--liquidity-gate]
 world-cup-bot preflight [--skip-auth]
 world-cup-bot shadow-status [--min-phase N] [--json]
+world-cup-bot phase status [--json]
+world-cup-bot phase set <state_id|auto>
+world-cup-bot phase purge --team NAME
 world-cup-bot watch [--verbose] [--record]
 world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot cancel --cancel-window | --team NAME | --all-wc
