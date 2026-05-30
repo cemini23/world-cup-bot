@@ -49,9 +49,10 @@ jobs:
         run: pip install "git+https://github.com/cemini23/vet.git"
       - name: vet operator docs (minimal profile)
         run: |
-          vet SHADOW.md --profile minimal
-          r=$?; if [ "$r" -ge 2 ]; then exit "$r"; fi
-          vet SETUP.md --profile minimal
-          r=$?; if [ "$r" -ge 2 ]; then exit "$r"; fi
-          vet ROADMAP.md --profile minimal
-          r=$?; if [ "$r" -ge 2 ]; then exit "$r"; fi
+          # minimal profile scores ~55/100 when all checks pass — WARN is OK; REJECT (exit ≥2) fails CI
+          set +e
+          for f in SHADOW.md SETUP.md ROADMAP.md; do
+            vet "$f" --profile minimal
+            r=$?
+            if [ "$r" -ge 2 ]; then exit "$r"; fi
+          done
