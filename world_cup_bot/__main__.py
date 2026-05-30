@@ -12,6 +12,7 @@ from pathlib import Path
 
 from world_cup_bot import (
     advisor,
+    alerts,
     calendar_guard,
     conviction,
     cross_venue_scanner,
@@ -22,6 +23,7 @@ from world_cup_bot import (
     quoter,
     research,
     scanner,
+    shadow_checklist,
     ws_user,
 )
 from world_cup_bot.clob_auth import (
@@ -214,7 +216,12 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         return 1
 
     # Calendar guard: cancel resting quotes for teams entering kickoff window
-    cancel_result = order_manager.cancel_for_cancel_window(settings, markets)
+    cancel_result = order_manager.cancel_for_cancel_window(
+        settings,
+        markets,
+        ledger_path=settings.ledger_path,
+        version_spec=version_spec,
+    )
     if cancel_result.order_ids:
         mode = "DRY" if cancel_result.dry_run else "LIVE"
         print(
@@ -448,6 +455,8 @@ def _cmd_fill(args: argparse.Namespace) -> int:
         kill_switch=result.kill_switch,
         pull_quotes=result.pull_quotes,
         dry_run=settings.dry_run,
+        ledger_path=settings.ledger_path,
+        version_spec=version_spec,
     )
 
     if result.exit_intent:
@@ -485,10 +494,16 @@ def _print_fill_result(result: fill_handler.FillHandlerResult) -> None:
 def _cmd_cancel(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     markets = _load_markets(settings)
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
 
     dry_run = settings.dry_run if args.live is False else False
     if args.live:
         dry_run = False
+
+    ledger_kw = {
+        "ledger_path": settings.ledger_path,
+        "version_spec": version_spec,
+    }
 
     if args.cancel_window:
         result = order_manager.cancel_for_cancel_window(
@@ -496,6 +511,7 @@ def _cmd_cancel(args: argparse.Namespace) -> int:
             markets,
             min_hours=args.min_hours,
             dry_run=dry_run,
+            **ledger_kw,
         )
     elif args.team:
         result = order_manager.cancel_for_teams(
@@ -504,6 +520,7 @@ def _cmd_cancel(args: argparse.Namespace) -> int:
             {args.team},
             reason=f"manual cancel — {args.team}",
             dry_run=dry_run,
+            **ledger_kw,
         )
     elif args.all_wc:
         result = order_manager.cancel_all_wc_orders(settings, markets, dry_run=dry_run)
@@ -539,6 +556,39 @@ def _cmd_orders(args: argparse.Namespace) -> int:
 
     print(order_manager.format_orders_table(open_orders))
     print(f"\n{len(open_orders)} open WC advance order(s)")
+    return 0
+
+
+def _cmd_shadow_status(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    payload = shadow_checklist.ready_payload(settings, test_auth=not args.skip_auth)
+
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"DRY_RUN={payload['dry_run']}  progress={payload['shadow_progress']}")
+        for step in payload["shadow_steps"]:
+            print(
+                f"  [{step['status']:7}] phase {step['phase']} {step['title']}: {step['detail']}"
+            )
+        ledger_stats = payload["ledger"]
+        print(
+            f"Ledger: {ledger_stats['quote_intents']} intents, "
+            f"{ledger_stats['fills']} fills, {ledger_stats['distinct_days']} day(s)"
+        )
+
+    min_phase = args.min_phase
+    for step in payload["shadow_steps"]:
+        if step["phase"] > min_phase:
+            continue
+        if step["status"] in {"blocked", "pending"}:
+            if args.json:
+                pass
+            else:
+                print(f"\nGate FAIL: phase {step['phase']} step '{step['id']}' is {step['status']}")
+            return 1
+    if not args.json:
+        print(f"\nGate PASS through phase {min_phase}")
     return 0
 
 
@@ -719,9 +769,15 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
             _print_cross_venue_scan(result)
         else:
             for row in result.alerts:
-                print(
+                line = (
                     f"ALERT {row.team} {row.market_type} gap={row.gap_pp:.1f}pp "
                     f"PM={row.pm_mid:.3f} KAL={row.kalshi_mid:.3f}"
+                )
+                print(line)
+                alerts.notify(
+                    "cross_venue_alert",
+                    line,
+                    extra=row.to_dict(),
                 )
             if result.slug_warnings:
                 for row in result.slug_warnings:
@@ -965,6 +1021,24 @@ def main(argv: list[str] | None = None) -> None:
         help="Skip L2 GET /data/orders auth probe",
     )
     pf.set_defaults(func=_cmd_preflight)
+
+    ss = sub.add_parser(
+        "shadow-status",
+        help="SHADOW.md gate check — exit 1 if phase steps pending/blocked",
+    )
+    ss.add_argument(
+        "--min-phase",
+        type=int,
+        default=1,
+        help="Require steps through this phase to be done/warn (default: 1)",
+    )
+    ss.add_argument("--json", action="store_true", help="Print full ready payload JSON")
+    ss.add_argument(
+        "--skip-auth",
+        action="store_true",
+        help="Skip L2 auth probe when evaluating checklist",
+    )
+    ss.set_defaults(func=_cmd_shadow_status)
 
     ui = sub.add_parser(
         "ui",

@@ -210,6 +210,36 @@ def record_exit_intent(
     )
 
 
+def record_order_cancel(
+    spec: StrategyVersionSpec,
+    *,
+    path: Path,
+    order_ids: list[str],
+    reason: str,
+    teams: tuple[str, ...] = (),
+    dry_run: bool = True,
+) -> None:
+    """Append cancel batch for audit trail."""
+    if not order_ids:
+        return
+    event = "order_cancel_dry_run" if dry_run else "order_cancel"
+    append_row(
+        path,
+        LedgerRow(
+            event=event,
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            reason=reason,
+            extra={
+                "order_ids": order_ids,
+                "order_count": len(order_ids),
+                "teams": list(teams),
+            },
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class PnlSummary:
     logic_version: str

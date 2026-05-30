@@ -14,6 +14,7 @@ from world_cup_bot.clob_auth import (
 )
 from world_cup_bot.clob_rest import fetch_open_orders
 from world_cup_bot.config import Settings
+from world_cup_bot.logic_version import StrategyVersionSpec
 from world_cup_bot.quoter import QuoteIntent
 from world_cup_bot.scanner import AdvanceMarket
 
@@ -174,13 +175,62 @@ def cancel_orders(
     *,
     reason: str,
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> CancelResult:
     """Cancel explicit open orders."""
     dry = settings.dry_run if dry_run is None else dry_run
     ids = [o.order_id for o in orders]
     teams = tuple(sorted({o.team for o in orders if o.team}))
     _cancel_order_ids(settings, ids, dry_run=dry)
-    return CancelResult(order_ids=ids, dry_run=dry, reason=reason, teams=teams)
+    result = CancelResult(order_ids=ids, dry_run=dry, reason=reason, teams=teams)
+    _maybe_record_cancel(result, ledger_path, version_spec)
+    _maybe_notify_cancel(result)
+    return result
+
+
+def _maybe_record_cancel(
+    result: CancelResult,
+    ledger_path: str | None,
+    version_spec: StrategyVersionSpec | None,
+) -> None:
+    if not result.order_ids or not ledger_path or version_spec is None:
+        return
+    from pathlib import Path
+
+    from world_cup_bot import ledger
+
+    ledger.record_order_cancel(
+        version_spec,
+        path=Path(ledger_path),
+        order_ids=result.order_ids,
+        reason=result.reason,
+        teams=result.teams,
+        dry_run=result.dry_run,
+    )
+
+
+def _maybe_notify_cancel(result: CancelResult) -> None:
+    if not result.order_ids:
+        return
+    from world_cup_bot.alerts import notify
+
+    teams = ", ".join(result.teams) if result.teams else "?"
+    notify(
+        "order_cancel",
+        f"Cancelled {len(result.order_ids)} WC order(s) — {result.reason}",
+        extra={
+            "teams": list(result.teams),
+            "dry_run": result.dry_run,
+            "count": len(result.order_ids),
+        },
+    )
+    if "kill_switch" in result.reason:
+        notify(
+            "trading_halt",
+            f"Trading halt pull — {teams}",
+            extra={"reason": result.reason, "teams": list(result.teams)},
+        )
 
 
 def cancel_for_teams(
@@ -190,13 +240,22 @@ def cancel_for_teams(
     *,
     reason: str,
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> CancelResult:
     """Cancel all open WC orders for the given teams."""
     if not teams:
         return CancelResult(order_ids=[], dry_run=settings.dry_run, reason=reason)
     open_orders = fetch_wc_open_orders(settings, markets)
     targets = [o for o in open_orders if o.team and o.team in teams]
-    return cancel_orders(settings, targets, reason=reason, dry_run=dry_run)
+    return cancel_orders(
+        settings,
+        targets,
+        reason=reason,
+        dry_run=dry_run,
+        ledger_path=ledger_path,
+        version_spec=version_spec,
+    )
 
 
 def cancel_for_cancel_window(
@@ -206,6 +265,8 @@ def cancel_for_cancel_window(
     min_hours: float | None = None,
     reason: str = "calendar cancel window",
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> CancelResult:
     """Cancel open orders for every team inside the pre-kickoff cancel window."""
     threshold = min_hours if min_hours is not None else settings.min_hours_before_kickoff
@@ -214,7 +275,15 @@ def cancel_for_cancel_window(
     if not teams:
         return CancelResult(order_ids=[], dry_run=settings.dry_run, reason=reason, teams=())
     detail = f"{reason} — teams: {', '.join(sorted(teams))}"
-    return cancel_for_teams(settings, markets, teams, reason=detail, dry_run=dry_run)
+    return cancel_for_teams(
+        settings,
+        markets,
+        teams,
+        reason=detail,
+        dry_run=dry_run,
+        ledger_path=ledger_path,
+        version_spec=version_spec,
+    )
 
 
 def cancel_all_wc_orders(
@@ -302,6 +371,8 @@ def apply_fill_safety_actions(
     pull_quotes: bool,
     halt: TradingHalt | None = None,
     dry_run: bool | None = None,
+    ledger_path: str | None = None,
+    version_spec: StrategyVersionSpec | None = None,
 ) -> CancelResult | None:
     """Kill switch / queue pull → cancel resting quotes and optionally halt team."""
     if not kill_switch and not pull_quotes:
@@ -314,6 +385,8 @@ def apply_fill_safety_actions(
         {team},
         reason="kill_switch" if kill_switch else "queue_depletion pull",
         dry_run=dry_run,
+        ledger_path=ledger_path,
+        version_spec=version_spec,
     )
     return result
 

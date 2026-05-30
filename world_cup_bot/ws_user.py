@@ -240,6 +240,8 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
                 pull_quotes=result.pull_quotes,
                 halt=ctx.halt,
                 dry_run=ctx.dry_run,
+                ledger_path=ctx.ledger_path,
+                version_spec=ctx.version_spec,
             )
 
         if ctx.on_result:
@@ -295,7 +297,13 @@ async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> 
             if ctx.settings is not None:
                 from world_cup_bot.order_manager import cancel_for_cancel_window
 
-                cancel_for_cancel_window(ctx.settings, ctx.markets, dry_run=ctx.dry_run)
+                cancel_for_cancel_window(
+                    ctx.settings,
+                    ctx.markets,
+                    dry_run=ctx.dry_run,
+                    ledger_path=ctx.ledger_path,
+                    version_spec=ctx.version_spec,
+                )
 
 
 async def _ping_loop(ws: Any, *, stop: asyncio.Event) -> None:
