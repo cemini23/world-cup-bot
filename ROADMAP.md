@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 150 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 159 pytest (CI on push)
 
 ---
 
@@ -35,8 +35,8 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **Paper arb ledger (Phase A)** | **2026-05-30** | `cross-venue-scan --record` + `cross-venue-pnl --refresh` — no execution |
 | **Prod cross-venue `--record`** | After pull | Patch cross-venue unit: add `--record`, set `WC_CROSS_VENUE_LEDGER_PATH`; see prod brief |
 | **Cross-venue Phase B** | **2026-05-30** | `cross-venue-fill record|import-csv|reconcile` — manual dual-leg bridge |
+| **Phase router PR3** | **2026-05-30** | Replay JSONL fixtures, FIFA match gate, per-phase `bilateral_threshold` |
 | **Cross-venue Phase C** | Backlog | Kalshi order module + dual-leg coordinator, orphan leg handling, capital caps |
-| **Phase router PR3** | Backlog | Replay tests on 2022/2023 JSONL, per-phase `bilateral_threshold`, FIFA match-integer gates |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
 | **CeminiSuite import** | Post shadow gate | `briefs/2026-05-29_world-cup-bot-cemini-import.md` (OSINT) — skill_audit before scp |
 
@@ -86,6 +86,7 @@ Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record
 | 2026-05-30 | `922a171` | Phase router PR2: multi-phase scanner, settlement gate, SIGUSR1 reload |
 | 2026-05-30 | `9f17058` | Paper cross-venue arb ledger (Phase A); systemd cross-venue `--record` |
 | 2026-05-30 | (Phase B) | Manual fill bridge: `cross-venue-fill record|import-csv|reconcile` |
+| 2026-05-30 | (PR3) | Phase router replay JSONL, FIFA match gate, bilateral_threshold in plan |
 
 ## Sources
 

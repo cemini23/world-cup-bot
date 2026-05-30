@@ -99,6 +99,11 @@ cancel_hours_by_phase:
   final_group_md3: 12
   knockout: 24
 
+# PR3 — block knockout FSM until group fixtures complete (WC_FIFA_MATCH_GATE=1)
+fifa_match_gate:
+  min_group_matches_to_enter_knockout: 72
+  match_duration_minutes: 105
+
 # Module 1b FSM — calendar windows are UTC; overlapping transition days pick last match
 tournament_states:
   pre_tournament:
@@ -158,6 +163,7 @@ tournament_states:
     lp_active_phases: [reach_semifinal]
     operating_overrides:
       cancel_hours: 24
+      bilateral_threshold: 0.85
     cross_venue_enabled: true
     require_full_settlement_to_exit: true
 

@@ -1,0 +1,4 @@
+# WC 2022 Qatar-style slow settlement hold (mapped to 2026 FSM dates)
+{"ts":"2026-06-28T08:00:00Z","label":"2022_style_partial_settlement","expect_phase":"group_to_knockout_transition","expect_source":"settlement_gate","expect_blocked_by":"group_advance","settlement":{"group_advance":{"total":48,"settled":32}}}
+{"ts":"2026-06-28T20:00:00Z","label":"2022_style_still_partial","expect_phase":"group_to_knockout_transition","expect_source":"settlement_gate","expect_blocked_by":"group_advance","settlement":{"group_advance":{"total":48,"settled":45}}}
+{"ts":"2026-06-29T06:00:00Z","label":"2022_style_full_settlement","expect_phase":"round_of_32","expect_source":"auto","settlement":{"group_advance":{"total":48,"settled":48}}}

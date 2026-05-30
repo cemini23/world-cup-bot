@@ -65,6 +65,7 @@ if [[ "$PROFILE" == "monitor" ]]; then
     world-cup-bot-rewards-sync
     world-cup-bot-conviction-staleness
     world-cup-bot-fixture-check
+    world-cup-bot-cross-venue-reconcile
   )
 else
   UNITS=(
@@ -87,6 +88,7 @@ done
 
 touch "$INSTALL_ROOT/logs/cross_venue_alerts.jsonl"
 touch "$INSTALL_ROOT/data/local/cross_venue_arb_ledger.jsonl"
+touch "$INSTALL_ROOT/logs/cross_venue_reconcile.log"
 touch "$INSTALL_ROOT/logs/cron_pnl.log"
 touch "$INSTALL_ROOT/logs/cron_rewards.log"
 touch "$INSTALL_ROOT/data/local/shadow_ledger.jsonl"
@@ -104,7 +106,8 @@ if [[ "$ENABLE" == true ]]; then
       world-cup-bot-discover.timer \
       world-cup-bot-pnl-daily.timer \
       world-cup-bot-conviction-staleness.timer \
-      world-cup-bot-fixture-check.timer
+      world-cup-bot-fixture-check.timer \
+      world-cup-bot-cross-venue-reconcile.timer
     echo "Monitor profile enabled (read-only + shadow timers)."
     echo "Rewards sync unit installed but timer NOT enabled — enable after Phase 2 + L2 creds:"
     echo "  systemctl enable --now world-cup-bot-rewards-sync.timer"

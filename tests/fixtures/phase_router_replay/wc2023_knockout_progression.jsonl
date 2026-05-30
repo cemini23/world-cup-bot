@@ -1,0 +1,4 @@
+# WC 2023-style fast knockout progression (2026 calendar; settlement cleared)
+{"ts":"2026-07-04T12:00:00Z","label":"2023_style_r16","expect_phase":"round_of_16","expect_source":"auto","settlement":{"group_advance":{"total":48,"settled":48},"reach_round_of_16":{"total":16,"settled":16}}}
+{"ts":"2026-07-09T12:00:00Z","label":"2023_style_qf","expect_phase":"quarterfinal","expect_source":"auto","settlement":{"group_advance":{"total":48,"settled":48},"reach_round_of_16":{"total":16,"settled":16},"reach_quarterfinal":{"total":8,"settled":8}}}
+{"ts":"2026-07-14T12:00:00Z","label":"2023_style_sf","expect_phase":"semifinal","expect_source":"auto","settlement":{"reach_quarterfinal":{"total":8,"settled":8},"reach_semifinal":{"total":4,"settled":4}}}

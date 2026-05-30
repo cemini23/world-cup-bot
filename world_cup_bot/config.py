@@ -96,3 +96,8 @@ def phase_router_lp_gate() -> bool:
 def phase_settlement_gate_enabled() -> bool:
     """When true with router enabled, calendar FSM waits for phase settlement."""
     return _bool("WC_PHASE_SETTLEMENT_GATE", True)
+
+
+def phase_fifa_match_gate_enabled() -> bool:
+    """When true with router enabled, block knockout until group fixtures complete."""
+    return _bool("WC_FIFA_MATCH_GATE", False)

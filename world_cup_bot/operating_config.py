@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import yaml
@@ -102,4 +102,19 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
         risk=RiskOps(
             max_daily_adverse_fill_usd=float(risk.get("max_daily_adverse_fill_usd", 500)),
         ),
+    )
+
+
+def apply_bilateral_threshold_override(
+    operating: OperatingConfig,
+    bilateral_threshold: float | None,
+) -> OperatingConfig:
+    """Map phase-router bilateral_threshold to high/low mid bands."""
+    if bilateral_threshold is None:
+        return operating
+    high = float(bilateral_threshold)
+    low = max(0.0, min(1.0, 1.0 - high))
+    return replace(
+        operating,
+        bilateral=BilateralOps(high_mid=high, low_mid=low),
     )

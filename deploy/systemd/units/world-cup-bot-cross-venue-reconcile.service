@@ -1,0 +1,12 @@
+[Unit]
+Description=World Cup Bot weekly cross-venue fill reconcile
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+Environment=WC_CROSS_VENUE_LEDGER_PATH=@INSTALL_ROOT@/data/local/cross_venue_arb_ledger.jsonl
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh cross-venue-fill reconcile --json >> @INSTALL_ROOT@/logs/cross_venue_reconcile.log 2>&1'
+User=root

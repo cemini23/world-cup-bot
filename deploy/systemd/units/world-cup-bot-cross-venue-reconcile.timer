@@ -1,0 +1,9 @@
+[Unit]
+Description=World Cup Bot weekly cross-venue reconcile (Sun 08:00 UTC)
+
+[Timer]
+OnCalendar=Sun *-*-* 08:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

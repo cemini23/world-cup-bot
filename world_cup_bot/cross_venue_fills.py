@@ -277,10 +277,7 @@ def import_fills_csv(
             return CsvImportResult(
                 0,
                 0,
-                (
-                    "CSV must include pm_price,kalshi_price columns "
-                    f"(got {reader.fieldnames})",
-                ),
+                (f"CSV must include pm_price,kalshi_price columns (got {reader.fieldnames})",),
             )
 
         for idx, raw_row in enumerate(reader, start=2):
@@ -308,8 +305,7 @@ def _latest_fills_by_pair(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any
         if row.get("event") != EVENT_FILL:
             continue
         key = str(
-            row.get("intent_key")
-            or _pair_key(str(row.get("team")), str(row.get("market_type")))
+            row.get("intent_key") or _pair_key(str(row.get("team")), str(row.get("market_type")))
         )
         prev = out.get(key)
         if prev is None or str(row.get("timestamp", "")) > str(prev.get("timestamp", "")):
@@ -342,9 +338,7 @@ def build_reconcile_report(rows: list[dict[str, Any]]) -> ReconcileReport:
         if intent is not None:
             team = str(intent.get("team") or key.split(":", 1)[-1])
             market_type = str(intent.get("market_type") or key.split(":", 1)[0])
-            entry_profit = float(
-                intent.get("theoretical_profit_usd") or intent.get("pnl_usd") or 0
-            )
+            entry_profit = float(intent.get("theoretical_profit_usd") or intent.get("pnl_usd") or 0)
             entry_total += entry_profit
 
         if fill is not None:

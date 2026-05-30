@@ -13,6 +13,7 @@ Run the bot **24/7 on your own VPS** — laptop not required. All paths are conf
 | `/opt/world-cup-bot/data/local/shadow_ledger.jsonl` | Shadow plan + pnl-daily ledger (systemd default) |
 | `/opt/world-cup-bot/data/local/cross_venue_arb_ledger.jsonl` | Paper cross-venue arb intents (`--record`) |
 | `/opt/world-cup-bot/data/local/ledger.jsonl` | Optional live ledger path |
+| `/opt/world-cup-bot/logs/cross_venue_reconcile.log` | Weekly `cross-venue-fill reconcile --json` |
 | `/opt/world-cup-bot/logs/` | Timer stdout + cross-venue alerts |
 
 Change the root with `--install-root` (e.g. `/home/you/world-cup-bot`).
@@ -23,7 +24,7 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
-| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
+| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
 | **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
@@ -65,6 +66,7 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | Unit | Command | When to enable |
 |------|---------|----------------|
 | `world-cup-bot-pnl-daily.timer` | `pnl --scope current` | Phase 1+ shadow — no L2 creds required |
+| `world-cup-bot-cross-venue-reconcile.timer` | `cross-venue-fill reconcile --json` | Weekly Sun 08:00 UTC — after `--record` alerts |
 | `world-cup-bot-rewards-sync.timer` | `rewards sync --record` | Phase 2+ after L2 creds on `.env` / `.env.trading` |
 
 PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB access — keep it disabled until trading host is ready.
@@ -73,6 +75,7 @@ PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB 
 
 ```bash
 /opt/world-cup-bot/bin/wc_run.sh cross-venue-scan --once --record
+/opt/world-cup-bot/bin/wc_run.sh cross-venue-fill reconcile
 /opt/world-cup-bot/bin/wc_run.sh cross-venue-pnl --refresh
 /opt/world-cup-bot/bin/wc_run.sh shadow-status --min-phase 1
 /opt/world-cup-bot/bin/wc_run.sh scan --conviction

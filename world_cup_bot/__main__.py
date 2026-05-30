@@ -47,6 +47,7 @@ from world_cup_bot.clob_auth import (
 )
 from world_cup_bot.config import (
     Settings,
+    phase_fifa_match_gate_enabled,
     phase_router_enabled,
     phase_router_lp_gate,
     phase_settlement_gate_enabled,
@@ -54,7 +55,7 @@ from world_cup_bot.config import (
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.market_phases import get_market_phases_config, install_sigusr1_reload
-from world_cup_bot.operating_config import load_operating_config
+from world_cup_bot.operating_config import apply_bilateral_threshold_override, load_operating_config
 from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
 
 
@@ -454,6 +455,8 @@ def _resolve_phase_context(settings: Settings):
     config_path = Path(settings.market_phases_config)
     settlement_report = None
     gate_on = phase_router_enabled() and phase_settlement_gate_enabled()
+    match_on = phase_router_enabled() and phase_fifa_match_gate_enabled()
+    fixtures_path = Path(__file__).resolve().parent.parent / "data" / "worldcup2026-fixtures.json"
     if gate_on:
         mp_cfg = get_market_phases_config(config_path)
         phase_ids = sorted(
@@ -473,6 +476,8 @@ def _resolve_phase_context(settings: Settings):
         enabled=phase_router_enabled(),
         settlement_gate_enabled=gate_on,
         settlement_report=settlement_report,
+        match_gate_enabled=match_on,
+        fixtures_path=fixtures_path if match_on else None,
     )
 
 
@@ -492,6 +497,11 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     )
 
     operating = load_operating_config(Path(settings.operating_config))
+    if phase_router_enabled():
+        operating = apply_bilateral_threshold_override(
+            operating,
+            phase_ctx.operating_overrides.get("bilateral_threshold"),
+        )
     risk_ok, risk_detail = risk.check_daily_adverse_budget(
         Path(settings.ledger_path),
         operating,
@@ -1348,9 +1358,7 @@ def _cmd_cross_venue_pnl(args: argparse.Namespace) -> int:
     for pos in summary.positions:
         cur = f"{pos.current_gap_pp:.1f}" if pos.current_gap_pp is not None else "   —"
         profit = (
-            pos.current_profit_usd
-            if pos.current_profit_usd is not None
-            else pos.entry_profit_usd
+            pos.current_profit_usd if pos.current_profit_usd is not None else pos.entry_profit_usd
         )
         print(
             f"{pos.team:20} {pos.market_type:18} {pos.entry_gap_pp:6.1f} {cur:>6} "
@@ -1474,9 +1482,7 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     if phase_router_enabled():
         ctx = _resolve_phase_context(settings)
         if not phase_router.cross_venue_allowed(ctx):
-            msg = (
-                f"Cross-venue scan skipped — disabled for tournament_phase={ctx.tournament_phase}"
-            )
+            msg = f"Cross-venue scan skipped — disabled for tournament_phase={ctx.tournament_phase}"
             if args.json:
                 print(json.dumps({"skipped": True, "reason": msg}, indent=2))
             else:

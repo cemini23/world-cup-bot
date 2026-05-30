@@ -14,20 +14,26 @@ def test_market_is_settled_not_accepting():
 
 
 def test_market_is_settled_resolved_prices():
-    assert market_is_settled(
-        {
-            "closed": False,
-            "acceptingOrders": True,
-            "outcomePrices": ["1", "0"],
-        }
-    ) is True
+    assert (
+        market_is_settled(
+            {
+                "closed": False,
+                "acceptingOrders": True,
+                "outcomePrices": ["1", "0"],
+            }
+        )
+        is True
+    )
 
 
 def test_market_is_settled_open():
-    assert market_is_settled(
-        {
-            "closed": False,
-            "acceptingOrders": True,
-            "outcomePrices": ["0.55", "0.45"],
-        }
-    ) is False
+    assert (
+        market_is_settled(
+            {
+                "closed": False,
+                "acceptingOrders": True,
+                "outcomePrices": ["0.55", "0.45"],
+            }
+        )
+        is False
+    )

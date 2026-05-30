@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from world_cup_bot.fifa_match_gate import FifaMatchGateConfig
+
 _config_cache: dict[str, MarketPhasesConfig] = {}
 
 
@@ -53,6 +55,7 @@ class MarketPhasesConfig:
     phases: dict[str, MarketPhaseSpec]
     tournament_states: dict[str, TournamentStateSpec]
     cancel_hours_by_phase: dict[str, float]
+    fifa_match_gate: FifaMatchGateConfig = field(default_factory=FifaMatchGateConfig)
 
     def phase_spec(self, phase_id: str) -> MarketPhaseSpec | None:
         return self.phases.get(phase_id)
@@ -120,6 +123,7 @@ def load_market_phases_config(path: Path) -> MarketPhasesConfig:
         cancel_hours_by_phase={
             str(k): float(v) for k, v in (raw.get("cancel_hours_by_phase") or {}).items()
         },
+        fifa_match_gate=FifaMatchGateConfig.from_market_phases_raw(raw.get("fifa_match_gate")),
     )
 
 

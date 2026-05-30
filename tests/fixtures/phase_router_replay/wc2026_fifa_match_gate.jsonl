@@ -1,0 +1,3 @@
+# FIFA match-integer gate — block R32 until 72 group matches complete
+{"ts":"2026-06-28T12:00:00Z","label":"calendar_r32_but_matches_incomplete","expect_phase":"group_to_knockout_transition","expect_source":"fifa_match_gate","expect_blocked_by":"fifa_group_matches","match_gate_enabled":true,"completed_group_matches":70,"settlement":{"group_advance":{"total":48,"settled":48}}}
+{"ts":"2026-06-28T22:00:00Z","label":"matches_72_settlement_clear","expect_phase":"round_of_32","expect_source":"auto","match_gate_enabled":true,"completed_group_matches":72,"settlement":{"group_advance":{"total":48,"settled":48}}}

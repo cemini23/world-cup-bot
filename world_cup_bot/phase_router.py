@@ -9,6 +9,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from world_cup_bot.fifa_match_gate import (
+    FifaMatchGateConfig,
+    apply_fifa_match_gate,
+    check_fifa_match_gate,
+)
 from world_cup_bot.market_phases import (
     MarketPhasesConfig,
     TournamentStateSpec,
@@ -48,6 +53,8 @@ class PhaseRouterContext:
     calendar_phase: str | None = None
     settlement_pending_phases: tuple[str, ...] = ()
     settlement_blocked_by: str | None = None
+    fifa_match_blocked_by: str | None = None
+    completed_group_matches: int | None = None
 
     def to_status_dict(self) -> dict[str, Any]:
         return {
@@ -62,6 +69,8 @@ class PhaseRouterContext:
             "calendar_phase": self.calendar_phase,
             "settlement_pending_phases": list(self.settlement_pending_phases),
             "settlement_blocked_by": self.settlement_blocked_by,
+            "fifa_match_blocked_by": self.fifa_match_blocked_by,
+            "completed_group_matches": self.completed_group_matches,
         }
 
 
@@ -168,8 +177,13 @@ def resolve_phase_router(
     enabled: bool = True,
     settlement_gate_enabled: bool = False,
     settlement_report: SettlementGateReport | None = None,
+    match_gate_enabled: bool = False,
+    fixtures_path: Path | None = None,
+    completed_group_matches_override: int | None = None,
+    fifa_gate_config: FifaMatchGateConfig | None = None,
 ) -> PhaseRouterContext:
     config = get_market_phases_config(config_path)
+    gate_cfg = fifa_gate_config or config.fifa_match_gate
     market_phase_id = config.active_phase
 
     if not enabled or not config.tournament_states:
@@ -201,6 +215,9 @@ def resolve_phase_router(
     )
     forced = forced_source in {"env", "override_file"}
 
+    fifa_blocked: str | None = None
+    completed_group: int | None = None
+
     if forced:
         state_id, source = forced_state, forced_source
         blocked_by = None
@@ -213,6 +230,25 @@ def resolve_phase_router(
             gate_enabled=settlement_gate_enabled,
         )
         source = "settlement_gate" if blocked_by else cal_source
+
+        if match_gate_enabled and blocked_by is None:
+            gate_status = check_fifa_match_gate(
+                calendar_state_id=calendar_state,
+                gate_config=gate_cfg,
+                now=now or datetime.now(UTC),
+                fixtures_path=fixtures_path,
+                completed_override=completed_group_matches_override,
+            )
+            completed_group = gate_status.completed_group_matches
+            hold_state, fifa_blocked = apply_fifa_match_gate(
+                calendar_state,
+                gate_status,
+                gate_enabled=True,
+            )
+            if fifa_blocked:
+                state_id = hold_state
+                blocked_by = None
+                source = "fifa_match_gate"
 
     spec = config.tournament_states.get(state_id)
     if spec is None:
@@ -228,6 +264,8 @@ def resolve_phase_router(
             calendar_phase=calendar_state,
             settlement_pending_phases=pending,
             settlement_blocked_by=blocked_by,
+            fifa_match_blocked_by=fifa_blocked,
+            completed_group_matches=completed_group,
         )
 
     scanner_ids = tuple(spec.scanner_phase_ids or [market_phase_id])
@@ -262,6 +300,8 @@ def resolve_phase_router(
         calendar_phase=calendar_state,
         settlement_pending_phases=pending,
         settlement_blocked_by=blocked_by,
+        fifa_match_blocked_by=fifa_blocked,
+        completed_group_matches=completed_group,
     )
 
 

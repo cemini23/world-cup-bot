@@ -346,8 +346,7 @@ def _latest_intents_by_pair(rows: list[dict[str, Any]]) -> dict[str, dict[str, A
         if row.get("logic_version") != PAPER_ARB_SPEC.version_id:
             continue
         key = str(
-            row.get("intent_key")
-            or _pair_key(str(row.get("team")), str(row.get("market_type")))
+            row.get("intent_key") or _pair_key(str(row.get("team")), str(row.get("market_type")))
         )
         prev = out.get(key)
         if prev is None or str(row.get("timestamp", "")) > str(prev.get("timestamp", "")):
