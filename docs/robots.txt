@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cemini23.github.io/world-cup-bot/sitemap.xml
