@@ -18,6 +18,7 @@ from world_cup_bot import (
     conviction_patch,
     conviction_staleness,
     cross_venue_alerts,
+    cross_venue_paper,
     cross_venue_scanner,
     event_log,
     fill_handler,
@@ -1273,6 +1274,90 @@ def _print_cross_venue_scan(result: cross_venue_scanner.CrossVenueScanResult) ->
         print(f"{row.team:20} {row.market_type:18} {gap:>6} {pm:>6} {kal:>6} {flag:>5}  {note}")
 
 
+def _maybe_record_cross_venue_paper(
+    result: cross_venue_scanner.CrossVenueScanResult,
+    cfg,
+    *,
+    notional: float | None,
+) -> cross_venue_paper.PaperArbRecordResult | None:
+    if not result.alerts:
+        return None
+    paper = cross_venue_paper.paper_config_from_cross_venue(cfg)
+    ledger_path = cross_venue_paper.default_cross_venue_ledger_path()
+    rec = cross_venue_paper.record_paper_arb_intents(
+        result,
+        cfg,
+        paper,
+        path=ledger_path,
+        notional_usd=notional,
+    )
+    event_log.log_event(
+        "cross_venue_paper_record",
+        recorded=rec.recorded,
+        skipped_dedup=rec.skipped_dedup,
+        ledger_path=str(ledger_path),
+    )
+    return rec
+
+
+def _cmd_cross_venue_pnl(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    cfg = load_cross_venue_config(Path(settings.cross_venue_config))
+    paper = cross_venue_paper.paper_config_from_cross_venue(cfg)
+    ledger_path = cross_venue_paper.default_cross_venue_ledger_path()
+    rows = ledger.load_rows(ledger_path)
+
+    scan = None
+    if args.refresh:
+        scan = cross_venue_scanner.run_scan(
+            cfg,
+            gamma_url=settings.gamma_url,
+            kalshi_base_url=settings.kalshi_base_url,
+            include_discoveries=False,
+        )
+
+    summary = cross_venue_paper.summarize_paper_arb_pnl(
+        rows,
+        cfg,
+        paper,
+        scan=scan,
+    )
+
+    if args.json:
+        payload = {**summary.to_dict(), "ledger_path": str(ledger_path)}
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(cross_venue_paper.PAPER_ARB_SPEC.version_banner())
+    print(f"Ledger: {ledger_path}")
+    print(
+        f"Intents: {summary.intent_count}  unique pairs: {summary.unique_pairs}  "
+        f"entry profit (sum): ${summary.entry_profit_usd:.2f}"
+    )
+    if scan is not None:
+        print(
+            f"MTM (refresh): ${summary.mtm_profit_usd:.2f}  "
+            f"open={summary.open_count} converged={summary.converged_count}"
+        )
+    if not summary.positions:
+        print("No paper arb intents recorded yet — run cross-venue-scan --record on alerts.")
+        return 0
+
+    print(f"\n{'TEAM':20} {'TYPE':18} {'ENTRY':>6} {'CUR':>6} {'PROFIT':>8} {'STATUS':>10}")
+    for pos in summary.positions:
+        cur = f"{pos.current_gap_pp:.1f}" if pos.current_gap_pp is not None else "   —"
+        profit = (
+            pos.current_profit_usd
+            if pos.current_profit_usd is not None
+            else pos.entry_profit_usd
+        )
+        print(
+            f"{pos.team:20} {pos.market_type:18} {pos.entry_gap_pp:6.1f} {cur:>6} "
+            f"${profit:7.2f} {pos.status:>10}"
+        )
+    return 0
+
+
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     if phase_router_enabled():
@@ -1322,10 +1407,31 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
 
     while True:
         result = _once()
+        rec = None
+        if args.record:
+            rec = _maybe_record_cross_venue_paper(
+                result,
+                cfg,
+                notional=args.notional,
+            )
         if args.json:
-            print(json.dumps(result.to_dict(), indent=2))
+            payload = result.to_dict()
+            if rec is not None:
+                payload["paper_record"] = {
+                    "recorded": rec.recorded,
+                    "skipped_dedup": rec.skipped_dedup,
+                    "ledger_path": str(cross_venue_paper.default_cross_venue_ledger_path()),
+                    "proposals": [p.to_dict() for p in rec.proposals],
+                }
+            print(json.dumps(payload, indent=2))
         elif not args.alert_only:
             _print_cross_venue_scan(result)
+            if rec is not None:
+                lp = cross_venue_paper.default_cross_venue_ledger_path()
+                print(
+                    f"\nPaper arb: recorded {rec.recorded} intent(s), "
+                    f"dedup skipped {rec.skipped_dedup} → {lp}"
+                )
         else:
             for row in result.alerts:
                 line = (
@@ -1336,6 +1442,11 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
             for row in result.slug_warnings:
                 print(f"SLUG_CHANGE {row.team}: {row.slug_change_detail}")
             cross_venue_alerts.notify_scan_results(result)
+            if rec is not None and rec.recorded:
+                print(
+                    f"PAPER_ARB recorded {rec.recorded} → "
+                    f"{cross_venue_paper.default_cross_venue_ledger_path()}"
+                )
             if args.discover:
                 new = [d for d in result.discoveries if not d.in_config]
                 if new:
@@ -1771,7 +1882,30 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="List discovered PM↔Kalshi pairs for config/cross_venue.yaml (no config scan)",
     )
+    cv.add_argument(
+        "--record",
+        action="store_true",
+        help="Append paper arb intents to cross_venue_arb_ledger.jsonl on alerts",
+    )
+    cv.add_argument(
+        "--notional",
+        type=float,
+        default=None,
+        help="Hypothetical USD per leg (default: paper_arb.default_notional_usd in yaml)",
+    )
     cv.set_defaults(func=_cmd_cross_venue_scan, once=True, loop=False)
+
+    cvpnl = sub.add_parser(
+        "cross-venue-pnl",
+        help="Paper arb PnL summary from cross-venue ledger (read-only MTM)",
+    )
+    cvpnl.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Poll PM+Kalshi once and mark-to-market open vs converged gaps",
+    )
+    cvpnl.add_argument("--json", action="store_true", help="Machine-readable output")
+    cvpnl.set_defaults(func=_cmd_cross_venue_pnl)
 
     args = parser.parse_args(argv)
     if not args.command:

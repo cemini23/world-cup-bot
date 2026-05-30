@@ -47,6 +47,14 @@ class CrossVenueConfig:
     pairs: tuple[CrossVenuePair, ...]
     blockers: tuple[str, ...]
     discovery: DiscoveryConfig
+    paper_arb: PaperArbConfigSlice | None = None
+
+
+@dataclass(frozen=True)
+class PaperArbConfigSlice:
+    default_notional_usd: float
+    dedup_interval_sec: float
+    min_fee_adjusted_gap_pp: float
 
 
 def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
@@ -98,6 +106,15 @@ def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
             )
         )
 
+    paper_raw = raw.get("paper_arb")
+    paper_slice = None
+    if isinstance(paper_raw, dict):
+        paper_slice = PaperArbConfigSlice(
+            default_notional_usd=float(paper_raw.get("default_notional_usd", 500)),
+            dedup_interval_sec=float(paper_raw.get("dedup_interval_sec", 3600)),
+            min_fee_adjusted_gap_pp=float(paper_raw.get("min_fee_adjusted_gap_pp", 0.5)),
+        )
+
     return CrossVenueConfig(
         version=int(raw.get("version", 1)),
         alert_threshold_pp=float(raw.get("alert_threshold_pp", 5.0)),
@@ -107,4 +124,5 @@ def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
         pairs=tuple(pairs),
         blockers=tuple(str(b) for b in raw.get("blockers") or ()),
         discovery=discovery,
+        paper_arb=paper_slice,
     )

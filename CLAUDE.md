@@ -18,7 +18,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 3 | Quoter | `quoter.py` | Dry-run default; live POST via `clob_live.py` |
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile; queue depletion + vol cooldown |
 | 5 | Calendar guard | `calendar_guard.py`, `data/worldcup2026-fixtures.json` | Live — CC0 fixtures, not Polymarket |
-| 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_alerts.py`, `kalshi_rest.py`, `pm_discovery.py`, `config/cross_venue.yaml` | Live — alert-only PM vs Kalshi |
+| 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_alerts.py`, `kalshi_rest.py`, `pm_discovery.py`, `config/cross_venue.yaml` | Live — alert-only PM vs Kalshi; **paper arb ledger** (`--record`, `cross-venue-pnl`) |
 | 7 | Ledger / PnL | `ledger.py`, `logic_version.py` | Live — JSONL + version filter |
 | — | Liquidity gate | `liquidity_scanner.py`, `clob_rest.py` | Live — public CLOB `/book`; bid/ask band floors in `operating.yaml` |
 | — | Conviction ops | `conviction_staleness.py`, `conviction_patch.py`, `fixture_watch.py` | Staleness alerts, DR patch staging, fixture upstream diff |
@@ -71,6 +71,10 @@ world-cup-bot plan [--record] [--advisor] [--liquidity-gate]
 world-cup-bot preflight [--skip-auth]
 world-cup-bot shadow-status [--min-phase N] [--json]
 world-cup-bot phase status [--json]
+world-cup-bot phase set <state_id|auto>
+world-cup-bot phase purge --team NAME
+world-cup-bot cross-venue-scan [--loop] [--record] [--notional USD]
+world-cup-bot cross-venue-pnl [--refresh] [--json]
 world-cup-bot phase set <state_id|auto>
 world-cup-bot phase purge --team NAME
 world-cup-bot watch [--verbose] [--record]

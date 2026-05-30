@@ -32,6 +32,7 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **LP safety DR re-run** | **2026-06-06** | Weekly cadence — see OSINT wiki `wc-lp-safety-cadence`; update `conviction.yaml` if verdicts change |
 | **Phase router (Module 1b)** | **2026-05-30** | PR1+PR2 on `main` — FSM, multi-phase scanner, settlement gate, SIGUSR1 reload; flags default OFF |
 | **Cross-venue pair refresh** | Ongoing | `discover` timer + manual `cross-venue-scan --discover-only` when PM advance slugs firm |
+| **Paper arb ledger (Phase A)** | **2026-05-30** | `cross-venue-scan --record` + `cross-venue-pnl --refresh` — no execution |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
 | **CeminiSuite import** | Post shadow gate | `briefs/2026-05-29_world-cup-bot-cemini-import.md` (OSINT) — skill_audit before scp |
 

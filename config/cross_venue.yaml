@@ -10,6 +10,12 @@ poll_interval_sec: 120
 fee_kalshi_profit_pct: 7.0
 verification_max_age_days: 14  # pairs with stale last_verified auto-block alerts
 
+# Phase A paper arb ledger — cross-venue-scan --record (no execution)
+paper_arb:
+  default_notional_usd: 500
+  dedup_interval_sec: 3600
+  min_fee_adjusted_gap_pp: 0.5
+
 pairs:
   # --- fade_watch (group winner) ---
   - team: USA
