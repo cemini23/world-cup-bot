@@ -33,6 +33,7 @@ from world_cup_bot import (
     rewards_sync,
     risk,
     scanner,
+    settlement_gate,
     shadow_checklist,
     ws_user,
 )
@@ -42,10 +43,15 @@ from world_cup_bot.clob_auth import (
     load_maker_address,
     load_poly_address,
 )
-from world_cup_bot.config import Settings, phase_router_enabled, phase_router_lp_gate
+from world_cup_bot.config import (
+    Settings,
+    phase_router_enabled,
+    phase_router_lp_gate,
+    phase_settlement_gate_enabled,
+)
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
-from world_cup_bot.market_phases import load_market_phases_config
+from world_cup_bot.market_phases import get_market_phases_config, install_sigusr1_reload
 from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
 
@@ -136,11 +142,36 @@ def _cmd_calendar(args: argparse.Namespace) -> int:
     return 1
 
 
-def _load_markets(settings: Settings) -> list[scanner.AdvanceMarket]:
-    return scanner.discover_advance_markets(
+def _load_markets(
+    settings: Settings,
+    *,
+    phase_ctx: phase_router.PhaseRouterContext | None = None,
+    min_hours: float | None = None,
+) -> list[scanner.AdvanceMarket]:
+    cancel_hours = min_hours
+    phase_ids: list[str] | None = None
+    phases_config = None
+    if phase_router_enabled() and phase_ctx is not None:
+        base_hours = cancel_hours if cancel_hours is not None else settings.min_hours_before_kickoff
+        cancel_hours = phase_router.effective_cancel_hours(phase_ctx, base_hours)
+        phase_ids = list(phase_ctx.scanner_phase_ids)
+        phases_config = get_market_phases_config(Path(settings.market_phases_config))
+    elif cancel_hours is None:
+        cancel_hours = settings.min_hours_before_kickoff
+
+    markets = scanner.discover_markets(
         settings.gamma_url,
-        min_hours_before_kickoff=settings.min_hours_before_kickoff,
+        min_hours_before_kickoff=cancel_hours,
+        phase_ids=phase_ids,
+        phases_config=phases_config,
     )
+    if phase_router_enabled() and phase_router_lp_gate() and phase_ctx is not None:
+        markets = [
+            m
+            for m in markets
+            if phase_router.lp_quoting_allowed(phase_ctx, market_phase_id=m.market_phase_id)
+        ]
+    return markets
 
 
 def _liquidity_context(
@@ -418,9 +449,28 @@ def _plan_abort(settings: Settings, reason: str, detail: str, *, exit_code: int 
 
 
 def _resolve_phase_context(settings: Settings):
+    config_path = Path(settings.market_phases_config)
+    settlement_report = None
+    gate_on = phase_router_enabled() and phase_settlement_gate_enabled()
+    if gate_on:
+        mp_cfg = get_market_phases_config(config_path)
+        phase_ids = sorted(
+            {
+                pid
+                for spec in mp_cfg.tournament_states.values()
+                for pid in spec.lp_active_phases + spec.scanner_phase_ids
+            }
+        )
+        settlement_report = settlement_gate.check_phases_settlement(
+            mp_cfg,
+            phase_ids,
+            gamma_url=settings.gamma_url,
+        )
     return phase_router.resolve_phase_router(
-        Path(settings.market_phases_config),
+        config_path,
         enabled=phase_router_enabled(),
+        settlement_gate_enabled=gate_on,
+        settlement_report=settlement_report,
     )
 
 
@@ -433,6 +483,12 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     if phase_router_enabled():
         event_log.log_event("phase_router", **phase_ctx.to_status_dict())
 
+    cancel_hours = (
+        phase_router.effective_cancel_hours(phase_ctx, settings.min_hours_before_kickoff)
+        if phase_router_enabled()
+        else settings.min_hours_before_kickoff
+    )
+
     operating = load_operating_config(Path(settings.operating_config))
     risk_ok, risk_detail = risk.check_daily_adverse_budget(
         Path(settings.ledger_path),
@@ -443,7 +499,11 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         return _plan_abort(settings, "daily_adverse_cap", risk_detail)
 
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
-    markets = _load_markets(settings)
+    if phase_router_enabled():
+        min_mid = phase_ctx.operating_overrides.get("min_mid")
+        cfg = conviction.with_min_mid_override(cfg, min_mid)
+
+    markets = _load_markets(settings, phase_ctx=phase_ctx, min_hours=cancel_hours)
 
     liq_cfg = None
     liq_by_team: dict[str, liquidity_scanner.LiquidityReport] = {}
@@ -467,13 +527,20 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             "No conviction targets (try --all to see skips).",
         )
 
+    if phase_router_enabled() and phase_router_lp_gate() and not markets:
+        return _plan_abort(
+            settings,
+            "phase_router_lp_gate",
+            f"No LP-eligible markets for tournament_phase={phase_ctx.tournament_phase} "
+            f"phases={list(phase_ctx.lp_active_phases)}",
+        )
+
     if phase_router_enabled() and phase_router_lp_gate():
-        if not phase_router.lp_quoting_allowed(phase_ctx):
+        if not phase_ctx.lp_active_phases:
             return _plan_abort(
                 settings,
                 "phase_router_lp_gate",
-                f"LP not active for tournament_phase={phase_ctx.tournament_phase} "
-                f"market_phase={phase_ctx.market_phase_id}",
+                f"LP not active for tournament_phase={phase_ctx.tournament_phase}",
             )
 
     gate = advisor.AdvisorGate.OFF
@@ -522,6 +589,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         markets,
         ledger_path=settings.ledger_path,
         version_spec=version_spec,
+        min_hours=cancel_hours,
     )
     if cancel_result.order_ids:
         mode = "DRY" if cancel_result.dry_run else "LIVE"
@@ -594,13 +662,11 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
 def _cmd_phase_status(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
-    ctx = phase_router.resolve_phase_router(
-        Path(settings.market_phases_config),
-        enabled=True,
-    )
+    ctx = _resolve_phase_context(settings)
     payload = {
         "enabled_env": phase_router_enabled(),
         "lp_gate_env": phase_router_lp_gate(),
+        "settlement_gate_env": phase_settlement_gate_enabled(),
         "config": settings.market_phases_config,
         "override_path": str(phase_router.default_override_path()),
         **ctx.to_status_dict(),
@@ -609,19 +675,29 @@ def _cmd_phase_status(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2))
     else:
         print(f"tournament_phase: {ctx.tournament_phase} (source={ctx.source})")
+        if ctx.calendar_phase and ctx.calendar_phase != ctx.tournament_phase:
+            print(f"calendar_phase:   {ctx.calendar_phase}")
         print(f"market_phase_id:  {ctx.market_phase_id}")
         print(f"scanner_phases:  {', '.join(ctx.scanner_phase_ids) or '(none)'}")
         print(f"lp_active:        {', '.join(ctx.lp_active_phases) or '(none)'}")
         print(f"cross_venue:      {ctx.cross_venue_enabled}")
+        if ctx.settlement_blocked_by:
+            print(f"settlement_hold:  blocked by {ctx.settlement_blocked_by}")
+        if ctx.settlement_pending_phases:
+            print(f"settlement_pending: {', '.join(ctx.settlement_pending_phases)}")
         if ctx.operating_overrides:
             print(f"overrides:        {ctx.operating_overrides}")
-        print(f"router_enabled:   {phase_router_enabled()}  lp_gate: {phase_router_lp_gate()}")
+        print(
+            f"router_enabled:   {phase_router_enabled()}  "
+            f"lp_gate: {phase_router_lp_gate()}  "
+            f"settlement_gate: {phase_settlement_gate_enabled()}"
+        )
     return 0
 
 
 def _cmd_phase_set(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
-    config = load_market_phases_config(Path(settings.market_phases_config))
+    config = get_market_phases_config(Path(settings.market_phases_config))
     state = args.phase_id.strip()
     if state not in config.tournament_states and state != "auto":
         valid = ", ".join(sorted(config.tournament_states))
@@ -1199,6 +1275,18 @@ def _print_cross_venue_scan(result: cross_venue_scanner.CrossVenueScanResult) ->
 
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
+    if phase_router_enabled():
+        ctx = _resolve_phase_context(settings)
+        if not phase_router.cross_venue_allowed(ctx):
+            msg = (
+                f"Cross-venue scan skipped — disabled for tournament_phase={ctx.tournament_phase}"
+            )
+            if args.json:
+                print(json.dumps({"skipped": True, "reason": msg}, indent=2))
+            else:
+                print(msg)
+            return 0
+
     cfg = load_cross_venue_config(Path(settings.cross_venue_config))
 
     def _once() -> cross_venue_scanner.CrossVenueScanResult:
@@ -1262,6 +1350,8 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    settings = Settings.from_env()
+    install_sigusr1_reload(Path(settings.market_phases_config))
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
         description="World Cup 2026 advance-market LP bot (early build)",

@@ -91,3 +91,8 @@ def phase_router_enabled() -> bool:
 def phase_router_lp_gate() -> bool:
     """When true with router enabled, plan skips LP unless market phase is lp_active."""
     return _bool("WC_PHASE_ROUTER_LP_GATE", False)
+
+
+def phase_settlement_gate_enabled() -> bool:
+    """When true with router enabled, calendar FSM waits for phase settlement."""
+    return _bool("WC_PHASE_SETTLEMENT_GATE", True)

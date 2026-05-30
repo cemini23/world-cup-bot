@@ -328,3 +328,23 @@ def filter_conviction_markets(
     if quote_only:
         return [r for r in results if r.quote]
     return results
+
+
+def with_min_mid_override(config: ConvictionConfig, min_mid: float | None) -> ConvictionConfig:
+    if min_mid is None:
+        return config
+    limits = Limits(
+        min_mid=float(min_mid),
+        max_mid=config.limits.max_mid,
+        bilateral_mid=config.limits.bilateral_mid,
+        default_max_notional_usd=config.limits.default_max_notional_usd,
+        yes_size_ratio=config.limits.yes_size_ratio,
+        min_reward_shares=config.limits.min_reward_shares,
+    )
+    return ConvictionConfig(
+        yes_conviction=config.yes_conviction,
+        bilateral_only=config.bilateral_only,
+        fade_watch=config.fade_watch,
+        limits=limits,
+        per_team=config.per_team,
+    )

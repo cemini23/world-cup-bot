@@ -1,4 +1,4 @@
-"""Gamma scanner — discover FIFA 2026 advance-to-knockout markets at runtime."""
+"""Gamma scanner — discover FIFA 2026 markets at runtime (multi-phase when router enabled)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from typing import Any
 
 from world_cup_bot import calendar_guard, team_names
 from world_cup_bot.http_client import urlopen_get
+from world_cup_bot.market_phases import MarketPhasesConfig
 from world_cup_bot.operating_config import OperatingConfig, load_operating_config
 
 _ADVANCE_QUESTION = re.compile(
@@ -21,6 +22,14 @@ _ADVANCE_QUESTION = re.compile(
 )
 _SEARCH_QUERY = "world cup advance knockout"
 DEFAULT_MIN_HOURS_BEFORE_KICKOFF = 10.0
+
+
+@dataclass(frozen=True)
+class PhaseScanTarget:
+    phase_id: str
+    pattern: re.Pattern[str]
+    gamma_search: str
+    priority: int
 
 
 @dataclass(frozen=True)
@@ -45,6 +54,7 @@ class AdvanceMarket:
     bilateral_mode: bool
     min_hours_before_kickoff: float
     prefer_hours_before_kickoff: float
+    market_phase_id: str = "group_advance"
 
     @property
     def kickoff_known(self) -> bool:
@@ -100,6 +110,34 @@ def parse_team_from_question(question: str) -> str | None:
     return team_names.normalize_team(m.group(1))
 
 
+def parse_team_with_pattern(question: str, pattern: re.Pattern[str]) -> str | None:
+    m = pattern.match(question.strip())
+    if not m:
+        return None
+    return team_names.normalize_team(m.group(1))
+
+
+def build_scan_targets(
+    config: MarketPhasesConfig,
+    phase_ids: list[str],
+) -> list[PhaseScanTarget]:
+    targets: list[PhaseScanTarget] = []
+    for pid in phase_ids:
+        spec = config.phases.get(pid)
+        if spec is None or not spec.title_regex:
+            continue
+        targets.append(
+            PhaseScanTarget(
+                phase_id=pid,
+                pattern=re.compile(spec.title_regex, re.IGNORECASE),
+                gamma_search=spec.gamma_search or _SEARCH_QUERY,
+                priority=spec.scanner_priority,
+            )
+        )
+    targets.sort(key=lambda t: (t.priority, t.phase_id))
+    return targets
+
+
 def parse_market(
     market: dict[str, Any],
     *,
@@ -107,9 +145,12 @@ def parse_market(
     schedule: dict[str, list[datetime]] | None = None,
     min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
     operating: OperatingConfig | None = None,
+    team: str | None = None,
+    market_phase_id: str = "group_advance",
 ) -> AdvanceMarket | None:
     question = market.get("question") or ""
-    team = parse_team_from_question(question)
+    if team is None:
+        team = parse_team_from_question(question)
     if not team:
         return None
 
@@ -160,6 +201,7 @@ def parse_market(
         bilateral_mode=bilateral,
         min_hours_before_kickoff=min_hours_before_kickoff,
         prefer_hours_before_kickoff=ops.calendar.prefer_hours_before_kickoff,
+        market_phase_id=market_phase_id,
     )
 
 
@@ -178,6 +220,81 @@ def fetch_search_payload(
         return json.loads(resp.read().decode())
 
 
+def discover_markets(
+    gamma_url: str = "https://gamma-api.polymarket.com",
+    *,
+    now: datetime | None = None,
+    schedule: dict[str, list[datetime]] | None = None,
+    min_hours_before_kickoff: float = DEFAULT_MIN_HOURS_BEFORE_KICKOFF,
+    operating: OperatingConfig | None = None,
+    opener: Any | None = None,
+    phase_ids: list[str] | None = None,
+    phases_config: MarketPhasesConfig | None = None,
+) -> list[AdvanceMarket]:
+    """Fetch markets from Gamma; filter by phase regex list when router provides phase_ids."""
+    if not phase_ids or phases_config is None:
+        return discover_advance_markets(
+            gamma_url,
+            now=now,
+            schedule=schedule,
+            min_hours_before_kickoff=min_hours_before_kickoff,
+            operating=operating,
+            opener=opener,
+        )
+
+    targets = build_scan_targets(phases_config, phase_ids)
+    if not targets:
+        return discover_advance_markets(
+            gamma_url,
+            now=now,
+            schedule=schedule,
+            min_hours_before_kickoff=min_hours_before_kickoff,
+            operating=operating,
+            opener=opener,
+        )
+
+    ops = operating or load_operating_config()
+    sched = schedule if schedule is not None else calendar_guard.build_team_schedule()
+    now = now or datetime.now(UTC)
+    out: list[AdvanceMarket] = []
+    seen_conditions: set[str] = set()
+    payload_cache: dict[str, dict[str, Any]] = {}
+
+    for target in targets:
+        query = target.gamma_search
+        if query not in payload_cache:
+            try:
+                payload_cache[query] = fetch_search_payload(gamma_url, query, opener=opener)
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+                raise RuntimeError(f"Gamma public-search failed for {query!r}: {exc}") from exc
+
+        for event in payload_cache[query].get("events") or []:
+            for market in event.get("markets") or []:
+                question = str(market.get("question") or "")
+                team = parse_team_with_pattern(question, target.pattern)
+                if not team:
+                    continue
+                cid = str(market.get("conditionId") or "")
+                if cid and cid in seen_conditions:
+                    continue
+                parsed = parse_market(
+                    market,
+                    now=now,
+                    schedule=sched,
+                    min_hours_before_kickoff=min_hours_before_kickoff,
+                    operating=ops,
+                    team=team,
+                    market_phase_id=target.phase_id,
+                )
+                if parsed:
+                    if cid:
+                        seen_conditions.add(cid)
+                    out.append(parsed)
+
+    out.sort(key=lambda m: (m.market_phase_id, m.team.lower(), m.slug))
+    return out
+
+
 def discover_advance_markets(
     gamma_url: str = "https://gamma-api.polymarket.com",
     *,
@@ -187,7 +304,7 @@ def discover_advance_markets(
     operating: OperatingConfig | None = None,
     opener: Any | None = None,
 ) -> list[AdvanceMarket]:
-    """Fetch advance markets from Gamma public-search; prices are live, not hardcoded."""
+    """Fetch group-advance markets from Gamma public-search (v1 default)."""
     try:
         payload = fetch_search_payload(gamma_url, opener=opener)
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
@@ -218,7 +335,11 @@ def filter_lp_eligible(
     markets: list[AdvanceMarket],
     *,
     lp_only: bool = True,
+    lp_phase_ids: set[str] | None = None,
 ) -> list[AdvanceMarket]:
     if not lp_only:
         return markets
-    return [m for m in markets if m.lp_eligible]
+    out = [m for m in markets if m.lp_eligible]
+    if lp_phase_ids:
+        out = [m for m in out if m.market_phase_id in lp_phase_ids]
+    return out

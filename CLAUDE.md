@@ -13,7 +13,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | # | Module | Package file(s) | Status |
 |---|--------|-----------------|--------|
 | 1 | Scanner | `scanner.py`, `http_client.py` | Live — Gamma `public-search` |
-| 1b | Phase router | `phase_router.py`, `market_phases.py`, `config/market_phases.yaml` | FSM skeleton — `WC_PHASE_ROUTER_ENABLED=0` default |
+| 1b | Phase router | `phase_router.py`, `market_phases.py`, `settlement_gate.py`, `config/market_phases.yaml` | PR1+PR2 — FSM, multi-phase scanner, settlement gate, SIGUSR1; flags default OFF |
 | 2 | Conviction | `conviction.py`, `config/conviction.yaml` | Live — team tiers, quote gate |
 | 3 | Quoter | `quoter.py` | Dry-run default; live POST via `clob_live.py` |
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile; queue depletion + vol cooldown |

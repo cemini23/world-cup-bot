@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import signal
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+_config_cache: dict[str, MarketPhasesConfig] = {}
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,12 @@ class MarketPhasesConfig:
 
     def phase_spec(self, phase_id: str) -> MarketPhaseSpec | None:
         return self.phases.get(phase_id)
+
+    def ordered_tournament_state_ids(self) -> list[str]:
+        return sorted(
+            self.tournament_states.keys(),
+            key=lambda sid: self.tournament_states[sid].calendar_start,
+        )
 
 
 def _parse_operating(raw: dict[str, Any] | None) -> OperatingOverrides:
@@ -112,3 +121,40 @@ def load_market_phases_config(path: Path) -> MarketPhasesConfig:
             str(k): float(v) for k, v in (raw.get("cancel_hours_by_phase") or {}).items()
         },
     )
+
+
+def get_market_phases_config(path: Path) -> MarketPhasesConfig:
+    key = str(path.resolve())
+    cached = _config_cache.get(key)
+    if cached is not None:
+        return cached
+    loaded = load_market_phases_config(path)
+    _config_cache[key] = loaded
+    return loaded
+
+
+def invalidate_market_phases_cache(path: Path | None = None) -> None:
+    if path is None:
+        _config_cache.clear()
+        return
+    _config_cache.pop(str(path.resolve()), None)
+
+
+def install_sigusr1_reload(path: Path) -> None:
+    """Re-parse market_phases.yaml on SIGUSR1 (long-running daemons)."""
+
+    def _handler(signum: int, frame: object) -> None:
+        invalidate_market_phases_cache(path)
+        try:
+            from world_cup_bot import event_log
+
+            event_log.log_event(
+                "config_reload",
+                signal="SIGUSR1",
+                target="market_phases",
+                path=str(path),
+            )
+        except Exception:
+            pass
+
+    signal.signal(signal.SIGUSR1, _handler)
