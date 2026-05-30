@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World Cup Bot — Open-Source Polymarket &amp; Kalshi FIFA 2026 LP Bot</title>
+  <meta name="description" content="World Cup Bot: MIT open-source liquidity provision for FIFA 2026 advance-to-knockout markets on Polymarket. Shadow-first LP with calendar cancel window, JSONL ledger, and Polymarket vs Kalshi gap alerts.">
+  <meta name="keywords" content="world cup bot, world cup bot polymarket, world cup bot kalshi, polymarket world cup, kalshi world cup, FIFA 2026 prediction markets, liquidity provision bot">
+  <link rel="canonical" href="https://cemini23.github.io/world-cup-bot/">
+  <meta property="og:title" content="World Cup Bot — Polymarket &amp; Kalshi FIFA 2026 LP">
+  <meta property="og:description" content="Open-source shadow-first LP bot for World Cup advance markets on Polymarket. Cross-venue Kalshi alerts. MIT license.">
+  <meta property="og:url" content="https://cemini23.github.io/world-cup-bot/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="World Cup Bot — Polymarket &amp; Kalshi">
+  <meta name="twitter:description" content="MIT open-source LP bot for FIFA 2026 advance markets. Shadow-first. Not financial advice.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "World Cup Bot",
+    "description": "Open-source liquidity provision bot for FIFA World Cup 2026 advance-to-knockout markets on Polymarket, with Polymarket vs Kalshi cross-venue gap alerts.",
+    "codeRepository": "https://github.com/cemini23/world-cup-bot",
+    "programmingLanguage": "Python",
+    "license": "https://spdx.org/licenses/MIT.html",
+    "author": {
+      "@type": "Organization",
+      "name": "cemini23",
+      "url": "https://github.com/cemini23"
+    },
+    "keywords": "world cup bot, polymarket, kalshi, prediction markets, FIFA 2026, liquidity provision"
+  }
+  </script>
+  <style>
+    :root { --bg: #f4f4f5; --text: #1a1a1a; --muted: #6b7280; --accent: #0d9488; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 2rem 1rem 3rem; max-width: 42rem; margin-inline: auto; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; margin-top: 0; }
+    a { color: var(--accent); }
+    .cta { display: inline-block; margin-top: 1.25rem; padding: 0.65rem 1.1rem; background: var(--accent); color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; }
+    .cta:hover { opacity: 0.92; }
+    ul { padding-left: 1.25rem; }
+    footer { margin-top: 2.5rem; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>World Cup Bot</h1>
+  <p class="subtitle">Open-source Polymarket LP bot for FIFA 2026 advance markets — with Kalshi cross-venue alerts</p>
+
+  <p><strong>World Cup Bot</strong> is an MIT-licensed Python stack for liquidity provision on FIFA World Cup 2026 <em>advance to knockout</em> markets on <a href="https://polymarket.com">Polymarket</a>. It includes shadow-first deployment, a calendar cancel window before kickoff, versioned JSONL ledger, and optional <strong>Polymarket vs Kalshi</strong> gap alerts (alert-only, no auto execution).</p>
+
+  <ul>
+    <li>Conviction YAML + Gamma mids at runtime (no hardcoded prices)</li>
+    <li>Shadow mode default (<code>DRY_RUN=true</code>) with phased <a href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md">SHADOW.md</a> checklist</li>
+    <li>Cross-venue scanner for PM / Kalshi cohort pairs</li>
+  </ul>
+
+  <a class="cta" href="https://github.com/cemini23/world-cup-bot">View on GitHub</a>
+  <a class="cta" href="https://outlierweekly.substack.com" style="background:#1a1a1a;margin-left:0.5rem;">Outlier Weekly</a>
+
+  <footer>
+    Not financial advice. Fork with your own API keys. Methodology writeup: Outlier Weekly Issue 3.
+  </footer>
+</body>
+</html>

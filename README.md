@@ -3,7 +3,7 @@
 [![CI](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Open-source bot for **FIFA World Cup 2026** *advance to knockout stages* markets on [Polymarket](https://polymarket.com).
+**World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
 **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4`.
 
