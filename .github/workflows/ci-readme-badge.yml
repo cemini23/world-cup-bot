@@ -18,6 +18,9 @@ jobs:
       github.event.workflow_run.conclusion != 'cancelled' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    env:
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,9 +28,6 @@ jobs:
           fetch-depth: 0
 
       - name: Update README CI badge and status line
-        env:
-          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
         run: |
           case "$CONCLUSION" in
             success) LABEL=passing ;;
