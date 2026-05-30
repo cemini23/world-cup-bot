@@ -1,0 +1,12 @@
+[Unit]
+Description=World Cup Bot daily PnL snapshot (shadow ledger)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+Environment=WC_LEDGER_PATH=@INSTALL_ROOT@/data/local/shadow_ledger.jsonl
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh pnl --scope current >> @INSTALL_ROOT@/logs/cron_pnl.log 2>&1'
+User=root

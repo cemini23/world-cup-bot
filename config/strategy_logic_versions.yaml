@@ -1,4 +1,4 @@
-# Strategy logic version registry (K75 pattern — see Cemini wiki pnl-attribution-versioning)
+# Strategy logic version registry — bump on material logic/sizing/execution changes.
 # Bump current_version_id + deployed_at on every material signal/sizing/execution change.
 
 strategy_key: pm_wc_advance_lp

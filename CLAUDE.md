@@ -6,7 +6,7 @@ Read this at session start. Human docs: [README.md](README.md), [SETUP.md](SETUP
 
 Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout** markets. Shadow-first (`DRY_RUN=true` default). Prices and spreads come from **Gamma + CLOB at runtime** — never hardcode mids or team prices in Python.
 
-**Not in scope for this repo:** CeminiSuite prod stack, hosted service, financial advice, Kalshi auto-trading (alert-only cross-venue is roadmapped).
+**Not in scope for this repo:** hosted service, financial advice, Kalshi auto-trading (alert-only cross-venue is roadmapped).
 
 ## Module map
 
@@ -123,8 +123,8 @@ These are the recurring production gotchas — no separate LESSONS.md needed yet
 ## Related
 
 - Newsletter: [Outlier Weekly](https://outlierweekly.substack.com) — Issue 3 launch ~2026-06-03
+- Optional VPS: [deploy/systemd/README.md](deploy/systemd/README.md)
 - Sibling OSS: [vet](https://github.com/cemini23/vet), [wikilint](https://github.com/cemini23/wikilint)
-- Research wiki (private operator): Cemini OSINT `wiki/` — WC LP rules, Polymarket API refs (not vendored here)
 
 ## Skills / extra agent files
 

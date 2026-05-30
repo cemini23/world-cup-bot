@@ -16,6 +16,8 @@ world-cup-bot ui                # optional dashboard → http://127.0.0.1:8765
 
 **Pass criteria:** Gamma returns markets; preflight has no `FAIL` except geoblock when shadowing from US (WARN is OK).
 
+**Optional — 24/7 VPS:** install [deploy/systemd/](deploy/systemd/README.md) (`monitor` profile on any host; `trading` profile on non-US for live POST).
+
 ## Phase 1 — Dry-run quote loop (≥3 sessions)
 
 ```bash

@@ -1,0 +1,18 @@
+[Unit]
+Description=World Cup Bot fill watch (WS + REST reconcile)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+EnvironmentFile=-@INSTALL_ROOT@/.env.trading
+Environment=WC_DRY_RUN=true
+Environment=WC_LEDGER_PATH=@INSTALL_ROOT@/data/local/ledger.jsonl
+ExecStart=@INSTALL_ROOT@/bin/wc_run.sh watch --verbose --record
+Restart=always
+RestartSec=60
+User=root
+
+[Install]
+WantedBy=multi-user.target

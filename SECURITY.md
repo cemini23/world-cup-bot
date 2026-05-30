@@ -7,7 +7,7 @@ This repository is **fully public**. It must never contain:
 - Private keys, seed phrases, or API secrets
 - Production server hostnames, SSH config, or internal relay paths
 - Wallet addresses used for live trading
-- CeminiSuite or operator-specific deployment config
+- Operator-specific deployment config (keep `.env` and systemd overrides on your machines only)
 
 ## How we develop vs what you get
 

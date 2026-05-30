@@ -62,6 +62,8 @@ Requires a Polymarket account with CLOB API access. Kalshi alerts need separate 
 
 See [SETUP.md](SETUP.md) for environment variables and geoblock notes.
 
+**24/7 on a VPS:** optional [systemd units](deploy/systemd/README.md) (`monitor` + `trading` profiles).
+
 **Shadow → live:** [SHADOW.md](SHADOW.md) phased checklist. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md).
 
 ## Security

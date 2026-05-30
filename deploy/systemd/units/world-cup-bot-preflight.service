@@ -1,0 +1,12 @@
+[Unit]
+Description=World Cup Bot preflight (geoblock + CLOB auth probe)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+EnvironmentFile=-@INSTALL_ROOT@/.env.trading
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh preflight >> @INSTALL_ROOT@/logs/cron_preflight.log 2>&1'
+User=root

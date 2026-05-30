@@ -1,6 +1,6 @@
-# World Cup Bot — conviction LP seeds (K83 Gemini DR ingest)
+# World Cup Bot — conviction LP seeds
 # Prices from Gamma at runtime; this file only gates WHICH teams to quote.
-# Matrix: OSINT wiki world-cup-2026-group-conviction-matrix (DeadBall + B Wade + Gemini DR May 29)
+# Tiers from public research (Gemini Deep Research + community LP analysis, May 2026).
 
 version: 3
 

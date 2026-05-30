@@ -33,7 +33,7 @@ world-cup-bot watch --verbose --record
 
 Subscribes to `wss://ws-subscriptions-clob.polymarket.com/ws/user` for WC advance **condition IDs** discovered via Gamma. On `TRADE` / `MATCHED`, parses **maker** legs → fill handler → optional ledger.
 
-Pair with periodic REST `/data/trades` reconciliation (every 30s in `watch`) before live capital. WS alone can miss silent fills per Cemini wiki.
+Pair with periodic REST `/data/trades` reconciliation (every 30s in `watch`) before live capital. WebSocket alone can miss silent fills — run both in production.
 
 ## Pre-flight (before live LP)
 
@@ -151,15 +151,18 @@ Config paths resolve against the **repo root** automatically — you can run `wo
 
 Override port: `world-cup-bot ui --port 8765`. CLI remains the path for `watch`, live fills, and recording.
 
-## Cemini operator (24/7 VPS)
+## 24/7 VPS (systemd, optional)
 
-For CeminiSuite hosts (`cemini-prod` + `cemini-egress-fi`), systemd units and `wc_run.sh` live in **`deploy/cemini/`**:
+Run on **your own Linux VPS** so the bot stays up when your laptop is off. Example units live in **`deploy/systemd/`**:
 
 ```bash
-sudo bash deploy/cemini/install-systemd.sh --host prod --enable
+sudo bash deploy/systemd/install-systemd.sh --profile monitor --enable
 ```
 
-See [deploy/cemini/README.md](deploy/cemini/README.md) for the two-host split, SHADOW phase enable matrix, and log paths. Public forks do not need this — use `.env` on your own machine.
+- **`monitor`** — cross-venue alerts, shadow plan, scan, calendar (works from US IP; read-only)
+- **`trading`** — fill watch + live plan on a **non-US** VPS (order POST is geo-blocked from the US)
+
+See [deploy/systemd/README.md](deploy/systemd/README.md) for install root, two-VPS split, and SHADOW phase gates. Default path: `/opt/world-cup-bot` — change with `--install-root`.
 
 ## Disclaimer
 

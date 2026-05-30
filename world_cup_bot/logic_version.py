@@ -1,4 +1,4 @@
-"""Strategy logic version registry — mirrors Cemini prod pnl-attribution-versioning pattern."""
+"""Strategy logic version registry — PnL scoped by deployed logic version."""
 
 from __future__ import annotations
 

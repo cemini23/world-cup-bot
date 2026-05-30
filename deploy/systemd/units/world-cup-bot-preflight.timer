@@ -1,5 +1,5 @@
 [Unit]
-Description=World Cup Bot preflight every 6 hours (egress-fi)
+Description=World Cup Bot preflight every 6 hours
 
 [Timer]
 OnBootSec=10min
