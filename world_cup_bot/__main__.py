@@ -405,10 +405,7 @@ def _cmd_rewards_sync(args: argparse.Namespace) -> int:
         dates = [args.date]
     else:
         today = datetime.now(UTC).date()
-        dates = [
-            (today - timedelta(days=offset)).isoformat()
-            for offset in range(1, args.days + 1)
-        ]
+        dates = [(today - timedelta(days=offset)).isoformat() for offset in range(1, args.days + 1)]
 
     try:
         results = rewards_sync.sync_rewards_range(
@@ -655,9 +652,7 @@ def _cmd_shadow_status(args: argparse.Namespace) -> int:
     else:
         print(f"DRY_RUN={payload['dry_run']}  progress={payload['shadow_progress']}")
         for step in payload["shadow_steps"]:
-            print(
-                f"  [{step['status']:7}] phase {step['phase']} {step['title']}: {step['detail']}"
-            )
+            print(f"  [{step['status']:7}] phase {step['phase']} {step['title']}: {step['detail']}")
         ledger_stats = payload["ledger"]
         print(
             f"Ledger: {ledger_stats['quote_intents']} intents, "
