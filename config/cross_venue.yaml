@@ -16,6 +16,15 @@ paper_arb:
   dedup_interval_sec: 3600
   min_fee_adjusted_gap_pp: 0.5
 
+# Phase C auto dual-leg — requires WC_CROSS_VENUE_AUTO_EXEC=1 and DRY_RUN=false
+auto_arb:
+  max_notional_usd: 100
+  max_daily_notional_usd: 500
+  max_open_arbs: 3
+  kalshi_first: true
+  min_fee_adjusted_gap_pp: 0.5
+  slippage_buffer_pp: 0.25
+
 pairs:
   # --- fade_watch (group winner) ---
   - team: USA

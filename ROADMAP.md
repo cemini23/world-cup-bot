@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · **Tests:** 159 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 165 pytest (CI on push)
 
 ---
 
@@ -36,7 +36,7 @@ Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (
 | **Prod cross-venue `--record`** | After pull | Patch cross-venue unit: add `--record`, set `WC_CROSS_VENUE_LEDGER_PATH`; see prod brief |
 | **Cross-venue Phase B** | **2026-05-30** | `cross-venue-fill record|import-csv|reconcile` — manual dual-leg bridge |
 | **Phase router PR3** | **2026-05-30** | Replay JSONL fixtures, FIFA match gate, per-phase `bilateral_threshold` |
-| **Cross-venue Phase C** | Backlog | Kalshi order module + dual-leg coordinator, orphan leg handling, capital caps |
+| **Cross-venue Phase C** | **2026-05-30** | `cross-venue-exec attempt|orphans|resolve-orphan` — pilot caps, orphan handling |
 | **Trading VPS profile** | Phase 2–4 | Non-US host: `watch`, then live plan after SHADOW Phases 3–4 |
 | **CeminiSuite import** | Post shadow gate | `briefs/2026-05-29_world-cup-bot-cemini-import.md` (OSINT) — skill_audit before scp |
 
@@ -58,9 +58,10 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 
 ## Out of scope (v1)
 
-- Kalshi auto-trading (alert-only cross-venue; paper ledger records intent only)
 - Hosted/managed service
 - Guaranteed edge / financial advice
+
+Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, non-US VPS, Kalshi + PM creds, and SHADOW Phase 4 operator GO.
 
 ---
 
@@ -70,7 +71,7 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 |-------|--------|-------|
 | **A — Paper ledger** | **Shipped** | On `ALERT`, append `cross_venue_arb_intent_paper` to JSONL; `cross-venue-pnl --refresh` MTM vs live gap |
 | **B — Manual bridge** | **Shipped** | `cross-venue-fill record`, CSV import, reconcile vs paper intents |
-| **C — Auto dual-leg** | Planned | Kalshi order placement + PM hedge coordinator; orphan handling; pilot notional caps |
+| **C — Auto dual-leg** | **Shipped** | `cross-venue-exec` — Kalshi + PM coordinator; `WC_CROSS_VENUE_AUTO_EXEC=0` default |
 
 Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record` on monitor host only.
 
@@ -87,6 +88,7 @@ Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record
 | 2026-05-30 | `9f17058` | Paper cross-venue arb ledger (Phase A); systemd cross-venue `--record` |
 | 2026-05-30 | (Phase B) | Manual fill bridge: `cross-venue-fill record|import-csv|reconcile` |
 | 2026-05-30 | (PR3) | Phase router replay JSONL, FIFA match gate, bilateral_threshold in plan |
+| 2026-05-30 | (Phase C) | Auto dual-leg `cross-venue-exec`, Kalshi orders, orphan resolve |
 
 ## Sources
 

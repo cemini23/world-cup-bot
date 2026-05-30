@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1`. See [ROADMAP.md](ROADMAP.md) for open operator items.
+**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) for open operator items.
 
 ## What it does (v1)
 
@@ -77,6 +77,7 @@ world-cup-bot cross-venue-scan --once --record   # paper arb intents on alerts
 world-cup-bot cross-venue-pnl --refresh          # MTM vs live gaps
 world-cup-bot cross-venue-fill record --team USA --market-type group_winner --pm-price 0.68 --kalshi-price 0.64
 world-cup-bot cross-venue-fill reconcile         # match intents vs manual fills
+world-cup-bot cross-venue-exec attempt --force --dry-run  # Phase C sim (caps apply)
 world-cup-bot ui                         # http://127.0.0.1:8765
 ```
 
@@ -107,7 +108,7 @@ world-cup-bot cross-venue-pnl --refresh    # mark-to-market vs current gaps
 world-cup-bot cross-venue-pnl --json       # scriptable summary
 ```
 
-Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. Phase C (auto dual-leg) is backlog — see [ROADMAP.md](ROADMAP.md).
+Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. **Phase C** (auto dual-leg, off by default): set `WC_CROSS_VENUE_AUTO_EXEC=1` + `DRY_RUN=false` on non-US VPS, then `cross-venue-exec attempt`. Pilot caps in `auto_arb:` block.
 
 ## 24/7 on a VPS
 

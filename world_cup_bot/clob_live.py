@@ -110,6 +110,61 @@ def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
     return resp
 
 
+def post_arb_order(
+    client: Any,
+    *,
+    token_id: str,
+    side: str,
+    price: float,
+    size_shares: float,
+) -> dict[str, Any]:
+    """Aggressive GTC limit for cross-venue hedge (not post-only)."""
+    from py_clob_client.clob_types import OrderArgs, PartialCreateOrderOptions
+    from py_clob_client.order_builder.constants import BUY, SELL
+
+    order_side = BUY if side.upper() == "BUY" else SELL
+    order_args = OrderArgs(
+        token_id=token_id,
+        price=price,
+        size=size_shares,
+        side=order_side,
+    )
+    options = PartialCreateOrderOptions(tick_size="0.01", neg_risk=False)
+    order = client.create_order(order_args, options)
+    resp = client.post_order(order, post_only=False)
+    if not isinstance(resp, dict):
+        return {"response": resp}
+    if resp.get("error") or resp.get("success") is False:
+        raise LiveClobPostError(str(resp.get("error") or resp))
+    return resp
+
+
+class LivePmArbClient:
+    """Thin adapter for cross_venue_exec.PmArbClient."""
+
+    def __init__(self, client: Any) -> None:
+        self._client = client
+
+    def post_arb_order(
+        self,
+        *,
+        token_id: str,
+        side: str,
+        price: float,
+        size_shares: float,
+        dry_run: bool,
+    ) -> dict[str, Any]:
+        if dry_run:
+            return {"orderID": f"dry-pm-{token_id[:8]}", "status": "dry_run"}
+        return post_arb_order(
+            self._client,
+            token_id=token_id,
+            side=side,
+            price=price,
+            size_shares=size_shares,
+        )
+
+
 def cancel_order_id(client: Any, order_id: str) -> dict[str, Any]:
     """Cancel one resting order by id."""
     resp = client.cancel(order_id)

@@ -18,6 +18,7 @@ from world_cup_bot import (
     conviction_patch,
     conviction_staleness,
     cross_venue_alerts,
+    cross_venue_exec,
     cross_venue_fills,
     cross_venue_paper,
     cross_venue_scanner,
@@ -1477,6 +1478,136 @@ def _cmd_cross_venue_fill(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    cfg = load_cross_venue_config(Path(settings.cross_venue_config))
+    auto = cross_venue_exec.auto_arb_from_cross_venue(cfg)
+    ledger_path = cross_venue_exec.default_exec_ledger_path()
+    rows = ledger.load_rows(ledger_path)
+
+    if args.exec_command == "orphans":
+        orphans = cross_venue_exec.list_orphans(rows)
+        if args.json:
+            print(json.dumps(orphans, indent=2))
+            return 0
+        if not orphans:
+            print("No open cross-venue orphans.")
+            return 0
+        for row in orphans:
+            print(
+                f"{row.get('correlation_id')} team={row.get('team')} "
+                f"venue={row.get('orphan_venue')} order={row.get('filled_order_id')}"
+            )
+        return 0
+
+    if args.exec_command == "resolve-orphan":
+        orphans = cross_venue_exec.list_orphans(rows)
+        match = next(
+            (o for o in orphans if o.get("correlation_id") == args.correlation_id),
+            None,
+        )
+        if match is None:
+            print(f"No orphan for correlation_id={args.correlation_id!r}", file=sys.stderr)
+            return 1
+        if args.action != "cancel_kalshi":
+            print("Only cancel_kalshi supported in v1", file=sys.stderr)
+            return 1
+        from world_cup_bot.kalshi_auth import load_kalshi_auth
+
+        auth = load_kalshi_auth()
+        dry_run = settings.dry_run or args.dry_run
+        resp = cross_venue_exec.resolve_orphan_cancel_kalshi(
+            match,
+            kalshi_auth=auth,
+            kalshi_base_url=settings.kalshi_base_url,
+            ledger_path=ledger_path,
+            dry_run=dry_run,
+        )
+        if args.json:
+            print(json.dumps(resp, indent=2))
+        else:
+            print(f"Resolved orphan {args.correlation_id} (cancel_kalshi dry_run={dry_run})")
+        return 0
+
+    # attempt
+    if not cross_venue_exec.cross_venue_auto_exec_enabled() and not args.force:
+        print(
+            "WC_CROSS_VENUE_AUTO_EXEC=0 — set env or pass --force for dry-run attempt",
+            file=sys.stderr,
+        )
+        return 1
+
+    scan = cross_venue_scanner.run_scan(
+        cfg,
+        gamma_url=settings.gamma_url,
+        kalshi_base_url=settings.kalshi_base_url,
+        team_filter=args.team,
+        include_discoveries=False,
+    )
+    alert_rows = [r for r in scan.rows if r.alert]
+    if args.team and args.market_type:
+        alert_rows = [
+            r for r in alert_rows if r.team == args.team and r.market_type == args.market_type
+        ]
+    elif args.team:
+        alert_rows = [r for r in alert_rows if r.team == args.team]
+    if not alert_rows:
+        print("No qualifying alerts for execution.", file=sys.stderr)
+        return 1
+
+    row = alert_rows[0]
+    notional = args.notional if args.notional is not None else auto.max_notional_usd
+    ok, detail = cross_venue_exec.check_exec_caps(rows, auto, notional_usd=notional)
+    if not ok:
+        print(f"Exec caps blocked: {detail}", file=sys.stderr)
+        return 1
+
+    try:
+        plan = cross_venue_exec.build_dual_leg_plan(
+            row,
+            cfg,
+            auto,
+            gamma_url=settings.gamma_url,
+            notional_usd=notional,
+        )
+    except (ValueError, RuntimeError) as exc:
+        print(f"Plan build failed: {exc}", file=sys.stderr)
+        return 1
+
+    auto_exec_on = cross_venue_exec.cross_venue_auto_exec_enabled()
+    dry_run = settings.dry_run or args.dry_run or not auto_exec_on
+    kalshi_auth = None
+    pm_client = None
+    if not dry_run:
+        from world_cup_bot.kalshi_auth import load_kalshi_auth
+
+        kalshi_auth = load_kalshi_auth()
+        from world_cup_bot.clob_live import LivePmArbClient, build_clob_client
+
+        pm_client = LivePmArbClient(build_clob_client(settings))
+
+    result = cross_venue_exec.execute_dual_leg(
+        plan,
+        ledger_path=ledger_path,
+        kalshi_auth=kalshi_auth,
+        kalshi_base_url=settings.kalshi_base_url,
+        pm_client=pm_client,
+        dry_run=dry_run,
+        kalshi_first=auto.kalshi_first,
+    )
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(cross_venue_exec.EXEC_SPEC.version_banner())
+        print(f"status={result.status} dry_run={dry_run} correlation={plan.correlation_id}")
+        if result.reason:
+            print(f"reason: {result.reason}")
+        if result.realized_pnl_usd is not None:
+            print(f"realized_pnl_usd=${result.realized_pnl_usd:.2f}")
+    return 0 if result.status in {"complete", "dry_run"} else 1
+
+
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     if phase_router_enabled():
@@ -2086,6 +2217,45 @@ def main(argv: list[str] | None = None) -> None:
         help="Print example CSV header + row",
     )
     cvtmpl.set_defaults(func=_cmd_cross_venue_fill)
+
+    cvex = sub.add_parser(
+        "cross-venue-exec",
+        help="Phase C — auto dual-leg arb (WC_CROSS_VENUE_AUTO_EXEC, pilot caps)",
+    )
+    cvex_sub = cvex.add_subparsers(dest="exec_command", required=True)
+
+    cvattempt = cvex_sub.add_parser("attempt", help="Execute dual-leg on best current alert")
+    cvattempt.add_argument("--team", help="Filter team (e.g. USA)")
+    cvattempt.add_argument("--market-type", help="Filter market type (e.g. group_winner)")
+    cvattempt.add_argument("--notional", type=float, default=None, help="USD cap (default yaml)")
+    cvattempt.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate legs even if DRY_RUN=false",
+    )
+    cvattempt.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow dry-run attempt when WC_CROSS_VENUE_AUTO_EXEC=0",
+    )
+    cvattempt.add_argument("--json", action="store_true")
+    cvattempt.set_defaults(func=_cmd_cross_venue_exec)
+
+    cvorph = cvex_sub.add_parser("orphans", help="List unresolved orphan legs")
+    cvorph.add_argument("--json", action="store_true")
+    cvorph.set_defaults(func=_cmd_cross_venue_exec)
+
+    cvres = cvex_sub.add_parser("resolve-orphan", help="Resolve an orphan leg")
+    cvres.add_argument("correlation_id", help="correlation_id from orphan row")
+    cvres.add_argument(
+        "--action",
+        choices=["cancel_kalshi"],
+        default="cancel_kalshi",
+        help="Resolution action",
+    )
+    cvres.add_argument("--dry-run", action="store_true")
+    cvres.add_argument("--json", action="store_true")
+    cvres.set_defaults(func=_cmd_cross_venue_exec)
 
     args = parser.parse_args(argv)
     if not args.command:

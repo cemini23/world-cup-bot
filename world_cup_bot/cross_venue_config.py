@@ -38,6 +38,16 @@ class CrossVenuePair:
 
 
 @dataclass(frozen=True)
+class AutoArbConfigSlice:
+    max_notional_usd: float
+    max_daily_notional_usd: float
+    max_open_arbs: int
+    kalshi_first: bool
+    min_fee_adjusted_gap_pp: float
+    slippage_buffer_pp: float
+
+
+@dataclass(frozen=True)
 class CrossVenueConfig:
     version: int
     alert_threshold_pp: float
@@ -48,6 +58,7 @@ class CrossVenueConfig:
     blockers: tuple[str, ...]
     discovery: DiscoveryConfig
     paper_arb: PaperArbConfigSlice | None = None
+    auto_arb: AutoArbConfigSlice | None = None
 
 
 @dataclass(frozen=True)
@@ -115,6 +126,18 @@ def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
             min_fee_adjusted_gap_pp=float(paper_raw.get("min_fee_adjusted_gap_pp", 0.5)),
         )
 
+    auto_raw = raw.get("auto_arb")
+    auto_slice = None
+    if isinstance(auto_raw, dict):
+        auto_slice = AutoArbConfigSlice(
+            max_notional_usd=float(auto_raw.get("max_notional_usd", 100)),
+            max_daily_notional_usd=float(auto_raw.get("max_daily_notional_usd", 500)),
+            max_open_arbs=int(auto_raw.get("max_open_arbs", 3)),
+            kalshi_first=bool(auto_raw.get("kalshi_first", True)),
+            min_fee_adjusted_gap_pp=float(auto_raw.get("min_fee_adjusted_gap_pp", 0.5)),
+            slippage_buffer_pp=float(auto_raw.get("slippage_buffer_pp", 0.25)),
+        )
+
     return CrossVenueConfig(
         version=int(raw.get("version", 1)),
         alert_threshold_pp=float(raw.get("alert_threshold_pp", 5.0)),
@@ -125,4 +148,5 @@ def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
         blockers=tuple(str(b) for b in raw.get("blockers") or ()),
         discovery=discovery,
         paper_arb=paper_slice,
+        auto_arb=auto_slice,
     )
