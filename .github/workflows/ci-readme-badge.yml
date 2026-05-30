@@ -1,0 +1,85 @@
+# Keep README CI badge + text status in sync after every CI run.
+# GitHub's native badge.svg is cached by camo.githubusercontent.com and often
+# stays red after CI recovers; shields.io + this commit bust stale renders.
+
+name: Refresh README CI status
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  sync-readme:
+    if: >-
+      github.event.workflow_run.conclusion != 'cancelled' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Update README CI badge and status line
+        env:
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
+        run: |
+          case "$CONCLUSION" in
+            success) LABEL=passing ;;
+            *) LABEL=failing ;;
+          esac
+          export LABEL UPDATED_AT
+          python3 <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          label = os.environ["LABEL"]
+          ts = os.environ["UPDATED_AT"]
+          path = Path("README.md")
+          text = path.read_text(encoding="utf-8")
+
+          badge = (
+              "[![CI](https://img.shields.io/github/actions/workflow/status/"
+              "cemini23/world-cup-bot/ci.yml?branch=main&label=CI)]"
+              "(https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)"
+          )
+          text, n = re.subn(r"\[!\[CI\]\([^\]]+\)\]\([^\)]+\)", badge, text, count=1)
+          if n != 1:
+              raise SystemExit("README CI badge line not found")
+
+          text, n = re.subn(
+              r"\*\*CI:\*\* (?:passing|failing)",
+              f"**CI:** {label}",
+              text,
+              count=1,
+          )
+          if n != 1:
+              raise SystemExit("README **CI:** status line not found")
+
+          marker = f"<!-- ci-badge-updated:{ts} -->"
+          if "<!-- ci-badge-updated:" in text:
+              text = re.sub(r"<!-- ci-badge-updated:[^>]+ -->", marker, text, count=1)
+          else:
+              text = text.replace(badge + "\n", badge + "\n" + marker + "\n", 1)
+
+          path.write_text(text, encoding="utf-8")
+          print(f"README CI -> {label} @ {ts}")
+          PY
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "README already up to date"
+            exit 0
+          fi
+          git commit -m "chore: sync README CI status (${CONCLUSION}) [skip ci]"
+          git push

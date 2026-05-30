@@ -5,8 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+# Skip re-run when README-only bot commit from ci-readme-badge workflow
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,6 +34,7 @@ jobs:
         run: pytest -q
 
   secrets:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +46,7 @@ jobs:
           extra_args: --only-verified
 
   docs-audit:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
