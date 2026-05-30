@@ -19,6 +19,7 @@ class TeamMode(StrEnum):
     BILATERAL_ONLY = "bilateral_only"
     FADE_WATCH = "fade_watch"
     SKIP = "skip"
+    HUMAN_REVIEW = "human_review"
     UNLISTED = "unlisted"
 
 
@@ -128,6 +129,10 @@ def evaluate_market(market: AdvanceMarket, config: ConvictionConfig) -> Convicti
 
     if mode == TeamMode.SKIP:
         return ConvictionResult(market, mode, False, "per_team mode=skip")
+    if mode == TeamMode.HUMAN_REVIEW:
+        return ConvictionResult(
+            market, mode, False, "human_review — operator gate required (K84 LP safety)"
+        )
     if mode == TeamMode.FADE_WATCH:
         return ConvictionResult(market, mode, False, "fade_watch — alert only")
     if mode == TeamMode.UNLISTED:

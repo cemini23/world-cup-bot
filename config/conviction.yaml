@@ -2,7 +2,7 @@
 # Prices from Gamma at runtime; this file only gates WHICH teams to quote.
 # Tiers from public research (Gemini Deep Research + community LP analysis, May 2026).
 
-version: 3
+version: 4
 
 # Mid-tier YES-heavy LP (target mid ~0.20–0.80)
 yes_conviction:
@@ -73,6 +73,13 @@ per_team:
     max_notional_usd: 2500
   Bosnia & Herzegovina:
     max_notional_usd: 2000
+  # K84 LP safety DR (2026-05-30) — re-verify by 2026-06-06 pre-friendlies
+  Spain:
+    mode: skip
+  Brazil:
+    max_notional_usd: 500
+  Morocco:
+    mode: human_review
   USA:
     max_notional_usd: 500
     mode: skip
@@ -103,4 +110,6 @@ per_team:
 # K83 Group B DR: Canada yes_conviction $2500; Bosnia/Qatar fade_watch (8–14pp PM vs Kalshi)
 # K83 Third-place DR: Ivory Coast +51pp mispricing → cap 2500; DR Congo skip (GD blowout risk)
 # K83 Market-gap live (May 29): advance-to-knockout PM↔Kalshi NOT pairable; group-winner gaps <5pp
+# K84 LP safety (May 30): Spain skip (Yamal/friendlies); Brazil reduce cap $500 (Neymar);
+#   Morocco human_review (Aguerd/depth unknown). [NEEDS RE-RUN 2026-06-06]
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)

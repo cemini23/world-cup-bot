@@ -6,7 +6,8 @@ from world_cup_bot.conviction import TeamMode, load_conviction_config
 def test_load_default_config():
     cfg = load_conviction_config()
     assert cfg.team_mode("Turkey") == TeamMode.YES_HEAVY
-    assert cfg.team_mode("Spain") == TeamMode.BILATERAL_ONLY
+    assert cfg.team_mode("Spain") == TeamMode.SKIP
+    assert cfg.team_mode("France") == TeamMode.BILATERAL_ONLY
     assert cfg.team_mode("Mexico") == TeamMode.FADE_WATCH
     assert cfg.team_mode("USA") == TeamMode.SKIP
 
@@ -35,10 +36,23 @@ def test_bilateral_only_low_mid_skipped():
 
 def test_bilateral_high_mid_quotes():
     cfg = load_conviction_config()
-    m = make_market("Spain", mid=0.93, bilateral=True)
+    m = make_market("France", mid=0.93, bilateral=True)
     result = conviction.evaluate_market(m, cfg)
     assert result.quote
     assert result.mode == TeamMode.BILATERAL_ONLY
+
+
+def test_k84_lp_safety_gates():
+    cfg = load_conviction_config()
+    assert cfg.team_mode("Spain") == TeamMode.SKIP
+    assert cfg.max_notional("Brazil") == 500
+    assert cfg.team_mode("Morocco") == TeamMode.HUMAN_REVIEW
+    sp = make_market("Spain", mid=0.93, bilateral=True)
+    assert not conviction.evaluate_market(sp, cfg).quote
+    br = make_market("Brazil", mid=0.95, bilateral=True)
+    assert conviction.evaluate_market(br, cfg).quote
+    mo = make_market("Morocco", mid=0.55)
+    assert not conviction.evaluate_market(mo, cfg).quote
 
 
 def test_fade_watch_never_quotes():
