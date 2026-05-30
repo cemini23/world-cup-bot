@@ -54,7 +54,7 @@ def test_kill_switch_in_cancel_window():
 def test_queue_depletion_pulls():
     ops = load_operating_config()
     market = make_market("Turkey", mid=0.45)
-    result = fill_handler.handle_fill(_fill(), market, ops, ahead_notional_usd=350.0, dry_run=True)
+    result = fill_handler.handle_fill(_fill(), market, ops, ahead_notional_usd=160.0, dry_run=True)
     assert result.pull_quotes
     assert "queue depletion" in result.reason
 

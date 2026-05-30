@@ -26,7 +26,20 @@ class FillHandlerOps:
     exit_within_seconds: float
     queue_depletion_usd: float
     vol_drop_pct: float
+    vol_cooldown_minutes: float
     exit_loss_ticks: int
+
+
+@dataclass(frozen=True)
+class LiquidityOps:
+    """CLOB /book depth gates — auto-clear human_review when passes (optional)."""
+
+    min_depth_within_reward_spread_usd: float  # bid-side band depth
+    min_ask_depth_within_reward_spread_usd: float
+    min_combined_book_depth_usd: float
+    min_levels_per_side: int
+    max_spread_cents: float | None
+    auto_clear_human_review: bool
 
 
 @dataclass(frozen=True)
@@ -34,6 +47,7 @@ class OperatingConfig:
     calendar: CalendarOps
     bilateral: BilateralOps
     fill_handler: FillHandlerOps
+    liquidity: LiquidityOps
 
 
 def load_operating_config(path: Path | None = None) -> OperatingConfig:
@@ -44,6 +58,7 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
     cal = raw.get("calendar") or {}
     bil = raw.get("bilateral") or {}
     fh = raw.get("fill_handler") or {}
+    liq = raw.get("liquidity") or {}
 
     return OperatingConfig(
         calendar=CalendarOps(
@@ -57,6 +72,24 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
             exit_within_seconds=float(fh.get("exit_within_seconds", 60)),
             queue_depletion_usd=float(fh.get("queue_depletion_usd", 300)),
             vol_drop_pct=float(fh.get("vol_drop_pct", 0.25)),
+            vol_cooldown_minutes=float(fh.get("vol_cooldown_minutes", 30)),
             exit_loss_ticks=int(fh.get("exit_loss_ticks", 1)),
+        ),
+        liquidity=LiquidityOps(
+            min_depth_within_reward_spread_usd=float(
+                liq.get(
+                    "min_bid_depth_within_reward_spread_usd",
+                    liq.get("min_depth_within_reward_spread_usd", 50),
+                )
+            ),
+            min_ask_depth_within_reward_spread_usd=float(
+                liq.get("min_ask_depth_within_reward_spread_usd", 15)
+            ),
+            min_combined_book_depth_usd=float(liq.get("min_combined_book_depth_usd", 150)),
+            min_levels_per_side=int(liq.get("min_levels_per_side", 2)),
+            max_spread_cents=(
+                float(liq["max_spread_cents"]) if liq.get("max_spread_cents") is not None else None
+            ),
+            auto_clear_human_review=bool(liq.get("auto_clear_human_review", False)),
         ),
     )

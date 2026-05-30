@@ -7,17 +7,24 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from world_cup_bot.clob_auth import ClobAuth
 from world_cup_bot.config import Settings
-from world_cup_bot.fill_handler import FillEvent, FillHandlerResult, handle_fill, submit_exit
+from world_cup_bot.fill_handler import (
+    FillEvent,
+    FillHandlerResult,
+    handle_fill,
+    submit_exit,
+    volatility_pull_triggered,
+)
 from world_cup_bot.ledger import DuplicateFillError, record_exit_intent, record_fill
+from world_cup_bot.liquidity_scanner import fetch_ahead_bid_notional_usd
 from world_cup_bot.logic_version import StrategyVersionSpec
 from world_cup_bot.operating_config import OperatingConfig
 from world_cup_bot.reconcile import ReconcileState, run_reconcile_pass
-from world_cup_bot.scanner import AdvanceMarket
+from world_cup_bot.scanner import AdvanceMarket, discover_advance_markets
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +60,8 @@ class FillWatchContext:
     maker_address: str = ""
     reconcile_state: ReconcileState = field(default_factory=ReconcileState)
     seen_fill_keys: set[str] = field(default_factory=set)
+    peak_mid_by_team: dict[str, float] = field(default_factory=dict)
+    vol_cooldown_until: dict[str, datetime] = field(default_factory=dict)
     stats: WatchStats = field(default_factory=WatchStats)
     halt: Any = field(default_factory=lambda: _trading_halt())
     on_result: Callable[[FillHandlerResult], None] | None = None
@@ -199,7 +208,23 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
         ctx.seen_fill_keys.add(key)
 
         market = ctx.markets_by_condition[condition_id]
-        result = handle_fill(fill, market, ctx.operating, dry_run=ctx.dry_run)
+        ahead_usd = 0.0
+        try:
+            ahead_usd = fetch_ahead_bid_notional_usd(
+                ctx.clob_url,
+                fill.token_id,
+                fill.fill_price,
+            )
+        except Exception as exc:  # noqa: BLE001 — fail open on book fetch
+            logger.warning("ahead depth fetch failed for %s: %s", fill.team, exc)
+
+        result = handle_fill(
+            fill,
+            market,
+            ctx.operating,
+            ahead_notional_usd=ahead_usd,
+            dry_run=ctx.dry_run,
+        )
         ctx.stats.fills_processed += 1
 
         if ctx.record:
@@ -260,6 +285,66 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
     return results
 
 
+def market_safety_pass(ctx: FillWatchContext) -> None:
+    """Refresh Gamma mids, enforce vol pull + calendar cancel during watch."""
+    if ctx.settings is None:
+        return
+
+    from world_cup_bot.order_manager import apply_fill_safety_actions, cancel_for_cancel_window
+
+    fresh = discover_advance_markets(
+        ctx.settings.gamma_url,
+        min_hours_before_kickoff=ctx.settings.min_hours_before_kickoff,
+    )
+    ctx.markets = fresh
+    ctx.markets_by_condition = {m.condition_id: m for m in fresh if m.condition_id}
+
+    now = datetime.now(UTC)
+    cooldown_min = ctx.operating.fill_handler.vol_cooldown_minutes
+
+    for market in fresh:
+        if market.mid is None:
+            continue
+        team = market.team
+        peak = ctx.peak_mid_by_team.get(team, market.mid)
+        if market.mid > peak:
+            ctx.peak_mid_by_team[team] = market.mid
+            peak = market.mid
+
+        cooldown_until = ctx.vol_cooldown_until.get(team)
+        if cooldown_until is not None and now < cooldown_until:
+            continue
+
+        if volatility_pull_triggered(peak, market.mid, ctx.operating.fill_handler):
+            logger.warning(
+                "volatility pull %s mid %.3f peak %.3f",
+                team,
+                market.mid,
+                peak,
+            )
+            apply_fill_safety_actions(
+                ctx.settings,
+                ctx.markets,
+                team=team,
+                kill_switch=False,
+                pull_quotes=True,
+                halt=ctx.halt,
+                dry_run=ctx.dry_run,
+                ledger_path=ctx.ledger_path,
+                version_spec=ctx.version_spec,
+            )
+            ctx.peak_mid_by_team[team] = market.mid
+            ctx.vol_cooldown_until[team] = now + timedelta(minutes=cooldown_min)
+
+    cancel_for_cancel_window(
+        ctx.settings,
+        ctx.markets,
+        dry_run=ctx.dry_run,
+        ledger_path=ctx.ledger_path,
+        version_spec=ctx.version_spec,
+    )
+
+
 async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> None:
     """Periodic REST /data/trades pass — WS alone can miss silent fills."""
     if ctx.auth is None or not ctx.poly_address or not ctx.maker_address:
@@ -294,16 +379,7 @@ async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> 
                     stats.trades_fetched,
                     stats.fills_skipped,
                 )
-            if ctx.settings is not None:
-                from world_cup_bot.order_manager import cancel_for_cancel_window
-
-                cancel_for_cancel_window(
-                    ctx.settings,
-                    ctx.markets,
-                    dry_run=ctx.dry_run,
-                    ledger_path=ctx.ledger_path,
-                    version_spec=ctx.version_spec,
-                )
+            market_safety_pass(ctx)
 
 
 async def _ping_loop(ws: Any, *, stop: asyncio.Event) -> None:

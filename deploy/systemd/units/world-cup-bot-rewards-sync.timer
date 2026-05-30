@@ -1,0 +1,9 @@
+[Unit]
+Description=World Cup Bot daily rewards sync at 07:10 UTC (enable after Phase 2 + L2 creds)
+
+[Timer]
+OnCalendar=*-*-* 07:10:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

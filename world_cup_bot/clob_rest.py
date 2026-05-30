@@ -48,6 +48,17 @@ def fetch_clob_time(clob_url: str) -> int:
     return int(payload)
 
 
+def fetch_book(clob_url: str, token_id: str, *, timeout: float = 15) -> dict[str, Any]:
+    """Public GET /book — no auth (requires User-Agent via http_client)."""
+    qs = urllib.parse.urlencode({"token_id": token_id})
+    url = f"{clob_url.rstrip('/')}/book?{qs}"
+    with urlopen_get(url, timeout=timeout) as resp:
+        payload = json.loads(resp.read().decode())
+    if not isinstance(payload, dict):
+        raise ValueError(f"unexpected /book payload type: {type(payload)}")
+    return payload
+
+
 def _authenticated_get(
     clob_url: str,
     path: str,

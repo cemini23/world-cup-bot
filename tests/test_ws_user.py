@@ -91,3 +91,82 @@ def test_process_trade_unknown_market_increments_skip():
     msg = _load_trade_fixture()
     assert ws_user.process_trade_message(msg, ctx) == []
     assert ctx.stats.fills_skipped_unknown_market == 1
+
+
+def test_process_trade_queue_depletion(monkeypatch):
+    market = make_market("Turkey", mid=0.45)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={"0x1": market},
+        markets=[market],
+        operating=load_operating_config(),
+        version_spec=load_strategy_version(),
+        ledger_path="data/local/test-ledger.jsonl",
+        dry_run=True,
+        record=False,
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.ws_user.fetch_ahead_bid_notional_usd",
+        lambda *_a, **_k: 200.0,
+    )
+    msg = _load_trade_fixture()
+    results = ws_user.process_trade_message(msg, ctx)
+    assert len(results) == 1
+    assert results[0].pull_quotes
+    assert "queue depletion" in results[0].reason
+
+
+def test_market_safety_vol_pull_respects_cooldown(monkeypatch):
+    from world_cup_bot.config import Settings
+
+    market = make_market("Turkey", mid=0.35, hours_to_kickoff=48.0)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    settings = Settings(
+        gamma_url="https://gamma-api.polymarket.com",
+        clob_url="https://clob.polymarket.com",
+        ws_user_url="wss://example.com/ws",
+        dry_run=True,
+        min_hours_before_kickoff=10.0,
+        max_notional_per_market_usd=2000.0,
+        conviction_config="config/conviction.yaml",
+        logic_version_config="config/strategy_logic_versions.yaml",
+        ledger_path="data/local/test-ledger.jsonl",
+        operating_config="config/operating.yaml",
+        cross_venue_config="config/cross_venue.yaml",
+        kalshi_base_url="https://api.elections.kalshi.com/trade-api/v2",
+    )
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={"0x1": market},
+        markets=[market],
+        operating=load_operating_config(),
+        version_spec=load_strategy_version(),
+        ledger_path="data/local/test-ledger.jsonl",
+        dry_run=True,
+        record=False,
+        settings=settings,
+    )
+    ctx.peak_mid_by_team["Turkey"] = 0.50
+    pulled: list[str] = []
+
+    def fake_apply(_settings, _markets, *, team, pull_quotes, **_kwargs):
+        if pull_quotes:
+            pulled.append(team)
+
+    monkeypatch.setattr(
+        "world_cup_bot.ws_user.discover_advance_markets",
+        lambda *_a, **_k: [market],
+    )
+    monkeypatch.setattr("world_cup_bot.order_manager.apply_fill_safety_actions", fake_apply)
+    monkeypatch.setattr(
+        "world_cup_bot.order_manager.cancel_for_cancel_window",
+        lambda *_a, **_k: None,
+    )
+
+    ws_user.market_safety_pass(ctx)
+    assert pulled == ["Turkey"]
+    ws_user.market_safety_pass(ctx)
+    assert pulled == ["Turkey"]

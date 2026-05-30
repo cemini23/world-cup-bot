@@ -8,6 +8,7 @@ version: 1
 alert_threshold_pp: 5.0
 poll_interval_sec: 120
 fee_kalshi_profit_pct: 7.0
+verification_max_age_days: 14  # pairs with stale last_verified auto-block alerts
 
 pairs:
   # --- fade_watch (group winner) ---

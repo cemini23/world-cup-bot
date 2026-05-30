@@ -29,6 +29,7 @@ def _sample_config() -> CrossVenueConfig:
         alert_threshold_pp=5.0,
         poll_interval_sec=120,
         fee_kalshi_profit_pct=7.0,
+        verification_max_age_days=14,
         pairs=(
             CrossVenuePair(
                 team="USA",
@@ -113,6 +114,56 @@ def test_slug_change_detected():
     row = scan_config_pair(pair, _sample_config(), pm=pm, kalshi=None)
     assert row.slug_changed is True
     assert "totally-new-slug" in (row.slug_change_detail or "")
+
+
+def test_stale_last_verified_blocks_alert():
+    cfg = _sample_config()
+    pair = CrossVenuePair(
+        team="USA",
+        market_type="group_winner",
+        polymarket_hint="Will USA win Group D?",
+        kalshi_event_ticker="KXWCGROUPWIN-26D",
+        kalshi_market_ticker="KXWCGROUPWIN-26D-USA",
+        rules_hash="group_winner_fifa_tiebreak_v1",
+        enabled=True,
+        last_verified="2026-01-01",
+        notes=None,
+        polymarket_slug="usa-win-group-d",
+        polymarket_condition_id="0xabc",
+    )
+    pm = PolymarketSnapshot(
+        team="USA",
+        market_type="group_winner",
+        group="D",
+        question="Will USA win Group D?",
+        slug="usa-win-group-d",
+        condition_id="0xabc",
+        mid=0.70,
+        best_bid=0.69,
+        best_ask=0.71,
+        volume=1000,
+        liquidity=5000,
+        accepting_orders=True,
+    )
+    kalshi = KalshiMarketSnapshot(
+        ticker="KXWCGROUPWIN-26D-USA",
+        event_ticker="KXWCGROUPWIN-26D",
+        title="USA wins Group D",
+        team="USA",
+        market_type="group_winner",
+        mid=0.55,
+        yes_bid=0.54,
+        yes_ask=0.56,
+        volume=500,
+        volume_24h=500,
+        open_interest=50,
+        status="open",
+    )
+    row = scan_config_pair(pair, cfg, pm=pm, kalshi=kalshi)
+    assert row.blocked is True
+    assert row.block_reason is not None
+    assert "stale" in row.block_reason
+    assert row.alert is False
 
 
 def test_blocked_market_type_no_alert():

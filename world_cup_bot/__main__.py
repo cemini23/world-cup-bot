@@ -15,9 +15,15 @@ from world_cup_bot import (
     alerts,
     calendar_guard,
     conviction,
+    conviction_patch,
+    conviction_staleness,
+    cross_venue_alerts,
     cross_venue_scanner,
     fill_handler,
+    fixture_watch,
     ledger,
+    liquidity_scanner,
+    operating_config,
     order_manager,
     preflight,
     quoter,
@@ -57,6 +63,12 @@ def _ledger_summary_dict(settings: Settings, version_spec) -> dict | None:
 def _build_advisor_context(settings: Settings, markets: list[scanner.AdvanceMarket]):
     version_spec = load_strategy_version(Path(settings.logic_version_config))
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    operating = operating_config.load_operating_config()
+    liq_cfg, liq_by_team = liquidity_scanner.liquidity_map_for_markets(
+        markets,
+        clob_url=settings.clob_url,
+        operating=operating,
+    )
     schedule = calendar_guard.build_team_schedule()
     now = datetime.now(UTC)
     cancel_rows = calendar_guard.teams_in_cancel_window(
@@ -74,6 +86,9 @@ def _build_advisor_context(settings: Settings, markets: list[scanner.AdvanceMark
         cancel_window=cancel_rows,
         ledger_summary=_ledger_summary_dict(settings, version_spec),
         prompt_path=advisor_settings.prompt_path,
+        liquidity_by_team=liq_by_team,
+        liquidity_cfg=liq_cfg,
+        liquidity_gate=True,
     )
 
 
@@ -124,6 +139,197 @@ def _load_markets(settings: Settings) -> list[scanner.AdvanceMarket]:
     )
 
 
+def _liquidity_context(
+    settings: Settings,
+    markets: list[scanner.AdvanceMarket],
+    *,
+    teams: set[str] | None = None,
+) -> tuple[operating_config.LiquidityOps, dict[str, liquidity_scanner.LiquidityReport]]:
+    operating = operating_config.load_operating_config()
+    scan_targets = markets
+    if teams:
+        scan_targets = [m for m in markets if m.team in teams]
+    return liquidity_scanner.liquidity_map_for_markets(
+        scan_targets,
+        clob_url=settings.clob_url,
+        operating=operating,
+    )
+
+
+def _liquidity_gate_enabled(*, explicit_flag: bool) -> bool:
+    operating = operating_config.load_operating_config()
+    return explicit_flag or operating.liquidity.auto_clear_human_review
+
+
+def _print_liquidity_report(report: liquidity_scanner.LiquidityReport) -> None:
+    m = report.market
+    mid = f"{report.midpoint:.3f}"
+    gamma_liq = f"{report.gamma_liquidity:.0f}" if report.gamma_liquidity is not None else "—"
+    band = f"{report.min_band_depth_usd:.0f}" if report.min_band_depth_usd is not None else "—"
+    status = "PASS" if report.passes else "FAIL"
+    print(
+        f"{m.team:24} {mid:>6} {gamma_liq:>8} {band:>8} {status:>4}  "
+        f"{'; '.join(report.reasons[:2])}"
+    )
+    if report.yes:
+        y = report.yes
+        print(
+            f"  YES bid/ask band ${y.bid.depth_in_band_usd:.0f}/${y.ask.depth_in_band_usd:.0f} "
+            f"({y.bid.levels}/{y.ask.levels} lvls) "
+            f"full ${y.bid.depth_usd:.0f}/${y.ask.depth_usd:.0f}"
+        )
+    if report.no:
+        n = report.no
+        print(
+            f"  NO  bid/ask band ${n.bid.depth_in_band_usd:.0f}/${n.ask.depth_in_band_usd:.0f} "
+            f"({n.bid.levels}/{n.ask.levels} lvls) "
+            f"full ${n.bid.depth_usd:.0f}/${n.ask.depth_usd:.0f}"
+        )
+
+
+def _cmd_conviction_staleness(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
+    staleness_alerts = conviction_staleness.scan_mid_staleness(
+        markets,
+        ledger_path=Path(settings.ledger_path),
+        threshold_pp=args.threshold_pp,
+    )
+    if args.json:
+        print(json.dumps([a.to_dict() for a in staleness_alerts], indent=2))
+        return 0 if not staleness_alerts else 2
+
+    if not staleness_alerts:
+        print(f"No mid moves ≥{args.threshold_pp:.0f}pp vs ledger quote_intent baseline.")
+        return 0
+
+    print(f"{'TEAM':24} {'PLACED':>7} {'LIVE':>7} {'Δpp':>6}  REASON")
+    for alert in staleness_alerts:
+        print(
+            f"{alert.team:24} {alert.mid_at_place:7.3f} {alert.live_mid:7.3f} "
+            f"{alert.delta_pp:6.1f}  {alert.reason}"
+        )
+    if args.notify:
+        for alert in staleness_alerts:
+            alerts.notify(
+                "conviction_staleness",
+                f"MID_STALE {alert.team} {alert.delta_pp:.1f}pp — {alert.reason}",
+                extra=alert.to_dict(),
+            )
+    print(f"\n{len(staleness_alerts)} staleness alert(s) — re-run conviction DR for flagged teams")
+    return 2
+
+
+def _cmd_fixture_check(args: argparse.Namespace) -> int:
+    try:
+        result = fixture_watch.check_fixtures(
+            local_path=Path(args.local) if args.local else None,
+            upstream_url=args.upstream_url,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"fixture-check failed: {exc}")
+        return 1
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    elif not result.has_changes:
+        print(
+            f"Fixtures in sync ({result.local_match_count} matches, "
+            f"sha256={result.local_sha256[:12]}…)"
+        )
+    else:
+        print(
+            f"Fixture drift detected — local {result.local_match_count} vs "
+            f"upstream {result.upstream_match_count} matches"
+        )
+        if result.local_sha256 != result.upstream_sha256 and not result.changes:
+            print("  (file hash differs but no per-match diff parsed)")
+        for change in result.changes:
+            print(
+                f"  {change.change_type:12} {change.team1} vs {change.team2} "
+                f"({change.group}): {change.detail}"
+            )
+
+    if result.has_changes and args.notify:
+        summary = (
+            f"{len(result.changes)} fixture change(s) — refresh data/worldcup2026-fixtures.json"
+        )
+        alerts.notify("fixture_drift", summary, extra=result.to_dict())
+
+    if args.apply:
+        if not result.has_changes:
+            print("Nothing to apply.")
+            return 0
+        path = fixture_watch.apply_upstream_fixtures(
+            local_path=Path(args.local) if args.local else None,
+            upstream_url=args.upstream_url,
+        )
+        print(f"Applied upstream fixtures → {path}")
+        return 0
+
+    return 2 if result.has_changes else 0
+
+
+def _cmd_conviction_patch(args: argparse.Namespace) -> int:
+    path = Path(args.file)
+    if not path.is_file():
+        print(f"File not found: {path}")
+        return 1
+    text = path.read_text(encoding="utf-8")
+    patches = conviction_patch.parse_dr_patches(text)
+    if not patches:
+        print("No conviction patches parsed — expected DR appendix JSON with team + lp_posture")
+        return 1
+
+    rendered = conviction_patch.render_staged_yaml(patches)
+    if args.stage:
+        out = conviction_patch.stage_patches(patches, out_dir=Path(args.out_dir))
+        print(f"Staged {len(patches)} patch(es) → {out}")
+        print(rendered)
+        return 0
+
+    print(rendered)
+    print(f"\n{len(patches)} patch(es) — merge into config/conviction.yaml manually")
+    return 0
+
+
+def _cmd_liquidity_scan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    markets = _load_markets(settings)
+    if args.eligible_only:
+        markets = scanner.filter_lp_eligible(markets)
+    if not markets:
+        print("No advance markets found.")
+        return 1
+
+    team_filter = {args.team} if args.team else None
+    if args.human_review_only:
+        cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+        markets = [m for m in markets if cfg.team_mode(m.team) == conviction.TeamMode.HUMAN_REVIEW]
+        if not markets:
+            print("No human_review markets in current scan set.")
+            return 1
+
+    liq_cfg, liq_by_team = _liquidity_context(settings, markets, teams=team_filter)
+    reports = [liq_by_team[m.team] for m in markets if m.team in liq_by_team]
+
+    if args.json:
+        print(liquidity_scanner.reports_to_json(reports))
+        return 0
+
+    print(f"{'TEAM':24} {'MID':>6} {'GAMMA$':>8} {'MINBAND':>8} {'GATE':>4}  REASON")
+    print(
+        f"(band depth: bid min ${liq_cfg.min_depth_within_reward_spread_usd:.0f}, "
+        f"ask min ${liq_cfg.min_ask_depth_within_reward_spread_usd:.0f} — config/operating.yaml)"
+    )
+    for report in reports:
+        _print_liquidity_report(report)
+
+    passed = sum(1 for r in reports if r.passes)
+    print(f"\n{passed}/{len(reports)} pass liquidity gate (CLOB /book, live)")
+    return 0 if passed == len(reports) else 2
+
+
 def _cmd_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     markets = _load_markets(settings)
@@ -135,18 +341,52 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         return 1
 
     cfg = None
+    liq_cfg = None
+    liq_by_team: dict[str, liquidity_scanner.LiquidityReport] = {}
     if args.conviction:
         cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    use_liq = args.liquidity or (args.conviction and _liquidity_gate_enabled(explicit_flag=False))
+    if use_liq:
+        liq_cfg, liq_by_team = _liquidity_context(
+            settings, markets, teams={args.team} if getattr(args, "team", None) else None
+        )
 
     if cfg:
-        print(f"{'TEAM':24} {'MID':>6} {'MODE':>16} {'QUOTE':>5} {'LP':>3}  REASON")
+        header = f"{'TEAM':24} {'MID':>6} {'MODE':>16} {'QUOTE':>5} {'LP':>3}"
+        if use_liq:
+            header += f" {'DEPTH':>5}"
+        print(f"{header}  REASON")
         for m in markets:
+            if getattr(args, "team", None) and m.team != args.team:
+                continue
             mid = f"{m.mid:.3f}" if m.mid is not None else "  —  "
-            ev = conviction.evaluate_market(m, cfg)
+            ev = conviction.evaluate_market(
+                m,
+                cfg,
+                liquidity=liq_by_team.get(m.team),
+                liquidity_cfg=liq_cfg,
+                liquidity_gate=use_liq,
+            )
+            depth_col = ""
+            if use_liq:
+                rep = liq_by_team.get(m.team)
+                if rep:
+                    depth_col = f" {'PASS' if rep.passes else 'FAIL':>5}"
+                else:
+                    depth_col = f" {'—':>5}"
             print(
                 f"{m.team:24} {mid:>6} {ev.mode.value:>16} "
-                f"{'Y' if ev.quote else 'N':>5} {'Y' if m.lp_eligible else 'N':>3}  {ev.reason}"
+                f"{'Y' if ev.quote else 'N':>5} {'Y' if m.lp_eligible else 'N':>3}"
+                f"{depth_col}  {ev.reason}"
             )
+    elif use_liq and not cfg:
+        print(f"{'TEAM':24} {'MID':>6} {'GAMMA$':>8} {'MINBAND':>8} {'GATE':>4}  REASON")
+        for m in markets:
+            if getattr(args, "team", None) and m.team != args.team:
+                continue
+            rep = liq_by_team.get(m.team)
+            if rep:
+                _print_liquidity_report(rep)
     else:
         print(f"{'TEAM':24} {'MID':>6} {'SPRD':>6} {'LIQ':>8} {'HRS':>6} {'BIL':>4} {'LP':>3}")
         for m in markets:
@@ -169,7 +409,21 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     markets = _load_markets(settings)
-    results = conviction.filter_conviction_markets(markets, cfg, quote_only=not args.all)
+
+    liq_cfg = None
+    liq_by_team: dict[str, liquidity_scanner.LiquidityReport] = {}
+    use_liq = _liquidity_gate_enabled(explicit_flag=args.liquidity_gate)
+    if use_liq:
+        liq_cfg, liq_by_team = _liquidity_context(settings, markets)
+
+    results = conviction.filter_conviction_markets(
+        markets,
+        cfg,
+        quote_only=not args.all,
+        liquidity_by_team=liq_by_team if use_liq else None,
+        liquidity_cfg=liq_cfg,
+        liquidity_gate=use_liq,
+    )
 
     if not results:
         print("No conviction targets (try --all to see skips).")
@@ -651,6 +905,7 @@ def _cmd_shadow_status(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2))
     else:
         print(f"DRY_RUN={payload['dry_run']}  progress={payload['shadow_progress']}")
+        print(f"Ledger path: {payload.get('ledger_path') or settings.ledger_path}")
         for step in payload["shadow_steps"]:
             print(f"  [{step['status']:7}] phase {step['phase']} {step['title']}: {step['detail']}")
         ledger_stats = payload["ledger"]
@@ -856,21 +1111,17 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
                     f"PM={row.pm_mid:.3f} KAL={row.kalshi_mid:.3f}"
                 )
                 print(line)
-                alerts.notify(
-                    "cross_venue_alert",
-                    line,
-                    extra=row.to_dict(),
-                )
-            if result.slug_warnings:
-                for row in result.slug_warnings:
-                    print(f"SLUG_CHANGE {row.team}: {row.slug_change_detail}")
+            for row in result.slug_warnings:
+                print(f"SLUG_CHANGE {row.team}: {row.slug_change_detail}")
+            cross_venue_alerts.notify_scan_results(result)
             if args.discover:
                 new = [d for d in result.discoveries if not d.in_config]
                 if new:
                     print(f"DISCOVER {len(new)} new pair(s) — run --discover-only for YAML rows")
 
         if args.once or not args.loop:
-            return 2 if result.alerts else 0
+            exit_code = 2 if (result.alerts or result.slug_warnings) else 0
+            return exit_code
 
         time.sleep(cfg.poll_interval_sec)
 
@@ -945,7 +1196,93 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Show conviction tier + quote gate per team",
     )
-    sc.set_defaults(eligible_only=True, func=_cmd_scan)
+    sc.add_argument(
+        "--liquidity",
+        action="store_true",
+        help="Fetch CLOB /book depth; with --conviction, apply liquidity gate to human_review",
+    )
+    sc.add_argument("--team", help="Filter to one team (with --liquidity)")
+    sc.set_defaults(eligible_only=True, func=_cmd_scan, liquidity=False)
+
+    cs = sub.add_parser(
+        "conviction-staleness",
+        help="Alert when live mid moved vs last ledger quote_intent (DR trigger)",
+    )
+    cs.add_argument(
+        "--threshold-pp",
+        type=float,
+        default=15.0,
+        help="Min absolute mid move in percentage points (default: 15)",
+    )
+    cs.add_argument("--json", action="store_true", help="Machine-readable output")
+    cs.add_argument(
+        "--notify",
+        action="store_true",
+        help="POST alerts to WC_ALERT_WEBHOOK_URL when drift detected",
+    )
+    cs.set_defaults(func=_cmd_conviction_staleness, notify=False)
+
+    fc = sub.add_parser(
+        "fixture-check",
+        help="Diff vendored fixtures vs openfootball upstream (alert-only)",
+    )
+    fc.add_argument(
+        "--local",
+        help="Local fixtures path (default: data/worldcup2026-fixtures.json)",
+    )
+    fc.add_argument(
+        "--upstream-url",
+        default=fixture_watch.DEFAULT_UPSTREAM_URL,
+        help="openfootball upstream JSON URL",
+    )
+    fc.add_argument("--json", action="store_true", help="Machine-readable output")
+    fc.add_argument(
+        "--notify",
+        action="store_true",
+        help="POST to WC_ALERT_WEBHOOK_URL when drift detected",
+    )
+    fc.add_argument(
+        "--apply",
+        action="store_true",
+        help="Replace local fixtures with upstream (operator refresh)",
+    )
+    fc.set_defaults(func=_cmd_fixture_check, notify=False)
+
+    cp = sub.add_parser(
+        "conviction-patch",
+        help="Parse Gemini DR JSON → staged conviction.yaml snippets (manual merge)",
+    )
+    cp.add_argument("file", help="DR output file (markdown with JSON appendix)")
+    cp.add_argument(
+        "--stage",
+        action="store_true",
+        help="Write data/local/staged/conviction-patch-*.yaml",
+    )
+    cp.add_argument(
+        "--out-dir",
+        default="data/local/staged",
+        help="Staging directory for --stage",
+    )
+    cp.set_defaults(func=_cmd_conviction_patch)
+
+    lq = sub.add_parser(
+        "liquidity-scan",
+        help="CLOB order-book depth vs operating.yaml liquidity gates (public /book)",
+    )
+    lq.add_argument("--team", help="Single team only")
+    lq.add_argument(
+        "--human-review-only",
+        action="store_true",
+        help="Only teams with per_team mode=human_review (e.g. Morocco)",
+    )
+    lq.add_argument(
+        "--all",
+        dest="eligible_only",
+        action="store_false",
+        help="Include markets outside LP eligibility filter",
+    )
+    lq.add_argument("--json", action="store_true", help="Machine-readable report")
+    lq.set_defaults(eligible_only=True, func=_cmd_liquidity_scan)
 
     pl = sub.add_parser(
         "plan",
@@ -977,7 +1314,12 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Exit non-zero if advisor is enabled but API call fails",
     )
-    pl.set_defaults(func=_cmd_plan)
+    pl.add_argument(
+        "--liquidity-gate",
+        action="store_true",
+        help="Fetch CLOB /book; auto-clear human_review when depth passes (see operating.yaml)",
+    )
+    pl.set_defaults(func=_cmd_plan, liquidity_gate=False)
 
     cx = sub.add_parser(
         "context",

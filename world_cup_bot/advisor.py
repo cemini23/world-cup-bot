@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from world_cup_bot.conviction import ConvictionConfig, ConvictionResult, evaluate_market
+from world_cup_bot.liquidity_scanner import LiquidityReport, report_to_dict
 from world_cup_bot.logic_version import StrategyVersionSpec
+from world_cup_bot.operating_config import LiquidityOps
 from world_cup_bot.scanner import AdvanceMarket
 
 logger = logging.getLogger(__name__)
@@ -105,8 +107,10 @@ def _market_row(
     market: AdvanceMarket,
     result: ConvictionResult,
     cfg: ConvictionConfig,
+    *,
+    liquidity: LiquidityReport | None = None,
 ) -> dict[str, Any]:
-    return {
+    row = {
         "team": market.team,
         "condition_id": market.condition_id,
         "mid": market.mid,
@@ -123,6 +127,9 @@ def _market_row(
         "quote_reason": result.reason,
         "max_notional_usd": cfg.max_notional(market.team),
     }
+    if liquidity is not None:
+        row["clob_depth"] = report_to_dict(liquidity)
+    return row
 
 
 def build_decision_context(
@@ -135,13 +142,25 @@ def build_decision_context(
     cancel_window: list[tuple[str, float]],
     ledger_summary: dict[str, Any] | None,
     prompt_path: Path | None = None,
+    liquidity_by_team: dict[str, LiquidityReport] | None = None,
+    liquidity_cfg: LiquidityOps | None = None,
+    liquidity_gate: bool = False,
 ) -> DecisionContext:
     prompt = prompt_path or DEFAULT_PROMPT
     instructions = ""
     if prompt.is_file():
         instructions = prompt.read_text(encoding="utf-8")
 
-    rows = [evaluate_market(m, conviction) for m in markets]
+    rows = [
+        evaluate_market(
+            m,
+            conviction,
+            liquidity=(liquidity_by_team or {}).get(m.team),
+            liquidity_cfg=liquidity_cfg,
+            liquidity_gate=liquidity_gate,
+        )
+        for m in markets
+    ]
     return DecisionContext(
         generated_at=datetime.now(UTC).isoformat(),
         logic_version=version_spec.version_id,
@@ -151,7 +170,15 @@ def build_decision_context(
         cancel_window=[
             {"team": team, "hours_to_kickoff": round(hours, 2)} for team, hours in cancel_window
         ],
-        conviction_rows=[_market_row(r.market, r, conviction) for r in rows],
+        conviction_rows=[
+            _market_row(
+                r.market,
+                r,
+                conviction,
+                liquidity=(liquidity_by_team or {}).get(r.market.team),
+            )
+            for r in rows
+        ],
         ledger_summary=ledger_summary,
         advisor_instructions=instructions,
     )

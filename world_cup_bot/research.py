@@ -9,13 +9,21 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from world_cup_bot import calendar_guard, conviction, scanner
+from world_cup_bot import (
+    calendar_guard,
+    conviction,
+    conviction_staleness,
+    cross_venue_scanner,
+    liquidity_scanner,
+    scanner,
+)
 from world_cup_bot.calendar_guard import load_fixtures
 from world_cup_bot.config import Settings
 from world_cup_bot.conviction import ConvictionConfig, TeamMode, load_conviction_config
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.ledger import load_rows, summarize_pnl
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.shadow_checklist import ready_payload
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -208,28 +216,23 @@ def build_research_bundle(
         fade = sorted(cfg.fade_watch)
         focus["fade_watch_teams"] = fade
         focus["markets"] = [_market_focus_row(by_team[t], cfg) for t in fade if t in by_team]
+        cv_cfg = load_cross_venue_config()
+        scan = cross_venue_scanner.run_scan(cv_cfg, gamma_url=settings.gamma_url)
+        focus["live_cross_venue_alerts"] = [r.to_dict() for r in scan.alerts]
+        focus["slug_warnings"] = [r.to_dict() for r in scan.slug_warnings]
         focus["known_research_flags"] = [
             {
-                "team": "USA",
-                "note": "K82 book gap; K83 live group-winner gap 1.0pp only — advance PM TBD",
-            },
-            {
-                "team": "Switzerland",
-                "note": "K83 group-winner gap 1.5pp; PM advance unavailable May 29",
-            },
-            {
-                "team": "England",
-                "note": "K83 group-winner gap 1.0pp",
-            },
-            {
-                "team": "Croatia",
-                "note": "K83 max gap 2.0pp group-winner; Kalshi vol $266 stale risk",
-            },
-            {
-                "team": "Bosnia & Herzegovina",
-                "note": "K83 Group B: 8–11pp PM vs Kalshi on advance — fade_watch",
-            },
-        ]
+                "team": row.team,
+                "market_type": row.market_type,
+                "gap_pp": row.gap_pp,
+                "blocked": row.blocked,
+                "block_reason": row.block_reason,
+                "slug_changed": row.slug_changed,
+                "alert": row.alert,
+            }
+            for row in scan.rows
+            if row.alert or row.slug_changed or row.blocked
+        ][:25]
 
     elif mode == ResearchMode.TEAM_LP_RISK:
         if not team:
@@ -239,9 +242,22 @@ def build_research_bundle(
             raise ValueError(f"No Gamma advance market for team {team!r}")
         focus["team"] = m.team
         focus["market"] = _market_focus_row(m, cfg)
+        operating = load_operating_config()
+        depth = liquidity_scanner.scan_market_liquidity(
+            m,
+            clob_url=settings.clob_url,
+            cfg=operating.liquidity,
+            bilateral=operating.bilateral,
+        )
+        focus["clob_depth"] = liquidity_scanner.report_to_dict(depth)
+        liquidity = operating.liquidity
         focus["operating_thresholds"] = {
-            "exit_within_seconds": 60,
-            "queue_depletion_usd": 300,
+            "exit_within_seconds": operating.fill_handler.exit_within_seconds,
+            "queue_depletion_usd": operating.fill_handler.queue_depletion_usd,
+            "min_depth_within_reward_spread_usd": liquidity.min_depth_within_reward_spread_usd,
+            "min_ask_depth_within_reward_spread_usd": (
+                liquidity.min_ask_depth_within_reward_spread_usd
+            ),
             "min_hours_before_kickoff": settings.min_hours_before_kickoff,
         }
 
@@ -267,6 +283,13 @@ def build_research_bundle(
             }
             for r in rows
             if r.mode != TeamMode.UNLISTED
+        ]
+        focus["staleness_alerts"] = [
+            a.to_dict()
+            for a in conviction_staleness.scan_mid_staleness(
+                markets,
+                ledger_path=Path(settings.ledger_path),
+            )
         ]
         focus["yaml_summary"] = {
             "yes_conviction_count": len(cfg.yes_conviction),

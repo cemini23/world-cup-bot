@@ -11,6 +11,17 @@ bilateral:
 
 fill_handler:
   exit_within_seconds: 60
-  queue_depletion_usd: 300
+  queue_depletion_usd: 150  # WC advance books — thinner than politics majors
   vol_drop_pct: 0.25
+  vol_cooldown_minutes: 30  # min between vol-pull cancels per team
   exit_loss_ticks: 1
+
+# CLOB GET /book depth gates (public API — no auth). Gamma `liquidity` is aggregate only.
+# WC advance markets are thinner than politics — thresholds tuned below major-market defaults.
+liquidity:
+  min_depth_within_reward_spread_usd: 50   # bid-side band depth (WC advance)
+  min_ask_depth_within_reward_spread_usd: 15  # offer side often thinner — separate floor
+  min_combined_book_depth_usd: 150
+  min_levels_per_side: 2
+  max_spread_cents: null  # null → use each market's Gamma rewardsMaxSpread
+  auto_clear_human_review: true  # depth-only clear; injury gates stay in conviction YAML

@@ -62,6 +62,9 @@ if [[ "$PROFILE" == "monitor" ]]; then
     world-cup-bot-calendar-guard
     world-cup-bot-discover
     world-cup-bot-pnl-daily
+    world-cup-bot-rewards-sync
+    world-cup-bot-conviction-staleness
+    world-cup-bot-fixture-check
   )
 else
   UNITS=(
@@ -83,6 +86,8 @@ for unit in "${UNITS[@]}"; do
 done
 
 touch "$INSTALL_ROOT/logs/cross_venue_alerts.jsonl"
+touch "$INSTALL_ROOT/logs/cron_pnl.log"
+touch "$INSTALL_ROOT/logs/cron_rewards.log"
 touch "$INSTALL_ROOT/data/local/shadow_ledger.jsonl"
 touch "$INSTALL_ROOT/data/local/ledger.jsonl"
 
@@ -96,8 +101,12 @@ if [[ "$ENABLE" == true ]]; then
       world-cup-bot-scan.timer \
       world-cup-bot-calendar-guard.timer \
       world-cup-bot-discover.timer \
-      world-cup-bot-pnl-daily.timer
+      world-cup-bot-pnl-daily.timer \
+      world-cup-bot-conviction-staleness.timer \
+      world-cup-bot-fixture-check.timer
     echo "Monitor profile enabled (read-only + shadow timers)."
+    echo "Rewards sync unit installed but timer NOT enabled — enable after Phase 2 + L2 creds:"
+    echo "  systemctl enable --now world-cup-bot-rewards-sync.timer"
   else
     systemctl enable --now world-cup-bot-preflight.timer
     echo "Trading profile: preflight timer enabled. Enable watch/live-plan after SHADOW.md gates."

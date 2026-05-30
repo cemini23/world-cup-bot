@@ -51,9 +51,16 @@ def test_calendar_payload_offline():
 
 def test_plan_payload_mocked():
     markets = [make_market("Turkey", mid=0.45)]
-    with patch("world_cup_bot.ui_data.scanner.discover_advance_markets", return_value=markets):
+    with (
+        patch("world_cup_bot.ui_data.scanner.discover_advance_markets", return_value=markets),
+        patch(
+            "world_cup_bot.ui_data.liquidity_scanner.liquidity_map_for_markets",
+            return_value=(None, {}),
+        ),
+    ):
         payload = plan_payload(_settings())
     assert "intents" in payload
+    assert payload["liquidity_gate"] is True
 
 
 def test_ui_health_endpoint():

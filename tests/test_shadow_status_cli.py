@@ -6,7 +6,7 @@ from argparse import Namespace
 from world_cup_bot import __main__
 
 
-def test_shadow_status_passes_when_steps_done(monkeypatch):
+def test_shadow_status_passes_when_steps_done(monkeypatch, capsys):
     payload = {
         "dry_run": True,
         "shadow_progress": "2/5",
@@ -15,10 +15,14 @@ def test_shadow_status_passes_when_steps_done(monkeypatch):
             {"id": "b", "phase": 1, "title": "t2", "detail": "d2", "status": "done"},
         ],
         "ledger": {"quote_intents": 1, "fills": 0, "distinct_days": 1},
+        "ledger_path": "/opt/world-cup-bot/data/local/shadow_ledger.jsonl",
     }
     monkeypatch.setattr(__main__.shadow_checklist, "ready_payload", lambda *a, **k: payload)
     rc = __main__._cmd_shadow_status(Namespace(min_phase=1, json=False, skip_auth=True))
     assert rc == 0
+    out = capsys.readouterr().out
+    assert "Ledger path:" in out
+    assert "shadow_ledger.jsonl" in out
 
 
 def test_shadow_status_fails_on_pending(monkeypatch, capsys):

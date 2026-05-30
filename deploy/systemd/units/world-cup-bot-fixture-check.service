@@ -1,0 +1,11 @@
+[Unit]
+Description=World Cup Bot fixture drift check (openfootball upstream)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh fixture-check --notify >> @INSTALL_ROOT@/logs/cron_fixture_check.log 2>&1'
+User=root

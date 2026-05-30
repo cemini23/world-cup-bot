@@ -1,0 +1,10 @@
+[Unit]
+Description=World Cup Bot conviction staleness daily check
+
+[Timer]
+OnBootSec=30min
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

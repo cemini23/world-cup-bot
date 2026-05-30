@@ -7,12 +7,22 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from world_cup_bot import advisor, calendar_guard, conviction, quoter, scanner
+from world_cup_bot import advisor, calendar_guard, conviction, liquidity_scanner, quoter, scanner
 from world_cup_bot.config import Settings
 from world_cup_bot.ledger import load_rows, summarize_by_version, summarize_pnl
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.paths import PROJECT_ROOT
 from world_cup_bot.quoter import QuoteIntent
+
+
+def _liquidity_context(settings: Settings, markets: list[scanner.AdvanceMarket]):
+    operating = load_operating_config()
+    return liquidity_scanner.liquidity_map_for_markets(
+        markets,
+        clob_url=settings.clob_url,
+        operating=operating,
+    )
 
 
 def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
@@ -21,11 +31,18 @@ def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
         settings.gamma_url,
         min_hours_before_kickoff=settings.min_hours_before_kickoff,
     )
+    liq_cfg, liq_by_team = _liquidity_context(settings, markets)
     by_mode: dict[str, int] = {}
     group_b: list[dict[str, Any]] = []
     group_b_teams = frozenset({"Canada", "Switzerland", "Bosnia & Herzegovina", "Qatar"})
     for market in markets:
-        ev = conviction.evaluate_market(market, cfg)
+        ev = conviction.evaluate_market(
+            market,
+            cfg,
+            liquidity=liq_by_team.get(market.team),
+            liquidity_cfg=liq_cfg,
+            liquidity_gate=True,
+        )
         by_mode[ev.mode.value] = by_mode.get(ev.mode.value, 0) + 1
         if market.team in group_b_teams:
             group_b.append(
@@ -35,6 +52,9 @@ def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
                     "mode": ev.mode.value,
                     "quote": ev.quote,
                     "reason": ev.reason,
+                    "clob_depth_pass": liq_by_team[market.team].passes
+                    if market.team in liq_by_team
+                    else None,
                 }
             )
     return {
@@ -47,6 +67,7 @@ def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
         "yes_conviction_count": len(cfg.yes_conviction),
         "bilateral_count": len(cfg.bilateral_only),
         "fade_watch_count": len(cfg.fade_watch),
+        "liquidity_gate": True,
     }
 
 
@@ -75,28 +96,38 @@ def markets_payload(
     if eligible_only:
         markets = scanner.filter_lp_eligible(markets)
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    liq_cfg, liq_by_team = _liquidity_context(settings, markets)
     rows = []
     for market in markets:
-        ev = conviction.evaluate_market(market, cfg)
-        rows.append(
-            {
-                "team": market.team,
-                "mid": market.mid,
-                "spread": market.spread,
-                "liquidity": market.liquidity,
-                "hours_to_kickoff": market.hours_to_kickoff,
-                "lp_eligible": market.lp_eligible,
-                "bilateral_mode": market.bilateral_mode,
-                "must_cancel": market.must_cancel,
-                "mode": ev.mode.value,
-                "quote": ev.quote,
-                "reason": ev.reason,
-            }
+        liq = liq_by_team.get(market.team)
+        ev = conviction.evaluate_market(
+            market,
+            cfg,
+            liquidity=liq,
+            liquidity_cfg=liq_cfg,
+            liquidity_gate=True,
         )
+        row: dict[str, Any] = {
+            "team": market.team,
+            "mid": market.mid,
+            "spread": market.spread,
+            "liquidity": market.liquidity,
+            "hours_to_kickoff": market.hours_to_kickoff,
+            "lp_eligible": market.lp_eligible,
+            "bilateral_mode": market.bilateral_mode,
+            "must_cancel": market.must_cancel,
+            "mode": ev.mode.value,
+            "quote": ev.quote,
+            "reason": ev.reason,
+        }
+        if liq:
+            row["clob_depth"] = liquidity_scanner.report_to_dict(liq)
+        rows.append(row)
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "count": len(rows),
         "eligible_only": eligible_only,
+        "liquidity_gate": True,
         "markets": rows,
     }
 
@@ -107,7 +138,15 @@ def plan_payload(settings: Settings) -> dict[str, Any]:
         settings.gamma_url,
         min_hours_before_kickoff=settings.min_hours_before_kickoff,
     )
-    results = conviction.filter_conviction_markets(markets, cfg, quote_only=True)
+    liq_cfg, liq_by_team = _liquidity_context(settings, markets)
+    results = conviction.filter_conviction_markets(
+        markets,
+        cfg,
+        quote_only=True,
+        liquidity_by_team=liq_by_team,
+        liquidity_cfg=liq_cfg,
+        liquidity_gate=True,
+    )
     intents: list[QuoteIntent] = []
     for result in results:
         if result.quote:
@@ -117,6 +156,7 @@ def plan_payload(settings: Settings) -> dict[str, Any]:
         "conviction_rows": len(results),
         "intent_count": len(intents),
         "dry_run": settings.dry_run,
+        "liquidity_gate": True,
         "intents": [_intent_dict(i) for i in intents],
     }
 
@@ -173,6 +213,12 @@ def advisor_context_payload(settings: Settings) -> dict[str, Any]:
     markets = scanner.filter_lp_eligible(markets)
     spec = load_strategy_version(Path(settings.logic_version_config))
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
+    operating = load_operating_config()
+    liq_cfg, liq_by_team = liquidity_scanner.liquidity_map_for_markets(
+        markets,
+        clob_url=settings.clob_url,
+        operating=operating,
+    )
     schedule = calendar_guard.build_team_schedule()
     now = datetime.now(UTC)
     cancel_rows = calendar_guard.teams_in_cancel_window(
@@ -200,6 +246,9 @@ def advisor_context_payload(settings: Settings) -> dict[str, Any]:
         cancel_window=cancel_rows,
         ledger_summary=ledger_summary,
         prompt_path=advisor_settings.prompt_path,
+        liquidity_by_team=liq_by_team,
+        liquidity_cfg=liq_cfg,
+        liquidity_gate=True,
     )
     return {
         "generated_at": datetime.now(UTC).isoformat(),

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from world_cup_bot import team_names
@@ -98,6 +98,27 @@ def _is_blocked_market_type(config: CrossVenueConfig, market_type: str) -> tuple
     return False, None
 
 
+def _verification_stale(
+    pair: CrossVenuePair,
+    config: CrossVenueConfig,
+) -> tuple[bool, str | None]:
+    if not pair.rules_hash:
+        return False, None
+    if not pair.last_verified:
+        return True, "last_verified missing — re-verify rules equivalence"
+    try:
+        verified = date.fromisoformat(str(pair.last_verified))
+    except ValueError:
+        return True, f"last_verified invalid date {pair.last_verified!r}"
+    age_days = (datetime.now(UTC).date() - verified).days
+    if age_days > config.verification_max_age_days:
+        return True, (
+            f"last_verified {pair.last_verified} stale "
+            f"({age_days}d > {config.verification_max_age_days}d)"
+        )
+    return False, None
+
+
 def scan_config_pair(
     pair: CrossVenuePair,
     config: CrossVenueConfig,
@@ -109,6 +130,10 @@ def scan_config_pair(
     if not pair.enabled:
         blocked = True
         block_reason = "pair disabled in config"
+    stale, stale_reason = _verification_stale(pair, config)
+    if stale:
+        blocked = True
+        block_reason = stale_reason or block_reason
 
     slug_changed, slug_detail = _slug_change(pair, pm)
     g = gap_pp(pm.mid if pm else None, kalshi.mid if kalshi else None)

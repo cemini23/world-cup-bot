@@ -151,6 +151,7 @@ def ready_payload(settings: Settings, *, test_auth: bool = False) -> dict:
     done = sum(1 for s in steps if s.status == StepStatus.DONE)
     return {
         "dry_run": settings.dry_run,
+        "ledger_path": str(settings.ledger_path),
         "preflight_ok": preflight.ok,
         "preflight_checks": [
             {"name": c.name, "status": c.status.value, "detail": c.detail} for c in preflight.checks

@@ -1,0 +1,11 @@
+[Unit]
+Description=World Cup Bot conviction mid staleness check
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh conviction-staleness --notify >> @INSTALL_ROOT@/logs/cron_conviction_staleness.log 2>&1'
+User=root

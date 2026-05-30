@@ -1,5 +1,5 @@
 [Unit]
-Description=World Cup Bot daily PnL snapshot (shadow ledger)
+Description=World Cup Bot daily PnL snapshot (shadow ledger, no rewards sync)
 After=network-online.target
 
 [Service]
@@ -8,5 +8,5 @@ WorkingDirectory=@INSTALL_ROOT@
 EnvironmentFile=-@INSTALL_ROOT@/.env
 Environment=WC_DRY_RUN=true
 Environment=WC_LEDGER_PATH=@INSTALL_ROOT@/data/local/shadow_ledger.jsonl
-ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh rewards sync --record >> @INSTALL_ROOT@/logs/cron_rewards.log 2>&1 && @INSTALL_ROOT@/bin/wc_run.sh pnl --scope current >> @INSTALL_ROOT@/logs/cron_pnl.log 2>&1'
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh pnl --scope current >> @INSTALL_ROOT@/logs/cron_pnl.log 2>&1'
 User=root

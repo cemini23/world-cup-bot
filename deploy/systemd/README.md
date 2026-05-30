@@ -21,7 +21,7 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
-| **Monitor** | US or any region | `monitor` | Cross-venue alerts, shadow plan, scan, calendar, discover, pnl |
+| **Monitor** | US or any region | `monitor` | Cross-venue alerts, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
 | **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
@@ -58,12 +58,25 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | 3 | — | preflight must PASS |
 | 4 | — | `world-cup-bot-live-plan.timer` (manual) |
 
+## PnL vs rewards (split units)
+
+| Unit | Command | When to enable |
+|------|---------|----------------|
+| `world-cup-bot-pnl-daily.timer` | `pnl --scope current` | Phase 1+ shadow — no L2 creds required |
+| `world-cup-bot-rewards-sync.timer` | `rewards sync --record` | Phase 2+ after L2 creds on `.env` / `.env.trading` |
+
+PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB access — keep it disabled until trading host is ready.
+
 ## Operator commands
 
 ```bash
 /opt/world-cup-bot/bin/wc_run.sh cross-venue-scan --once
+/opt/world-cup-bot/bin/wc_run.sh shadow-status --min-phase 1
 /opt/world-cup-bot/bin/wc_run.sh scan --conviction
-/opt/world-cup-bot/bin/wc_run.sh plan --record
+/opt/world-cup-bot/bin/wc_run.sh plan --record --liquidity-gate
+/opt/world-cup-bot/bin/wc_run.sh conviction-staleness --notify
+/opt/world-cup-bot/bin/wc_run.sh fixture-check --notify
+/opt/world-cup-bot/bin/wc_run.sh conviction-patch dr-output.md --stage
 journalctl -u world-cup-bot-cross-venue -f
 tail -f /opt/world-cup-bot/logs/cross_venue_alerts.jsonl
 ```
