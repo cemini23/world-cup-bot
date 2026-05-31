@@ -137,7 +137,8 @@ def run_ui_server(*, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None
             f"warning: binding to {host} exposes read-only API on your LAN — prefer 127.0.0.1\n"
         )
     server = ThreadingHTTPServer((host, port), UiHandler)
-    url = f"http://{host}:{port}/"
+    display_host = "localhost" if host in {"127.0.0.1", "::1"} else host
+    url = f"http://{display_host}:{port}/"
     sys.stderr.write(f"World Cup Bot UI (read-only) → {url}\n")
     sys.stderr.write("Ctrl+C to stop. No orders are posted from the UI.\n")
     try:

@@ -11,7 +11,7 @@ pip install -e ".[dev]"
 pip install -e ".[live]"        # websockets + py-clob-client (watch / live POST)
 world-cup-bot preflight         # geoblock WARN ok in shadow from US
 world-cup-bot scan --conviction --liquidity
-world-cup-bot ui                # optional dashboard → http://127.0.0.1:8765
+world-cup-bot ui                # optional dashboard → http://localhost:8765
 ```
 
 **Pass criteria:** Gamma returns markets; preflight has no `FAIL` except geoblock when shadowing from US (WARN is OK).

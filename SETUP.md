@@ -173,10 +173,10 @@ No extra dependencies — stdlib HTTP server only. **Not started automatically.*
 
 ```bash
 world-cup-bot ui
-# open http://127.0.0.1:8765
+# open http://localhost:8765
 ```
 
-Tabs: **Ready** (preflight + shadow progress), **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds `127.0.0.1` by default.
+Tabs: **Ready** (preflight + shadow progress), **Markets**, **Plan preview**, **Calendar**, **PnL**, **Advisor context** (copy JSON). All routes are GET-only; nothing posts orders. Binds **localhost** only by default (`--host` to override).
 
 Config paths resolve against the **repo root** automatically — you can run `world-cup-bot ui` from any directory after `pip install -e .`.
 

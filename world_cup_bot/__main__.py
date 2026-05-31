@@ -2145,7 +2145,7 @@ def main(argv: list[str] | None = None) -> None:
     ui.add_argument(
         "--host",
         default=DEFAULT_HOST,
-        help="Bind address (default: 127.0.0.1 — localhost only)",
+        help="Bind address (default: localhost — not exposed on LAN)",
     )
     ui.add_argument(
         "--port",

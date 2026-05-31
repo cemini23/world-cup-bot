@@ -79,7 +79,7 @@ world-cup-bot cross-venue-fill record --team USA --market-type group_winner --pm
 world-cup-bot cross-venue-fill reconcile         # match intents vs manual fills
 world-cup-bot cross-venue-exec attempt --force --dry-run  # Phase C sim (caps apply)
 world-cup-bot venue-reconcile compare polymarket-export.csv  # blind-spot #2
-world-cup-bot ui                         # http://127.0.0.1:8765
+world-cup-bot ui                         # optional dashboard → http://localhost:8765
 ```
 
 More commands: `world-cup-bot --help` · research modes: `world-cup-bot research list`
