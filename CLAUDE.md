@@ -147,6 +147,7 @@ reconcile loop (30s): GET /data/trades → same fill path (WS silent-fill blind 
 ## Related
 
 - Newsletter: [Outlier Weekly](https://outlierweekly.substack.com) — Issue 3 launch ~2026-06-03
+- **Gambling-wiki** (public): retail WC 2026 + PM/Kalshi wagering — `@gambling-wiki/concepts/prediction-markets-crossover.md`, `@gambling-wiki/entities/sports/world-cup-2026-betting.md`. This repo stays automation/LP; gambling-wiki stays bankroll/CLV/books.
 - Optional VPS: [deploy/systemd/README.md](deploy/systemd/README.md)
 - Sibling OSS: [vet](https://github.com/cemini23/vet), [wikilint](https://github.com/cemini23/wikilint)
 
