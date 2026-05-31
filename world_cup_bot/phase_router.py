@@ -157,7 +157,11 @@ def apply_settlement_gate(
             continue
         for pid in _phases_for_settlement_check(exiting):
             status = settlement.by_phase.get(pid)
-            if status and status.total_markets > 0 and not status.all_settled:
+            if (
+                status
+                and not status.all_settled
+                and (status.fetch_failed or status.total_markets > 0)
+            ):
                 return exiting_id, pid, settlement.pending_phase_ids
     return calendar_state_id, None, settlement.pending_phase_ids
 

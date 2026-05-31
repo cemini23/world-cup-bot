@@ -47,7 +47,9 @@ def test_kill_switch_in_cancel_window():
     market = make_market("Turkey", mid=0.45, hours_to_kickoff=6.0)
     result = fill_handler.handle_fill(_fill(), market, ops, dry_run=True)
     assert result.kill_switch
-    assert result.exit_intent is None
+    assert result.exit_intent is not None
+    assert result.exit_intent.kill_switch
+    assert result.exit_intent.size_shares == 500.0
     assert result.pull_quotes
 
 

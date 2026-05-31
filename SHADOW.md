@@ -37,23 +37,23 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] Daily adverse-fill budget understood (`config/operating.yaml` → `risk.max_daily_adverse_fill_usd`; default $500)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
-## Production blind spots (Cemini steal-from)
+## Production blind spots — audit before live
 
-Before trusting shadow PnL, scan the Cemini **production blind spots** checklist (OSINT wiki: `concepts/production-trading-blind-spots.md`):
+When shadow PnL “looks good” but something still feels wrong, scan this table **top to bottom** before Phase 4. These are common LP-bot failure modes from production post-mortems (venue CSV vs internal journal, phantom fills, silent aborts) — not strategy edge problems.
 
-| # | Check | WCB mitigation |
-|---|-------|----------------|
-| 1 | PnL logic versioned | `logic_version` on every ledger row; `pnl --scope current` |
-| 2 | Bot journal ≠ venue CSV | **Manual:** export Polymarket trades → `venue-reconcile compare export.csv` (≥20 rows) before Phase 4 |
-| 3 | Phantom fills | Reconcile polls order status; never infer fill from timeout |
-| 4 | Duplicate fills | Ledger dedup by `order_id` |
-| 5 | Silent state drift | WS + 30s REST reconcile in `watch` |
-| 6 | Zero intents, no reason | `plan` logs `event=plan_abort abort_reason=…` |
-| 7 | 429 rate limit death | `preflight` → `clob_rate_limit` burst probe |
+| # | Check | What goes wrong | This bot’s mitigation |
+|---|-------|-----------------|----------------------|
+| 1 | PnL logic versioned | “Profitable last month” after a code change | `logic_version` on every ledger row; `pnl --scope current` |
+| 2 | Bot journal ≠ venue CSV | Bot win rate >> Polymarket export | **Manual:** export Polymarket trades → `venue-reconcile compare export.csv` (≥20 rows) before Phase 4 |
+| 3 | Phantom fills | Risk gates no-op; ghost profits | Reconcile polls order status; never infer fill from timeout |
+| 4 | Duplicate fills | Double-counted position / 2× PnL | Ledger dedup by `order_id` |
+| 5 | Silent state drift | Positions wrong after API change | WS + 30s REST reconcile in `watch` |
+| 6 | Zero intents, no reason | `plan` exits with no quotes and no explanation | `plan` logs `event=plan_abort abort_reason=…` |
+| 7 | 429 rate limit death | Bot stops quoting after burst | `preflight` → `clob_rate_limit` burst probe |
 
-### Negative filter (K88 — selection before speed)
+### Selection diagnostics (`negative_filter_summary`)
 
-Every `plan` emits `event=negative_filter_summary` with skip buckets (`yaml_skip`, `human_review`, `liquidity_gate`, `mid_band`, …). Aligns with OSINT wiki concept **polymarket-negative-filter-trading** (K88 @myttle) — fix selection tiers in `conviction.yaml` before tuning quote speed.
+Every `plan` writes `event=negative_filter_summary` with skip counts by reason (`yaml_skip`, `human_review`, `liquidity_gate`, `mid_band`, …). **Fix team tiers and gates in `config/conviction.yaml` before tuning quote speed** — if most markets are skipped for selection reasons, faster quoting will not help.
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 
@@ -110,7 +110,7 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 
 ## Emergency halt (out-of-process)
 
-Cemini prod uses Redis `emergency_stop`; this OSS bot uses **systemd + cancel**:
+Some multi-strategy stacks use a shared kill flag (e.g. Redis) to halt every bot at once. **This repo is a single-process bot** — halt with **systemd + cancel**:
 
 ```bash
 # Immediate stop — any host
@@ -157,5 +157,4 @@ See [SETUP.md](SETUP.md), [ROADMAP.md](ROADMAP.md), and [CLAUDE.md](CLAUDE.md) f
 ## Sources
 
 - [Source: https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md]
-- [Source: OSINT wiki concepts/production-trading-blind-spots.md — Cemini steal-from checklist]
-- [Source: OSINT wiki concepts/polymarket-sports-lp-operating-rules.md]
+- [Source: https://docs.polymarket.com/ — Polymarket CLOB API]

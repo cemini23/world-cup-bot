@@ -53,6 +53,27 @@ def test_trading_halt_blocks_team():
     assert not halt.is_halted("Mexico")
 
 
+def test_fetch_wc_open_orders_requires_auth(monkeypatch):
+    import pytest
+
+    from world_cup_bot.clob_auth import MissingClobAuthError
+
+    def boom():
+        raise MissingClobAuthError("no creds")
+
+    monkeypatch.setattr(order_manager, "load_clob_auth", boom)
+    market = make_market("Turkey", mid=0.45)
+    overrides = {
+        **market.__dict__,
+        "yes_token_id": "yes-tok",
+        "no_token_id": "no-tok",
+        "condition_id": "0x1",
+    }
+    market = market.__class__(**overrides)
+    with pytest.raises(MissingClobAuthError):
+        order_manager.fetch_wc_open_orders(_settings(), [market])
+
+
 def test_cancel_orders_dry_run(monkeypatch):
     settings = _settings(dry_run=True)
     market = make_market("Turkey", mid=0.45, hours_to_kickoff=6.0)

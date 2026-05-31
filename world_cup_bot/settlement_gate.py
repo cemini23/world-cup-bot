@@ -17,9 +17,12 @@ class PhaseSettlementStatus:
     phase_id: str
     total_markets: int
     settled_markets: int
+    fetch_failed: bool = False
 
     @property
     def all_settled(self) -> bool:
+        if self.fetch_failed:
+            return False
         if self.total_markets == 0:
             return True
         return self.settled_markets >= self.total_markets
@@ -99,7 +102,12 @@ def check_phase_settlement(
         try:
             payload = fetch_search_payload(gamma_url, query, opener=opener)
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
-            return PhaseSettlementStatus(phase_id=phase_id, total_markets=0, settled_markets=0)
+            return PhaseSettlementStatus(
+                phase_id=phase_id,
+                total_markets=0,
+                settled_markets=0,
+                fetch_failed=True,
+            )
         cache[query] = payload
 
     markets = _markets_for_phase(payload, spec)
@@ -129,6 +137,8 @@ def check_phases_settlement(
             payloads_by_query=cache,
         )
     pending = tuple(
-        pid for pid, st in by_phase.items() if st.total_markets > 0 and not st.all_settled
+        pid
+        for pid, st in by_phase.items()
+        if st.fetch_failed or (st.total_markets > 0 and not st.all_settled)
     )
     return SettlementGateReport(by_phase=by_phase, pending_phase_ids=pending)

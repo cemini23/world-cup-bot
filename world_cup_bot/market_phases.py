@@ -145,7 +145,10 @@ def invalidate_market_phases_cache(path: Path | None = None) -> None:
 
 
 def install_sigusr1_reload(path: Path) -> None:
-    """Re-parse market_phases.yaml on SIGUSR1 (long-running daemons)."""
+    """Re-parse market_phases.yaml on SIGUSR1 (long-running daemons). No-op on Windows."""
+
+    if not hasattr(signal, "SIGUSR1"):
+        return
 
     def _handler(signum: int, frame: object) -> None:
         invalidate_market_phases_cache(path)

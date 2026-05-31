@@ -21,7 +21,11 @@ def daily_adverse_fill_usd(
     day: str | None = None,
     spec: StrategyVersionSpec | None = None,
 ) -> float:
-    """Sum of |negative pnl_usd| on order_fill rows for UTC day (default today)."""
+    """Sum adverse exposure on order_fill rows for UTC day (default today).
+
+    Uses |negative pnl_usd| when booked. When pnl_usd is absent (typical venue
+    fill before exit mark), counts notional_usd as conservative proxy.
+    """
     target_day = day or datetime.now(UTC).strftime("%Y-%m-%d")
     scoped = filter_rows_by_scope(rows, spec, PnlScope.CURRENT) if spec else rows
     total = 0.0
@@ -30,9 +34,14 @@ def daily_adverse_fill_usd(
             continue
         if _row_day(row) != target_day:
             continue
-        pnl = float(row.get("pnl_usd") or 0)
-        if pnl < 0:
-            total += abs(pnl)
+        if "pnl_usd" in row and row.get("pnl_usd") is not None:
+            pnl = float(row["pnl_usd"])
+            if pnl < 0:
+                total += abs(pnl)
+            continue
+        notional = float(row.get("notional_usd") or 0)
+        if notional > 0:
+            total += notional
     return round(total, 2)
 
 

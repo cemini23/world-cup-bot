@@ -76,6 +76,25 @@ def test_daily_adverse_fill_sums_negative_pnl(tmp_path: Path):
     assert daily_adverse_fill_usd(rows, day="2026-05-29", spec=spec) == 200.0
 
 
+def test_daily_adverse_fill_uses_notional_when_pnl_missing(tmp_path: Path):
+    path = tmp_path / "ledger.jsonl"
+    spec = _spec()
+    ledger.append_row(
+        path,
+        ledger.LedgerRow(
+            event="order_fill",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp="2026-05-29T12:00:00+00:00",
+            price=0.50,
+            size_shares=200.0,
+            notional_usd=100.0,
+        ),
+    )
+    rows = ledger.load_rows(path)
+    assert daily_adverse_fill_usd(rows, day="2026-05-29", spec=spec) == 100.0
+
+
 def test_daily_adverse_budget_blocks_at_cap(tmp_path: Path):
     path = tmp_path / "ledger.jsonl"
     spec = _spec()

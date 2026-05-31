@@ -113,12 +113,25 @@ def handle_fill(
     pull = queue_depletion_triggered(ahead_notional_usd, ops)
 
     if kill:
+        exit_price = build_exit_price(fill.fill_price, ops)
+        due = exit_due_by(fill.filled_at, ops)
+        exit_intent = ExitIntent(
+            team=fill.team,
+            side=fill.side,
+            token_id=fill.token_id,
+            order_id=_new_exit_order_id(fill.team, fill.side, dry_run=dry_run),
+            price=exit_price,
+            size_shares=fill.fill_shares,
+            due_by=due,
+            reason="kill_switch — flatten inside cancel/live window",
+            kill_switch=True,
+        )
         return FillHandlerResult(
             fill=fill,
-            exit_intent=None,
+            exit_intent=exit_intent,
             pull_quotes=True,
             kill_switch=True,
-            reason="kill_switch — fill inside cancel/live window",
+            reason=exit_intent.reason,
         )
 
     exit_price = build_exit_price(fill.fill_price, ops)

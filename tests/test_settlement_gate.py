@@ -37,3 +37,12 @@ def test_market_is_settled_open():
         )
         is False
     )
+
+
+def test_fetch_failure_fails_closed():
+    from world_cup_bot.settlement_gate import PhaseSettlementStatus
+
+    st = PhaseSettlementStatus(
+        phase_id="group_advance", total_markets=0, settled_markets=0, fetch_failed=True
+    )
+    assert st.all_settled is False

@@ -1070,32 +1070,36 @@ def _cmd_cancel(args: argparse.Namespace) -> int:
         "version_spec": version_spec,
     }
 
-    if args.cancel_window:
-        result = order_manager.cancel_for_cancel_window(
-            settings,
-            markets,
-            min_hours=args.min_hours,
-            dry_run=dry_run,
-            **ledger_kw,
-        )
-    elif args.team:
-        result = order_manager.cancel_for_teams(
-            settings,
-            markets,
-            {args.team},
-            reason=f"manual cancel — {args.team}",
-            dry_run=dry_run,
-            **ledger_kw,
-        )
-    elif args.all_wc:
-        result = order_manager.cancel_all_wc_orders(
-            settings,
-            markets,
-            dry_run=dry_run,
-            **ledger_kw,
-        )
-    else:
-        print("Specify --cancel-window, --team NAME, or --all-wc")
+    try:
+        if args.cancel_window:
+            result = order_manager.cancel_for_cancel_window(
+                settings,
+                markets,
+                min_hours=args.min_hours,
+                dry_run=dry_run,
+                **ledger_kw,
+            )
+        elif args.team:
+            result = order_manager.cancel_for_teams(
+                settings,
+                markets,
+                {args.team},
+                reason=f"manual cancel — {args.team}",
+                dry_run=dry_run,
+                **ledger_kw,
+            )
+        elif args.all_wc:
+            result = order_manager.cancel_all_wc_orders(
+                settings,
+                markets,
+                dry_run=dry_run,
+                **ledger_kw,
+            )
+        else:
+            print("Specify --cancel-window, --team NAME, or --all-wc")
+            return 1
+    except MissingClobAuthError as exc:
+        print(f"Cancel requires L2 API creds: {exc}")
         return 1
 
     mode = "DRY_RUN" if result.dry_run else "LIVE"
@@ -1113,6 +1117,9 @@ def _cmd_orders(args: argparse.Namespace) -> int:
     markets = _load_markets(settings)
     try:
         open_orders = order_manager.fetch_wc_open_orders(settings, markets)
+    except MissingClobAuthError as exc:
+        print(f"Orders list requires L2 API creds: {exc}")
+        return 1
     except Exception as exc:
         print(f"Could not fetch open orders: {exc}")
         return 1
@@ -1654,7 +1661,7 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
             print(f"reason: {result.reason}")
         if result.realized_pnl_usd is not None:
             print(f"realized_pnl_usd=${result.realized_pnl_usd:.2f}")
-    return 0 if result.status in {"complete", "dry_run"} else 1
+    return 0 if result.status in {"complete", "dry_run", "submitted"} else 1
 
 
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:

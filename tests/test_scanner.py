@@ -57,6 +57,26 @@ def test_bilateral_mode_high_mid():
     assert parsed.bilateral_mode
 
 
+def test_bilateral_mode_exact_high_threshold():
+    """Mid exactly at high_mid must set bilateral_mode (align with conviction >=)."""
+    market = {
+        "question": "Will France advance to the knockout stages at the 2026 FIFA World Cup?",
+        "slug": "france",
+        "conditionId": "0x2",
+        "clobTokenIds": ["1", "2"],
+        "bestBid": 0.89,
+        "bestAsk": 0.91,
+        "rewardsMinSize": 500,
+        "rewardsMaxSpread": 4.5,
+        "acceptingOrders": True,
+    }
+    now = datetime(2026, 6, 1, tzinfo=UTC)
+    parsed = scanner.parse_market(market, now=now)
+    assert parsed is not None
+    assert parsed.mid == pytest.approx(0.90)
+    assert parsed.bilateral_mode
+
+
 def test_lp_eligible_fail_closed_unknown_kickoff():
     m = make_market("Unknown FC", mid=0.45, hours_to_kickoff=None)
     assert not m.kickoff_known

@@ -80,23 +80,60 @@ def test_build_kalshi_order_buy():
 
 def test_check_exec_caps_blocks_daily(tmp_path: Path):
     ledger = tmp_path / "l.jsonl"
-    from world_cup_bot.cross_venue_exec import EVENT_EXEC_LEG, EXEC_SPEC
+    from world_cup_bot.cross_venue_exec import EVENT_EXEC_COMPLETE, EXEC_SPEC
     from world_cup_bot.ledger import LedgerRow, append_row
 
     append_row(
         ledger,
         LedgerRow(
-            event=EVENT_EXEC_LEG,
+            event=EVENT_EXEC_COMPLETE,
             logic_version=EXEC_SPEC.version_id,
             strategy_key=EXEC_SPEC.strategy_key,
             timestamp=datetime.now(UTC).isoformat(),
             notional_usd=450,
+            correlation_id="cap-test-1",
         ),
     )
     auto = AutoArbConfig(max_daily_notional_usd=500, max_notional_usd=100)
     ok, msg = check_exec_caps(load_rows(ledger), auto, notional_usd=100)
     assert not ok
     assert "daily cap" in msg
+
+
+def test_check_exec_caps_ignores_exec_leg_rows(tmp_path: Path):
+    """Leg rows must not inflate daily notional — only completion rows count."""
+    ledger = tmp_path / "l.jsonl"
+    from world_cup_bot.cross_venue_exec import EVENT_EXEC_COMPLETE, EVENT_EXEC_LEG, EXEC_SPEC
+    from world_cup_bot.ledger import LedgerRow, append_row
+
+    ts = datetime.now(UTC).isoformat()
+    cid = "cap-test-2"
+    for notional in (200, 200):
+        append_row(
+            ledger,
+            LedgerRow(
+                event=EVENT_EXEC_LEG,
+                logic_version=EXEC_SPEC.version_id,
+                strategy_key=EXEC_SPEC.strategy_key,
+                timestamp=ts,
+                notional_usd=notional,
+                correlation_id=cid,
+            ),
+        )
+    append_row(
+        ledger,
+        LedgerRow(
+            event=EVENT_EXEC_COMPLETE,
+            logic_version=EXEC_SPEC.version_id,
+            strategy_key=EXEC_SPEC.strategy_key,
+            timestamp=ts,
+            notional_usd=200,
+            correlation_id=cid,
+        ),
+    )
+    auto = AutoArbConfig(max_daily_notional_usd=500, max_notional_usd=100)
+    ok, msg = check_exec_caps(load_rows(ledger), auto, notional_usd=100)
+    assert ok, msg
 
 
 def test_execute_dual_leg_dry_run(tmp_path: Path):
@@ -124,9 +161,14 @@ def test_execute_dual_leg_dry_run(tmp_path: Path):
     assert result.status == "dry_run"
     assert result.pm_leg is not None
     assert result.kalshi_leg is not None
+    assert result.realized_pnl_usd is None
     assert len(pm.calls) == 1
     rows = load_rows(ledger)
-    assert any(r["event"] == "cross_venue_arb_exec_complete" for r in rows)
+    complete = [r for r in rows if r["event"] == "cross_venue_arb_exec_complete"]
+    assert len(complete) == 1
+    assert complete[0].get("pnl_usd") is None
+    assert complete[0].get("leg_status") == "dry_run"
+    assert not any(r["event"] == "cross_venue_arb_fill_manual" for r in rows)
 
 
 def test_execute_orphan_on_pm_failure(tmp_path: Path):

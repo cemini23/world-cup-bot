@@ -13,9 +13,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from world_cup_bot.cross_venue_config import CrossVenueConfig
-from world_cup_bot.cross_venue_fills import EVENT_FILL, compute_realized_pnl_usd
 from world_cup_bot.cross_venue_paper import (
-    PAPER_ARB_SPEC,
     paper_config_from_cross_venue,
     proposal_from_alert_row,
 )
@@ -277,14 +275,21 @@ def build_dual_leg_plan(
 
 
 def _today_exec_notional(rows: list[dict[str, Any]]) -> float:
+    """One notional per correlation_id per day — completion rows only."""
     today = datetime.now(UTC).date().isoformat()
     total = 0.0
+    seen: set[str] = set()
     for row in rows:
-        if row.get("event") not in {EVENT_EXEC_COMPLETE, EVENT_EXEC_LEG}:
+        if row.get("event") != EVENT_EXEC_COMPLETE:
             continue
         ts = str(row.get("timestamp") or "")[:10]
         if ts != today:
             continue
+        cid = str(row.get("correlation_id") or "")
+        if cid:
+            if cid in seen:
+                continue
+            seen.add(cid)
         total += float(row.get("notional_usd") or 0)
     return total
 
@@ -485,15 +490,13 @@ def execute_dual_leg(
             ),
         )
 
-    realized = compute_realized_pnl_usd(
-        plan.pm_leg,
-        plan.kalshi_leg,
-        plan.pm_price,
-        plan.kalshi_price,
-        plan.notional_usd,
-        fees_usd=0.0,
-    )
-    status = "dry_run" if dry_run else "complete"
+    realized = None
+    if not dry_run:
+        # Orders submitted — realized PnL requires venue fill confirmation + reconcile.
+        status = "submitted"
+    else:
+        status = "dry_run"
+
     _append_exec_row(
         ledger_path,
         LedgerRow(
@@ -509,31 +512,9 @@ def execute_dual_leg(
                 "intent_key": plan.intent_key,
                 "pm_order_id": pm_result.order_id,
                 "kalshi_order_id": kal_result.order_id,
-                "realized_pnl_usd": realized,
-            },
-        ),
-    )
-    _append_exec_row(
-        ledger_path,
-        LedgerRow(
-            event=EVENT_FILL,
-            logic_version=PAPER_ARB_SPEC.version_id,
-            strategy_key=PAPER_ARB_SPEC.strategy_key,
-            timestamp=datetime.now(UTC).isoformat(),
-            team=plan.team,
-            notional_usd=plan.notional_usd,
-            pnl_usd=realized,
-            reason="auto_exec",
-            correlation_id=plan.correlation_id,
-            extra={
-                "intent_key": plan.intent_key,
-                "market_type": plan.market_type,
-                "pm_leg": plan.pm_leg,
-                "kalshi_leg": plan.kalshi_leg,
-                "pm_fill_price": plan.pm_price,
-                "kalshi_fill_price": plan.kalshi_price,
-                "realized_pnl_usd": realized,
-                "source": "auto_exec",
+                "leg_status": status,
+                "pm_status": pm_result.status,
+                "kalshi_status": kal_result.status,
             },
         ),
     )
