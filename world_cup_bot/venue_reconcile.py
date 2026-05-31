@@ -60,8 +60,7 @@ def load_venue_order_ids(csv_path: Path) -> tuple[tuple[str, ...], str | None]:
         col = _find_order_id_column(reader.fieldnames)
         if not col:
             raise ValueError(
-                "CSV missing order id column — expected one of: "
-                + ", ".join(ORDER_ID_HEADERS)
+                "CSV missing order id column — expected one of: " + ", ".join(ORDER_ID_HEADERS)
             )
         ids: list[str] = []
         for row in reader:

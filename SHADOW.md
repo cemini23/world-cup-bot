@@ -53,7 +53,7 @@ Before trusting shadow PnL, scan the Cemini **production blind spots** checklist
 
 ### Negative filter (K88 — selection before speed)
 
-Every `plan` emits `event=negative_filter_summary` with skip buckets (`yaml_skip`, `human_review`, `liquidity_gate`, `mid_band`, …). Aligns with OSINT `@concepts/polymarket-negative-filter-trading.md` — fix selection tiers in `conviction.yaml` before tuning quote speed.
+Every `plan` emits `event=negative_filter_summary` with skip buckets (`yaml_skip`, `human_review`, `liquidity_gate`, `mid_band`, …). Aligns with OSINT wiki concept **polymarket-negative-filter-trading** (K88 @myttle) — fix selection tiers in `conviction.yaml` before tuning quote speed.
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 

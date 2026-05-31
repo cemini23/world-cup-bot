@@ -10,9 +10,7 @@ from world_cup_bot.venue_reconcile import compare_venue_csv, load_venue_order_id
 def test_load_venue_order_ids(tmp_path: Path):
     csv_path = tmp_path / "pm.csv"
     csv_path.write_text(
-        "order_id,team,side\n"
-        "0xaaa,USA,YES\n"
-        "0xbbb,Spain,YES\n",
+        "order_id,team,side\n0xaaa,USA,YES\n0xbbb,Spain,YES\n",
         encoding="utf-8",
     )
     ids, col = load_venue_order_ids(csv_path)

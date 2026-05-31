@@ -58,10 +58,10 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 
 | Lesson | Wiki source | Status | Fix |
 |--------|-------------|--------|-----|
-| Negative filter before speed | `@concepts/polymarket-negative-filter-trading.md` (K88) | **APPLIED** | `plan` → `event=negative_filter_summary` skip buckets |
-| Venue CSV = source of truth | `@concepts/production-trading-blind-spots.md` #2 | **APPLIED** | `venue-reconcile compare` CLI |
+| Negative filter before speed | OSINT `polymarket-negative-filter-trading` (K88) | **APPLIED** | `plan` → `event=negative_filter_summary` skip buckets |
+| Venue CSV = source of truth | OSINT production-trading-blind-spots #2 | **APPLIED** | `venue-reconcile compare` CLI |
 | Wiki enforcement at order time | K89 Wave 3b `R08b` | **DOCUMENTED-ONLY** | Prod brief staged; OSS hook when `WC_WIKI_ENFORCEMENT=1` on prod |
-| LP promotion gates (DSR/MCPT) | `@concepts/lp-algorithm-live-promotion-gates.md` | **DEFERRED** | Shadow net-PnL heuristic only for Issue 3 |
+| LP promotion gates (DSR/MCPT) | OSINT lp-algorithm-live-promotion-gates | **DEFERRED** | Shadow net-PnL heuristic only for Issue 3 |
 | Postgres `pnl_attribution` | Cemini prod | **DEFERRED** | Import brief scopes reuse post shadow |
 
 ---
