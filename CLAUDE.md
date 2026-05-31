@@ -19,7 +19,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile; queue depletion + vol cooldown |
 | 5 | Calendar guard | `calendar_guard.py`, `data/worldcup2026-fixtures.json` | Live — CC0 fixtures, not Polymarket |
 | 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_fills.py`, `cross_venue_exec.py`, `kalshi_auth.py`, `kalshi_orders.py`, `kalshi_rest.py`, `config/cross_venue.yaml` | Alert-only scan; paper ledger; manual fills; **Phase C exec** (gated) |
-| 7 | Ledger / PnL | `ledger.py`, `logic_version.py` | Live — JSONL + version filter |
+| 7 | Ledger / PnL | `ledger.py`, `logic_version.py`, `venue_reconcile.py` | JSONL + `logic_version`; venue CSV diff |
 | — | Liquidity gate | `liquidity_scanner.py`, `clob_rest.py` | Live — public CLOB `/book`; bid/ask band floors in `operating.yaml` |
 | — | Conviction ops | `conviction_staleness.py`, `conviction_patch.py`, `fixture_watch.py` | Staleness alerts, DR patch staging, fixture upstream diff |
 | — | Preflight | `preflight.py`, `clob_rest.py`, `clob_signing.py` | Geoblock + auth checks |
@@ -82,6 +82,7 @@ world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot cancel --cancel-window | --team NAME | --all-wc
 world-cup-bot orders
 world-cup-bot pnl [--scope current|legacy|all] [--by-version]
+world-cup-bot venue-reconcile compare <polymarket-export.csv> [--logic-version wc_advance_lp_v4]
 world-cup-bot rewards sync [--record]
 world-cup-bot conviction-staleness [--notify]
 world-cup-bot fixture-check [--notify] [--apply]

@@ -38,6 +38,7 @@ from world_cup_bot import (
     scanner,
     settlement_gate,
     shadow_checklist,
+    venue_reconcile,
     ws_user,
 )
 from world_cup_bot.clob_auth import (
@@ -524,20 +525,28 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     if use_liq:
         liq_cfg, liq_by_team = _liquidity_context(settings, markets)
 
-    results = conviction.filter_conviction_markets(
+    all_results = conviction.filter_conviction_markets(
         markets,
         cfg,
-        quote_only=not args.all,
+        quote_only=False,
         liquidity_by_team=liq_by_team if use_liq else None,
         liquidity_cfg=liq_cfg,
         liquidity_gate=use_liq,
     )
+    skip_summary = conviction.summarize_skip_buckets(all_results)
+    event_log.log_event(
+        "negative_filter_summary",
+        market_count=len(markets),
+        **skip_summary,
+    )
+    results = [r for r in all_results if r.quote]
 
     if not results:
+        detail = ", ".join(f"{k}={v}" for k, v in skip_summary.items() if k != "quoted")
         return _plan_abort(
             settings,
             "no_conviction_targets",
-            "No conviction targets (try --all to see skips).",
+            f"No conviction targets (try --all). Skips: {detail or 'none'}",
         )
 
     if phase_router_enabled() and phase_router_lp_gate() and not markets:
@@ -1478,6 +1487,46 @@ def _cmd_cross_venue_fill(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_venue_reconcile(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    ledger_path = Path(settings.ledger_path)
+
+    if args.venue_command == "csv-template":
+        for line in venue_reconcile.csv_template_lines():
+            print(line)
+        return 0
+
+    if args.venue_command == "compare":
+        report = venue_reconcile.compare_venue_csv(
+            Path(args.csv_path),
+            ledger_path,
+            logic_version=args.logic_version,
+        )
+        if args.json:
+            print(json.dumps(report.to_dict(), indent=2))
+            return 0
+        print(f"Ledger fills: {report.ledger_fill_count}")
+        print(f"Venue CSV rows: {report.venue_row_count}")
+        print(f"Matched order ids: {report.matched}")
+        if report.ledger_only:
+            print(f"\nLedger-only ({len(report.ledger_only)}) — bot recorded, not in export:")
+            for oid in report.ledger_only[:20]:
+                print(f"  {oid}")
+            if len(report.ledger_only) > 20:
+                print(f"  … +{len(report.ledger_only) - 20} more")
+        if report.venue_only:
+            print(f"\nVenue-only ({len(report.venue_only)}) — export has, bot ledger missing:")
+            for oid in report.venue_only[:20]:
+                print(f"  {oid}")
+            if len(report.venue_only) > 20:
+                print(f"  … +{len(report.venue_only) - 20} more")
+        if not report.ledger_only and not report.venue_only and report.matched:
+            print("\nOK — ledger and venue export agree on order ids.")
+        return 0
+
+    return 1
+
+
 def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     cfg = load_cross_venue_config(Path(settings.cross_venue_config))
@@ -2217,6 +2266,25 @@ def main(argv: list[str] | None = None) -> None:
         help="Print example CSV header + row",
     )
     cvtmpl.set_defaults(func=_cmd_cross_venue_fill)
+
+    vr = sub.add_parser(
+        "venue-reconcile",
+        help="Compare Polymarket CSV export to bot ledger fills (blind-spot #2)",
+    )
+    vr_sub = vr.add_subparsers(dest="venue_command", required=True)
+    vrcmp = vr_sub.add_parser(
+        "compare",
+        help="Diff order_id sets: ledger order_fill vs venue activity CSV",
+    )
+    vrcmp.add_argument("csv_path", help="Polymarket trades/activity export CSV")
+    vrcmp.add_argument(
+        "--logic-version",
+        help="Filter ledger fills to one logic_version (default: all fills)",
+    )
+    vrcmp.add_argument("--json", action="store_true")
+    vrcmp.set_defaults(func=_cmd_venue_reconcile)
+    vrtmpl = vr_sub.add_parser("csv-template", help="Example CSV header for exports")
+    vrtmpl.set_defaults(func=_cmd_venue_reconcile)
 
     cvex = sub.add_parser(
         "cross-venue-exec",

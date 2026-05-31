@@ -44,12 +44,16 @@ Before trusting shadow PnL, scan the Cemini **production blind spots** checklist
 | # | Check | WCB mitigation |
 |---|-------|----------------|
 | 1 | PnL logic versioned | `logic_version` on every ledger row; `pnl --scope current` |
-| 2 | Bot journal ≠ venue CSV | **Manual:** export Polymarket trades → compare ≥20 rows to ledger before Phase 4 |
+| 2 | Bot journal ≠ venue CSV | **Manual:** export Polymarket trades → `venue-reconcile compare export.csv` (≥20 rows) before Phase 4 |
 | 3 | Phantom fills | Reconcile polls order status; never infer fill from timeout |
 | 4 | Duplicate fills | Ledger dedup by `order_id` |
 | 5 | Silent state drift | WS + 30s REST reconcile in `watch` |
 | 6 | Zero intents, no reason | `plan` logs `event=plan_abort abort_reason=…` |
 | 7 | 429 rate limit death | `preflight` → `clob_rate_limit` burst probe |
+
+### Negative filter (K88 — selection before speed)
+
+Every `plan` emits `event=negative_filter_summary` with skip buckets (`yaml_skip`, `human_review`, `liquidity_gate`, `mid_band`, …). Aligns with OSINT `@concepts/polymarket-negative-filter-trading.md` — fix selection tiers in `conviction.yaml` before tuning quote speed.
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 
@@ -101,7 +105,7 @@ world-cup-bot watch --record    # fills + REST reconcile + exit POST
 - [ ] Kill switch fires on cancel-window fills (test with `calendar --team …`)
 - [ ] Exit intents post within 60s of fill
 - [ ] Daily `pnl` review; bump `logic_version` on material logic changes
-- [ ] **Venue CSV reconcile:** Polymarket account export vs bot ledger (≥20 trades) — journal WR must match venue
+- [ ] **Venue CSV reconcile:** Polymarket account export vs bot ledger (≥20 trades) — `world-cup-bot venue-reconcile compare export.csv`
 - [ ] Shadow net PnL ≥ 0 when fills exist (`shadow-status` → shadow_pnl step WARN = review before live)
 
 ## Emergency halt (out-of-process)

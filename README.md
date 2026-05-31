@@ -78,6 +78,7 @@ world-cup-bot cross-venue-pnl --refresh          # MTM vs live gaps
 world-cup-bot cross-venue-fill record --team USA --market-type group_winner --pm-price 0.68 --kalshi-price 0.64
 world-cup-bot cross-venue-fill reconcile         # match intents vs manual fills
 world-cup-bot cross-venue-exec attempt --force --dry-run  # Phase C sim (caps apply)
+world-cup-bot venue-reconcile compare polymarket-export.csv  # blind-spot #2
 world-cup-bot ui                         # http://127.0.0.1:8765
 ```
 

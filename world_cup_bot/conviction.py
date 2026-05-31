@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -328,6 +329,43 @@ def filter_conviction_markets(
     if quote_only:
         return [r for r in results if r.quote]
     return results
+
+
+def summarize_skip_buckets(results: Iterable[ConvictionResult]) -> dict[str, int]:
+    """Negative-filter buckets — K88 @myttle selection-before-speed pattern."""
+    buckets: dict[str, int] = {
+        "quoted": 0,
+        "yaml_skip": 0,
+        "human_review": 0,
+        "liquidity_gate": 0,
+        "mid_band": 0,
+        "fade_watch": 0,
+        "unlisted": 0,
+        "calendar": 0,
+        "other": 0,
+    }
+    for r in results:
+        if r.quote:
+            buckets["quoted"] += 1
+            continue
+        reason = (r.reason or "").lower()
+        if "mode=skip" in reason:
+            buckets["yaml_skip"] += 1
+        elif "human_review" in reason:
+            buckets["human_review"] += 1
+        elif "liquidity" in reason or "depth" in reason or "clob" in reason:
+            buckets["liquidity_gate"] += 1
+        elif "mid" in reason or "bilateral" in reason:
+            buckets["mid_band"] += 1
+        elif r.mode == TeamMode.FADE_WATCH:
+            buckets["fade_watch"] += 1
+        elif r.mode == TeamMode.UNLISTED:
+            buckets["unlisted"] += 1
+        elif "cancel" in reason or "kickoff" in reason:
+            buckets["calendar"] += 1
+        else:
+            buckets["other"] += 1
+    return {k: v for k, v in buckets.items() if v > 0}
 
 
 def with_min_mid_override(config: ConvictionConfig, min_mid: float | None) -> ConvictionConfig:
