@@ -48,14 +48,13 @@ def _funder_address() -> str | None:
 
 def _builder_config() -> Any | None:
     from py_clob_client_v2.clob_types import BuilderConfig
+    from py_clob_client_v2.constants import BYTES32_ZERO
 
     code = os.environ.get("POLYMARKET_BUILDER_CODE", "").strip()
-    if not code:
+    if not code or code == BYTES32_ZERO:
         return None
-    address = os.environ.get("POLYMARKET_BUILDER_ADDRESS", "").strip()
-    if not address:
-        address = os.environ.get("POLYMARKET_FUNDER_ADDRESS", "").strip()
-    return BuilderConfig(builder_address=address, builder_code=code)
+    # Match Cemini LP: builder_code only; funder is ClobClient.funder, not builder_address.
+    return BuilderConfig(builder_code=code)
 
 
 def _raise_post_error(exc: BaseException) -> None:
