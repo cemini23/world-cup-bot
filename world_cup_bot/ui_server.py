@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from world_cup_bot.config import Settings
+from world_cup_bot.console import write_stderr
 from world_cup_bot.shadow_checklist import ready_payload
 from world_cup_bot.ui_data import (
     advisor_context_payload,
@@ -132,6 +133,9 @@ class UiHandler(BaseHTTPRequestHandler):
 
 
 def run_ui_server(*, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
+    from world_cup_bot.console import configure_stdio
+
+    configure_stdio()
     if host not in {"127.0.0.1", "localhost", "::1"}:
         sys.stderr.write(
             f"warning: binding to {host} exposes read-only API on your LAN — prefer 127.0.0.1\n"
@@ -139,11 +143,11 @@ def run_ui_server(*, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None
     server = ThreadingHTTPServer((host, port), UiHandler)
     display_host = "localhost" if host in {"127.0.0.1", "::1"} else host
     url = f"http://{display_host}:{port}/"
-    sys.stderr.write(f"World Cup Bot UI (read-only) → {url}\n")
-    sys.stderr.write("Ctrl+C to stop. No orders are posted from the UI.\n")
+    write_stderr(f"World Cup Bot UI (read-only) -> {url}\n")
+    write_stderr("Ctrl+C to stop. No orders are posted from the UI.\n")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        sys.stderr.write("\nUI stopped.\n")
+        write_stderr("\nUI stopped.\n")
     finally:
         server.server_close()

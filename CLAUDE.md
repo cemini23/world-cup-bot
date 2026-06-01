@@ -40,7 +40,7 @@ CLI entry: `world_cup_bot/__main__.py` → `world-cup-bot` console script.
 | `config/strategy_logic_versions.yaml` | PnL attribution version (`wc_advance_lp_v4` current) |
 | `config/cross_venue.yaml` | PM↔Kalshi pairs, poll interval, `verification_max_age_days` |
 
-CI runs `scripts/check_hardcoded_thresholds.sh` — do not add `mid > 0.90`-style literals to `scanner.py`, `quoter.py`, or `fill_handler.py`.
+CI runs `scripts/check_hardcoded_thresholds.py` (or `.sh` wrapper) — do not add `mid > 0.90`-style literals to `scanner.py`, `quoter.py`, or `fill_handler.py`.
 
 Paths resolve from **repo root** via `paths.py` — CLI works from any cwd after `pip install -e .`.
 
@@ -102,7 +102,7 @@ world-cup-bot ui
    ```bash
    ruff check world_cup_bot tests
    ruff format world_cup_bot tests
-   bash scripts/check_hardcoded_thresholds.sh
+   python scripts/check_hardcoded_thresholds.py
    pytest -q
    ```
 4. Bump `config/strategy_logic_versions.yaml` `current.version_id` + `deployed_at` on **material** logic/sizing/execution changes (K75 attribution).

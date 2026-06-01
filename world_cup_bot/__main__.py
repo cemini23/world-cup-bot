@@ -1763,10 +1763,7 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
         time.sleep(cfg.poll_interval_sec)
 
 
-def main(argv: list[str] | None = None) -> None:
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    settings = Settings.from_env()
-    install_sigusr1_reload(Path(settings.market_phases_config))
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="world-cup-bot",
         description="World Cup 2026 advance-market LP bot (early build)",
@@ -1890,7 +1887,7 @@ def main(argv: list[str] | None = None) -> None:
 
     cp = sub.add_parser(
         "conviction-patch",
-        help="Parse Gemini DR JSON → staged conviction.yaml snippets (manual merge)",
+        help="Parse Gemini DR JSON -> staged conviction.yaml snippets (manual merge)",
     )
     cp.add_argument("file", help="DR output file (markdown with JSON appendix)")
     cp.add_argument(
@@ -1941,7 +1938,7 @@ def main(argv: list[str] | None = None) -> None:
     pl.add_argument(
         "--advisor",
         action="store_true",
-        help="Optional LLM review (requires ADVISOR_BASE_URL — see SETUP.md)",
+        help="Optional LLM review (requires ADVISOR_BASE_URL - see SETUP.md)",
     )
     pl.add_argument(
         "--advisor-gate",
@@ -1980,7 +1977,7 @@ def main(argv: list[str] | None = None) -> None:
 
     rs = sub.add_parser(
         "research",
-        help="Deep research modes — targeted prompts + focused context (no API call)",
+        help="Deep research modes - targeted prompts + focused context (no API call)",
     )
     rs_sub = rs.add_subparsers(dest="research_command")
 
@@ -1993,7 +1990,7 @@ def main(argv: list[str] | None = None) -> None:
         choices=[m.value for m in research.ResearchMode],
         help="Research mode (see prompts/README.md)",
     )
-    rs_run.add_argument("--group", help="Group letter A–L (group-conviction mode)")
+    rs_run.add_argument("--group", help="Group letter A-L (group-conviction mode)")
     rs_run.add_argument("--team", help="Team name (team-lp-risk mode)")
     rs_run.add_argument("--json", action="store_true", help="Print full JSON bundle")
     rs_run.add_argument(
@@ -2012,7 +2009,7 @@ def main(argv: list[str] | None = None) -> None:
         choices=[m.value for m in research.ResearchMode],
         help="Research mode (see prompts/gemini-deep-research/)",
     )
-    rs_gemini.add_argument("--group", help="Group letter A–L (group-conviction mode)")
+    rs_gemini.add_argument("--group", help="Group letter A-L (group-conviction mode)")
     rs_gemini.add_argument("--team", help="Team name (team-lp-risk mode)")
     rs_gemini.set_defaults(func=_cmd_research_gemini)
 
@@ -2047,7 +2044,7 @@ def main(argv: list[str] | None = None) -> None:
     rw_sync.add_argument("--json", action="store_true", help="Machine-readable output")
     rw_sync.set_defaults(func=_cmd_rewards_sync)
 
-    fl = sub.add_parser("fill", help="Handle a venue-confirmed fill → exit intent (Module 4)")
+    fl = sub.add_parser("fill", help="Handle a venue-confirmed fill -> exit intent (Module 4)")
     fl.add_argument("--team", required=True, help="Team name (must match Gamma market)")
     fl.add_argument("--side", required=True, choices=["YES", "NO", "yes", "no"])
     fl.add_argument("--order-id", required=True, help="Venue fill order id (for dedup)")
@@ -2064,7 +2061,7 @@ def main(argv: list[str] | None = None) -> None:
 
     wch = sub.add_parser(
         "watch",
-        help="Live user-channel WebSocket → fill handler (requires L2 API creds)",
+        help="Live user-channel WebSocket -> fill handler (requires L2 API creds)",
     )
     wch.add_argument(
         "--all",
@@ -2102,7 +2099,7 @@ def main(argv: list[str] | None = None) -> None:
 
     ss = sub.add_parser(
         "shadow-status",
-        help="SHADOW.md gate check — exit 1 if phase steps pending/blocked",
+        help="SHADOW.md gate check - exit 1 if phase steps pending/blocked",
     )
     ss.add_argument(
         "--min-phase",
@@ -2118,7 +2115,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     ss.set_defaults(func=_cmd_shadow_status)
 
-    ph = sub.add_parser("phase", help="Module 1b — tournament phase router (DR 10)")
+    ph = sub.add_parser("phase", help="Module 1b - tournament phase router (DR 10)")
     ph_sub = ph.add_subparsers(dest="phase_cmd", required=True)
 
     ph_status = ph_sub.add_parser("status", help="Show active FSM state + scanner/LP profile")
@@ -2145,7 +2142,7 @@ def main(argv: list[str] | None = None) -> None:
     ui.add_argument(
         "--host",
         default=DEFAULT_HOST,
-        help="Bind address (default: localhost — not exposed on LAN)",
+        help="Bind address (default: localhost - not exposed on LAN)",
     )
     ui.add_argument(
         "--port",
@@ -2157,7 +2154,7 @@ def main(argv: list[str] | None = None) -> None:
 
     cv = sub.add_parser(
         "cross-venue-scan",
-        help="Module 6 — PM vs Kalshi gap alerts (read-only, no auto-trade)",
+        help="Module 6 - PM vs Kalshi gap alerts (read-only, no auto-trade)",
     )
     cv.add_argument("--team", help="Filter to one team (e.g. USA, Switzerland)")
     cv.add_argument("--json", action="store_true", help="Print full scan result as JSON")
@@ -2184,7 +2181,7 @@ def main(argv: list[str] | None = None) -> None:
     cv.add_argument(
         "--discover-only",
         action="store_true",
-        help="List discovered PM↔Kalshi pairs for config/cross_venue.yaml (no config scan)",
+        help="List discovered PM vs Kalshi pairs for config/cross_venue.yaml (no config scan)",
     )
     cv.add_argument(
         "--record",
@@ -2213,7 +2210,7 @@ def main(argv: list[str] | None = None) -> None:
 
     cvfill = sub.add_parser(
         "cross-venue-fill",
-        help="Phase B — manual fills, CSV import, reconcile vs paper intents",
+        help="Phase B - manual fills, CSV import, reconcile vs paper intents",
     )
     cvfill_sub = cvfill.add_subparsers(dest="fill_command", required=True)
 
@@ -2224,12 +2221,12 @@ def main(argv: list[str] | None = None) -> None:
         required=True,
         help="Market type slug (e.g. group_winner)",
     )
-    cvrec.add_argument("--pm-price", type=float, required=True, help="PM fill price (0–1)")
+    cvrec.add_argument("--pm-price", type=float, required=True, help="PM fill price (0-1)")
     cvrec.add_argument(
         "--kalshi-price",
         type=float,
         required=True,
-        help="Kalshi fill price (0–1)",
+        help="Kalshi fill price (0-1)",
     )
     cvrec.add_argument(
         "--notional",
@@ -2295,7 +2292,7 @@ def main(argv: list[str] | None = None) -> None:
 
     cvex = sub.add_parser(
         "cross-venue-exec",
-        help="Phase C — auto dual-leg arb (WC_CROSS_VENUE_AUTO_EXEC, pilot caps)",
+        help="Phase C - auto dual-leg arb (WC_CROSS_VENUE_AUTO_EXEC, pilot caps)",
     )
     cvex_sub = cvex.add_subparsers(dest="exec_command", required=True)
 
@@ -2332,6 +2329,17 @@ def main(argv: list[str] | None = None) -> None:
     cvres.add_argument("--json", action="store_true")
     cvres.set_defaults(func=_cmd_cross_venue_exec)
 
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    from world_cup_bot.console import configure_stdio
+
+    configure_stdio()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    settings = Settings.from_env()
+    install_sigusr1_reload(Path(settings.market_phases_config))
+    parser = build_parser()
     args = parser.parse_args(argv)
     if not args.command:
         parser.print_help()
