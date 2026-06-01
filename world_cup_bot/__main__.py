@@ -642,6 +642,26 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             "Conviction rows matched but 0 quote intents built.",
         )
 
+    from world_cup_bot import balance_cap
+
+    if balance_cap.cap_to_collateral_enabled() and not settings.dry_run:
+        try:
+            capped = balance_cap.cap_intents_to_available_collateral(intents, settings)
+        except RuntimeError as exc:
+            return _plan_abort(settings, "balance_cap", str(exc))
+        if not capped:
+            return _plan_abort(
+                settings,
+                "balance_cap_empty",
+                "No quote intents fit within available USDC collateral.",
+            )
+        if len(capped) < len(intents):
+            print(
+                f"Balance cap: {len(capped)}/{len(intents)} intents "
+                f"(${sum(i.notional_usd for i in capped):.2f} collateral)"
+            )
+        intents = capped
+
     quoter.submit_quotes(
         intents,
         settings,
