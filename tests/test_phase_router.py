@@ -78,6 +78,18 @@ def test_lp_gate_knockout_without_group(config_path: Path):
     assert phase_router.lp_quoting_allowed(ctx, market_phase_id="reach_semifinal") is True
 
 
+def test_overlap_windows_choose_latest_state_order(config_path: Path):
+    # 2026-07-18 is intentionally overlapping in market_phases.yaml
+    # (third_place and final). We should prefer the later state in configured
+    # tournament order, not alphabetical state id sorting.
+    ctx = phase_router.resolve_phase_router(
+        config_path,
+        now=datetime(2026, 7, 18, 12, 0, tzinfo=UTC),
+        enabled=True,
+    )
+    assert ctx.tournament_phase == "final"
+
+
 def test_settlement_gate_holds_knockout_transition(config_path: Path):
     from world_cup_bot.settlement_gate import PhaseSettlementStatus, SettlementGateReport
 

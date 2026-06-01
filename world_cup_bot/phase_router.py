@@ -121,12 +121,16 @@ def detect_tournament_state(
 
     now = now or datetime.now(UTC)
     matches = [
-        spec.state_id for spec in config.tournament_states.values() if _state_contains(now, spec)
+        state_id
+        for state_id in config.ordered_tournament_state_ids()
+        if _state_contains(now, config.tournament_states[state_id])
     ]
     if len(matches) == 1:
         return matches[0], "auto"
     if len(matches) > 1:
-        return sorted(matches)[-1], "auto"
+        # For overlapping date windows, prefer the latest tournament state by
+        # configured state ordering (not alphabetical state id).
+        return matches[-1], "auto"
     return "unknown", "auto"
 
 

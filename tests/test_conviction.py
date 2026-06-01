@@ -89,6 +89,17 @@ def test_group_b_conviction_tiers():
     assert cfg.max_notional("Ivory Coast") == 2500
 
 
+def test_fade_watch_overrides_bilateral_list_conflicts():
+    cfg = load_conviction_config()
+    # England appears in both bilateral_only and fade_watch lists; the safer
+    # restrictive posture must win.
+    assert cfg.team_mode("England") == TeamMode.FADE_WATCH
+    m = make_market("England", mid=0.96, bilateral=True)
+    result = conviction.evaluate_market(m, cfg)
+    assert result.mode == TeamMode.FADE_WATCH
+    assert not result.quote
+
+
 def test_filter_quote_only():
     cfg = load_conviction_config()
     markets = [
