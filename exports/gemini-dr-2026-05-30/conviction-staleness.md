@@ -18,7 +18,7 @@ Audit **research freshness** for all teams in a World Cup 2026 Polymarket LP bot
 ```json
 {
   "dry_run": true,
-  "conviction_config": "/Users/claudiobarone/Desktop/projects/world-cup-bot/config/conviction.yaml",
+  "conviction_config": "config/conviction.yaml",
   "cancel_window": [],
   "all_teams": [
     {

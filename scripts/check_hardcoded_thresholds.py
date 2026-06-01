@@ -16,6 +16,13 @@ HOT_PATH = (
 PATTERN = re.compile(r"(mid\s*[><=!]+\s*0\.|>\s*0\.90|<\s*0\.10)")
 
 
+def line_matches_threshold(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#"):
+        return False
+    return bool(PATTERN.search(line))
+
+
 def main() -> int:
     hits: list[str] = []
     for path in HOT_PATH:
@@ -24,7 +31,7 @@ def main() -> int:
             return 1
         text = path.read_text(encoding="utf-8")
         for i, line in enumerate(text.splitlines(), start=1):
-            if PATTERN.search(line):
+            if line_matches_threshold(line):
                 hits.append(f"{path.relative_to(ROOT)}:{i}:{line.strip()}")
     if hits:
         print(

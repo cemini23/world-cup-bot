@@ -30,7 +30,7 @@ Design **Module 1b / Phase Router** so one codebase switches strategy by tournam
 ```json
 {
   "dry_run": true,
-  "conviction_config": "/Users/claudiobarone/Desktop/projects/world-cup-bot/config/conviction.yaml",
+  "conviction_config": "config/conviction.yaml",
   "cancel_window": [],
   "logic_version": "wc_advance_lp_v4",
   "market_phases_stub": "config/market_phases.yaml",

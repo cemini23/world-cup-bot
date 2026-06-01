@@ -32,7 +32,7 @@ Map **every tournament phase** after the group stage so World Cup Bot can extend
 ```json
 {
   "dry_run": true,
-  "conviction_config": "/Users/claudiobarone/Desktop/projects/world-cup-bot/config/conviction.yaml",
+  "conviction_config": "config/conviction.yaml",
   "cancel_window": [],
   "active_phase": "group_advance",
   "market_phases_stub": "config/market_phases.yaml",

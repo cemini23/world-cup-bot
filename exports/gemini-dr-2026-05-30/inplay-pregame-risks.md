@@ -39,7 +39,7 @@ World Cup Bot v1 **must not quote in-play**. This research defines **gates, aler
 ```json
 {
   "dry_run": true,
-  "conviction_config": "/Users/claudiobarone/Desktop/projects/world-cup-bot/config/conviction.yaml",
+  "conviction_config": "config/conviction.yaml",
   "cancel_window": [],
   "operating": {
     "cancel_hours": 10.0,

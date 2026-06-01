@@ -1,5 +1,5 @@
 [WARN] dry_run          DRY_RUN=true — live POST disabled; set DRY_RUN=false for LP
-[WARN] geoblock         Order POST blocked from US/FL (73.85.81.121) — use non-US egress for live LP
+[WARN] geoblock         Order POST blocked from US/FL (<redacted-ip>) — use non-US egress for live LP
 [OK  ] gamma            Gamma public-search OK (1 events)
 [OK  ] clob_time        CLOB /time → 1780282838
 [OK  ] clob_rate_limit  CLOB burst probe OK (5/5 OK)

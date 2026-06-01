@@ -1,6 +1,6 @@
 {
   "dry_run": true,
-  "ledger_path": "/Users/claudiobarone/Desktop/projects/world-cup-bot/data/local/ledger.jsonl",
+  "ledger_path": "data/local/ledger.jsonl",
   "preflight_ok": true,
   "preflight_checks": [
     {
@@ -11,7 +11,7 @@
     {
       "name": "geoblock",
       "status": "warn",
-      "detail": "Order POST blocked from US/FL (73.85.81.121) \u2014 use non-US egress for live LP"
+      "detail": "Order POST blocked from US/FL (<redacted-ip>) \u2014 use non-US egress for live LP"
     },
     {
       "name": "gamma",
@@ -81,7 +81,7 @@
       "id": "egress",
       "phase": 3,
       "title": "Non-US egress preflight",
-      "detail": "Order POST blocked from US/FL (73.85.81.121) \u2014 use non-US egress for live LP",
+      "detail": "Order POST blocked from US/FL (<redacted-ip>) \u2014 use non-US egress for live LP",
       "status": "warn",
       "cli": "world-cup-bot preflight"
     },
