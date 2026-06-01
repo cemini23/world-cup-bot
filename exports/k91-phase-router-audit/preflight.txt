@@ -1,0 +1,10 @@
+[WARN] dry_run          DRY_RUN=true — live POST disabled; set DRY_RUN=false for LP
+[WARN] geoblock         Order POST blocked from US/FL (73.85.81.121) — use non-US egress for live LP
+[OK  ] gamma            Gamma public-search OK (1 events)
+[OK  ] clob_time        CLOB /time → 1780282838
+[OK  ] clob_rate_limit  CLOB burst probe OK (5/5 OK)
+[SKIP] private_key      Skipped (shadow mode)
+[WARN] l2_creds         Missing CLOB L2 credentials: POLYMARKET_API_KEY, POLYMARKET_API_SECRET, POLYMARKET_API_PASSPHRASE. Derive from POLYMARKET_PRIVATE_KEY via py-clob-client create_or_derive_api_creds().
+[SKIP] clob_auth        No L2 creds — skip authenticated CLOB test
+
+Preflight passed.

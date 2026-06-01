@@ -1,0 +1,108 @@
+{
+  "dry_run": true,
+  "ledger_path": "/Users/claudiobarone/Desktop/projects/world-cup-bot/data/local/ledger.jsonl",
+  "preflight_ok": true,
+  "preflight_checks": [
+    {
+      "name": "dry_run",
+      "status": "warn",
+      "detail": "DRY_RUN=true \u2014 live POST disabled; set DRY_RUN=false for LP"
+    },
+    {
+      "name": "geoblock",
+      "status": "warn",
+      "detail": "Order POST blocked from US/FL (73.85.81.121) \u2014 use non-US egress for live LP"
+    },
+    {
+      "name": "gamma",
+      "status": "pass",
+      "detail": "Gamma public-search OK (1 events)"
+    },
+    {
+      "name": "clob_time",
+      "status": "pass",
+      "detail": "CLOB /time \u2192 1780282850"
+    },
+    {
+      "name": "clob_rate_limit",
+      "status": "pass",
+      "detail": "CLOB burst probe OK (5/5 OK)"
+    },
+    {
+      "name": "private_key",
+      "status": "skip",
+      "detail": "Skipped (shadow mode)"
+    },
+    {
+      "name": "l2_creds",
+      "status": "warn",
+      "detail": "Missing CLOB L2 credentials: POLYMARKET_API_KEY, POLYMARKET_API_SECRET, POLYMARKET_API_PASSPHRASE. Derive from POLYMARKET_PRIVATE_KEY via py-clob-client create_or_derive_api_creds()."
+    },
+    {
+      "name": "clob_auth",
+      "status": "skip",
+      "detail": "No L2 creds \u2014 skip authenticated CLOB test"
+    }
+  ],
+  "shadow_steps": [
+    {
+      "id": "install",
+      "phase": 0,
+      "title": "Install & preflight",
+      "detail": "Gamma public-search OK (1 events)",
+      "status": "done",
+      "cli": "world-cup-bot preflight"
+    },
+    {
+      "id": "dry_plan",
+      "phase": 1,
+      "title": "Dry-run plan sessions",
+      "detail": "26 quote intents across 1 day(s) (target: \u22653 days with --record)",
+      "status": "pending",
+      "cli": "world-cup-bot plan --record"
+    },
+    {
+      "id": "shadow_pnl",
+      "phase": 1,
+      "title": "Shadow net PnL floor",
+      "detail": "No fills yet \u2014 gate applies after watch --record",
+      "status": "done",
+      "cli": "world-cup-bot pnl --scope current"
+    },
+    {
+      "id": "watch",
+      "phase": 2,
+      "title": "Fill watch configured",
+      "detail": "Set POLYMARKET_API_KEY/SECRET/PASSPHRASE for watch",
+      "status": "pending",
+      "cli": "world-cup-bot watch --verbose --record"
+    },
+    {
+      "id": "egress",
+      "phase": 3,
+      "title": "Non-US egress preflight",
+      "detail": "Order POST blocked from US/FL (73.85.81.121) \u2014 use non-US egress for live LP",
+      "status": "warn",
+      "cli": "world-cup-bot preflight"
+    },
+    {
+      "id": "live_ready",
+      "phase": 4,
+      "title": "Live pilot gate",
+      "detail": "Keep DRY_RUN=true until Phases 1\u20133 complete",
+      "status": "blocked",
+      "cli": "DRY_RUN=false world-cup-bot preflight && world-cup-bot plan --record"
+    }
+  ],
+  "shadow_progress": "2/6 steps",
+  "ledger": {
+    "rows": 26,
+    "quote_intents": 26,
+    "fills": 0,
+    "distinct_days": 1
+  },
+  "docs": {
+    "shadow": "SHADOW.md",
+    "setup": "SETUP.md"
+  }
+}

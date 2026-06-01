@@ -1,0 +1,24 @@
+event=phase_router calendar_phase=pre_tournament completed_group_matches=0 cross_venue_enabled=true forced=false lp_active_phases=['group_advance'] market_phase_id=group_advance operating_overrides="{'cancel_hours': 10}" scanner_phase_ids=['group_advance'] settlement_pending_phases="['group_advance', 'reach_final']" source=auto tournament_phase=pre_tournament
+event=negative_filter_summary fade_watch=9 human_review=1 market_count=48 mid_band=4 quoted=16 unlisted=5 yaml_skip=13
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/__main__.py", line 2351, in <module>
+    main()
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/__main__.py", line 2347, in main
+    sys.exit(args.func(args))
+             ^^^^^^^^^^^^^^^
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/__main__.py", line 645, in _cmd_plan
+    quoter.submit_quotes(
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/quoter.py", line 198, in submit_quotes
+    cancel_replace_before_submit(
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/order_manager.py", line 330, in cancel_replace_before_submit
+    open_orders = fetch_wc_open_orders(settings, markets)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/order_manager.py", line 132, in fetch_wc_open_orders
+    auth = auth or load_clob_auth()
+                   ^^^^^^^^^^^^^^^^
+  File "/Users/claudiobarone/Desktop/projects/world-cup-bot/world_cup_bot/clob_auth.py", line 42, in load_clob_auth
+    raise MissingClobAuthError(
+world_cup_bot.clob_auth.MissingClobAuthError: Missing CLOB L2 credentials: POLYMARKET_API_KEY, POLYMARKET_API_SECRET, POLYMARKET_API_PASSPHRASE. Derive from POLYMARKET_PRIVATE_KEY via py-clob-client create_or_derive_api_creds().
+strategy=pm_wc_advance_lp logic_version=wc_advance_lp_v4 deployed=2026-05-30T00:00:00+00:00

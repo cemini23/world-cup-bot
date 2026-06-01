@@ -50,7 +50,7 @@ def test_k84_lp_safety_gates():
     sp = make_market("Spain", mid=0.93, bilateral=True)
     assert not conviction.evaluate_market(sp, cfg).quote
     br = make_market("Brazil", mid=0.95, bilateral=True)
-    assert conviction.evaluate_market(br, cfg).quote
+    assert not conviction.evaluate_market(br, cfg).quote
     mo = make_market("Morocco", mid=0.55)
     assert not conviction.evaluate_market(mo, cfg).quote
 
@@ -81,7 +81,7 @@ def test_missing_rewards_skipped():
 
 def test_group_b_conviction_tiers():
     cfg = load_conviction_config()
-    assert cfg.team_mode("Canada") == TeamMode.YES_HEAVY
+    assert cfg.team_mode("Canada") == TeamMode.FADE_WATCH
     assert cfg.team_mode("Bosnia & Herzegovina") == TeamMode.FADE_WATCH
     assert cfg.team_mode("Qatar") == TeamMode.SKIP
     assert cfg.team_mode("Switzerland") == TeamMode.FADE_WATCH
@@ -98,6 +98,16 @@ def test_fade_watch_overrides_bilateral_list_conflicts():
     result = conviction.evaluate_market(m, cfg)
     assert result.mode == TeamMode.FADE_WATCH
     assert not result.quote
+
+
+def test_k91_conviction_audit_fade_watch_downgrades():
+    cfg = load_conviction_config()
+    for team in ("Canada", "Japan", "Scotland", "Brazil"):
+        assert cfg.team_mode(team) == TeamMode.FADE_WATCH
+        m = make_market(team, mid=0.95, bilateral=True)
+        result = conviction.evaluate_market(m, cfg)
+        assert result.mode == TeamMode.FADE_WATCH
+        assert not result.quote
 
 
 def test_filter_quote_only():

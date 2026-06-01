@@ -1,0 +1,27 @@
+{
+  "enabled_env": true,
+  "lp_gate_env": true,
+  "settlement_gate_env": true,
+  "config": "/Users/claudiobarone/Desktop/projects/world-cup-bot/config/market_phases.yaml",
+  "override_path": "/Users/claudiobarone/Desktop/projects/world-cup-bot/exports/k91-phase-router-audit/phase_override.json",
+  "tournament_phase": "quarterfinal",
+  "market_phase_id": "reach_semifinal",
+  "source": "override_file",
+  "cross_venue_enabled": true,
+  "scanner_phase_ids": [
+    "reach_semifinal"
+  ],
+  "lp_active_phases": [
+    "reach_semifinal"
+  ],
+  "operating_overrides": {
+    "cancel_hours": 24,
+    "bilateral_threshold": 0.85
+  },
+  "forced": true,
+  "calendar_phase": "pre_tournament",
+  "settlement_pending_phases": [],
+  "settlement_blocked_by": null,
+  "fifa_match_blocked_by": null,
+  "completed_group_matches": null
+}

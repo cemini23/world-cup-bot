@@ -69,6 +69,7 @@ per_team:
     max_notional_usd: 2500
   Canada:
     max_notional_usd: 2500
+    mode: fade_watch
   Ivory Coast:
     max_notional_usd: 2500
   Bosnia & Herzegovina:
@@ -78,8 +79,13 @@ per_team:
     mode: skip
   Brazil:
     max_notional_usd: 500
+    mode: fade_watch
   Morocco:
     mode: human_review
+  Japan:
+    mode: fade_watch
+  Scotland:
+    mode: fade_watch
   USA:
     max_notional_usd: 500
     mode: skip
@@ -112,4 +118,5 @@ per_team:
 # K83 Market-gap live (May 29): advance-to-knockout PM↔Kalshi NOT pairable; group-winner gaps <5pp
 # K84 LP safety (May 30): Spain skip (Yamal/friendlies); Brazil reduce cap $500 (Neymar);
 #   Morocco human_review (Aguerd/depth unknown). [NEEDS RE-RUN 2026-06-06]
+# K91 conviction audit (May 31): Canada/Japan/Scotland/Brazil forced fade_watch pre-kickoff.
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)
