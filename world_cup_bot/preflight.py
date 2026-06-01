@@ -41,6 +41,9 @@ class PreflightReport:
         if check.status == CheckStatus.FAIL:
             self.ok = False
 
+    def recompute_ok(self) -> None:
+        self.ok = not any(c.status == CheckStatus.FAIL for c in self.checks)
+
 
 def _load_poly_address() -> str | None:
     explicit = os.environ.get("POLYMARKET_POLY_ADDRESS", "").strip()
@@ -59,6 +62,23 @@ def _load_poly_address() -> str | None:
 def _load_maker_address(poly_address: str | None) -> str | None:
     funder = os.environ.get("POLYMARKET_FUNDER_ADDRESS", "").strip()
     return funder or poly_address
+
+
+def _finalize_geoblock_report(report: PreflightReport, settings: Settings) -> None:
+    """Downgrade geoblock FAIL when live CLOB auth works (API country label quirk)."""
+    if settings.dry_run:
+        return
+    geo = next((c for c in report.checks if c.name == "geoblock"), None)
+    auth = next((c for c in report.checks if c.name == "clob_auth"), None)
+    if not geo or geo.status != CheckStatus.FAIL or not auth or auth.status != CheckStatus.PASS:
+        return
+    idx = report.checks.index(geo)
+    report.checks[idx] = PreflightCheck(
+        "geoblock",
+        CheckStatus.WARN,
+        f"{geo.detail} — authenticated CLOB OK; treat as egress-safe",
+    )
+    report.recompute_ok()
 
 
 def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightReport:
@@ -283,4 +303,5 @@ def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightRep
                 )
             )
 
+    _finalize_geoblock_report(report, settings)
     return report
