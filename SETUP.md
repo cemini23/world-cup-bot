@@ -20,9 +20,12 @@ Copy `.env.example` → `.env` and fill values locally.
 | `POLYMARKET_API_SECRET` | `watch` | L2 API secret |
 | `POLYMARKET_API_PASSPHRASE` | `watch` | L2 API passphrase |
 | `DRY_RUN` | yes | Keep `true` until you have shadow-tested |
+| `MAX_NOTIONAL_PER_MARKET_USD` | no | Hard ceiling per market (minimum with `conviction.yaml` caps; default `2000`) |
+| `WC_LIVE_PLAN_ACK` | live timer | Set to `1` in `.env` before enabling `world-cup-bot-live-plan.timer` |
+| `WC_ALERT_WEBHOOK_URL` | no | Discord/Slack HTTPS webhook for operator alerts |
 | `MIN_HOURS_BEFORE_KICKOFF` | no | Calendar guard cancel threshold (default `10`) |
 
-Derive L2 creds once from your private key (py-clob-client `create_or_derive_api_creds()`), then store the three values above in `.env`.
+Derive L2 creds once from your private key (`py-clob-client-v2` `create_or_derive_api_creds()`), then store the three values above in `.env`.
 
 ## Live fill watch (Module 4)
 

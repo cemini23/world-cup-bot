@@ -57,7 +57,7 @@ Every `plan` writes `event=negative_filter_summary` with skip counts by reason (
 
 ## Phase 2 — Fill watch (venue reads, still dry)
 
-Requires L2 API creds in `.env` (derive once via py-clob-client).
+Requires L2 API creds in `.env` (derive once via py-clob-client-v2 or Polymarket settings).
 
 ```bash
 world-cup-bot watch --verbose --record
@@ -94,11 +94,14 @@ world-cup-bot preflight         # L2 GET /data/orders auth probe passes
 Only after Phases 0–3. Start with **$500–1K** single-market pilot per bot spec.
 
 ```bash
-export DRY_RUN=false            # only on egress host
+export DRY_RUN=false            # only on non-US egress host
+export WC_LIVE_PLAN_ACK=1       # required before live-plan.timer (see deploy/systemd/README.md)
 world-cup-bot preflight         # all PASS
 world-cup-bot plan --record --liquidity-gate   # posts post-only GTC limits
 world-cup-bot watch --record    # fills + REST reconcile + exit POST
 ```
+
+Do **not** enable `plan --advisor` on systemd timers for the initial pilot. If you use the advisor interactively, prefer `--advisor-gate hard`.
 
 **Pass criteria:**
 

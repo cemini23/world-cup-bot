@@ -1,4 +1,4 @@
-# Gemini Deep Research — weekly OSINT pipeline (World Cup LP)
+# Gemini Deep Research — weekly conviction review pipeline (World Cup LP)
 
 Synthesize **external** injury/news, Polymarket/Kalshi market structure, and FIFA fixture context for the World Cup advance-LP bot. Do not recommend enabling live capital without operator review.
 

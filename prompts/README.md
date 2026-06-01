@@ -7,7 +7,7 @@ Three lanes:
 | **Operational** | [advisor.md](advisor.md) | Daily quote/skip/reduce before `plan --advisor` |
 | **Gemini Deep Research** | [gemini-deep-research/](gemini-deep-research/) | Paste into **gemini.google.com → Deep Research** |
 | **Agent JSON** | `deep-research-*.md` | Cursor/Claude with `research run <mode> --json` |
-| **Weekly OSINT** | `deep-research-weekly-osint-pipeline.md` | Monokern/NotebookLM weekly pass (K93); not daily ingest |
+| **Weekly research** | `deep-research-weekly-osint-pipeline.md` | Weekly conviction/cross-venue review; not daily YAML edits |
 
 ## Gemini Deep Research (recommended for web research)
 
@@ -44,7 +44,7 @@ world-cup-bot scan --conviction > /tmp/wc-scan.txt
 Deep research modes return **structured JSON** (schema in each prompt). Human applies changes to:
 
 - `config/conviction.yaml` — team tiers, caps, skip
-- `briefs/` or issues — Module 6 ticker map, cross-venue alerts
+- GitHub issues — Module 6 ticker map, cross-venue alerts
 - `SHADOW.md` notes — only if checklist phases change
 
 Never paste private keys or prod hostnames into research sessions.

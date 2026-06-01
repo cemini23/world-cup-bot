@@ -56,8 +56,10 @@ Copy `.env.example` → `.env` (never commit). See SETUP.md for full table.
 | Fill watch | L2 creds + `pip install -e ".[live]"` (websockets) |
 | Optional LLM | `ADVISOR_BASE_URL` (unset = zero cost) |
 | Optional alerts | `WC_ALERT_WEBHOOK_URL` |
+| Live plan ack | `WC_LIVE_PLAN_ACK=1` before enabling `live-plan.timer` |
+| Notional ceiling | `MAX_NOTIONAL_PER_MARKET_USD` (min with YAML caps) |
 
-Derive L2 creds once: py-clob-client `create_or_derive_api_creds()` from private key.
+Derive L2 creds once: py-clob-client-v2 `create_or_derive_api_creds()` from private key (or Polymarket settings UI).
 
 ## Commands (operator)
 
@@ -73,10 +75,8 @@ world-cup-bot shadow-status [--min-phase N] [--json]
 world-cup-bot phase status [--json]
 world-cup-bot phase set <state_id|auto>
 world-cup-bot phase purge --team NAME
-world-cup-bot cross-venue-scan [--loop] [--record] [--notional USD]
+world-cup-bot cross-venue-scan [--discover-only] [--loop] [--record] [--alert-only]
 world-cup-bot cross-venue-pnl [--refresh] [--json]
-world-cup-bot phase set <state_id|auto>
-world-cup-bot phase purge --team NAME
 world-cup-bot watch [--verbose] [--record]
 world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot cancel --cancel-window | --team NAME | --all-wc
@@ -88,7 +88,6 @@ world-cup-bot conviction-staleness [--notify]
 world-cup-bot fixture-check [--notify] [--apply]
 world-cup-bot conviction-patch FILE [--stage]
 world-cup-bot context --json
-world-cup-bot cross-venue-scan [--discover-only] [--loop] [--alert-only]
 world-cup-bot ui
 ```
 
@@ -116,7 +115,7 @@ Gamma public-search → AdvanceMarket rows (mid, spread, rewards, kickoff hours)
         ↓
 optional CLOB /book → liquidity_scanner (bid/ask band depth vs operating.yaml)
         ↓
-conviction.yaml gate → ConvictionResult (human_review may auto-clear on depth pass)
+conviction.yaml gate → ConvictionResult (human_review blocked unless liquidity auto-clear enabled in operating.yaml)
         ↓
 quoter.build_quotes → QuoteIntent[] → submit_quotes (dry or clob_live)
         ↓
@@ -141,13 +140,13 @@ reconcile loop (30s): GET /data/trades → same fill path (WS silent-fill blind 
 
 ## Open backlog (do not claim done)
 
-- CeminiSuite module import — OSINT `briefs/2026-05-29_world-cup-bot-cemini-import.md`; skill_audit before prod scp
 - ~~Formal shadow gate in GitHub Actions~~ — **Done:** `tests/test_shadow_fixture_gate.py` + TruffleHog/vet in CI
+- Dependency lockfile for reproducible `[live]` installs (post-launch)
 
 ## Related
 
 - Newsletter: [Outlier Weekly](https://outlierweekly.substack.com) — Issue 3 launch ~2026-06-03
-- **Gambling-wiki** (public): retail WC 2026 + PM/Kalshi wagering — `@gambling-wiki/concepts/prediction-markets-crossover.md`, `@gambling-wiki/entities/sports/world-cup-2026-betting.md`. This repo stays automation/LP; gambling-wiki stays bankroll/CLV/books.
+- **Gambling-wiki** (public): retail WC 2026 + PM/Kalshi wagering — [prediction markets crossover](https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/prediction-markets-crossover.md). This repo stays automation/LP; gambling-wiki stays bankroll/CLV/books.
 - Optional VPS: [deploy/systemd/README.md](deploy/systemd/README.md)
 - Sibling OSS: [vet](https://github.com/cemini23/vet), [wikilint](https://github.com/cemini23/wikilint)
 

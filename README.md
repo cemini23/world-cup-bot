@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch tied to [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) for open operator items.
+**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch: [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) for shipped features and planned work.
 
 ## What it does (v1)
 
@@ -26,7 +26,7 @@
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
 
-K91 pre-kickoff risk posture (2026-05-31): `Canada`, `Japan`, `Scotland`, and `Brazil` are `fade_watch` via `per_team` overrides (alert-only) pending LP safety re-run **2026-06-06**. K93: `conviction.yaml` **v5** removes them from aggressive tier lists; weekly external research via `world-cup-bot research run weekly-osint-pipeline`.
+Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_watch`** (alert-only) in `config/conviction.yaml` pending the next scheduled safety review (**2026-06-06**). Run `world-cup-bot research run weekly-osint-pipeline` for weekly external research; apply YAML changes manually after review.
 
 ### Go-live safety
 
@@ -130,7 +130,7 @@ Optional [systemd units](deploy/systemd/README.md):
 sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --profile monitor --enable
 ```
 
-See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contributors / AI agents:** [CLAUDE.md](CLAUDE.md) · **Open items:** [ROADMAP.md](ROADMAP.md).
+See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contributors:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Agents:** [CLAUDE.md](CLAUDE.md) · **Roadmap:** [ROADMAP.md](ROADMAP.md).
 
 ## Security
 
