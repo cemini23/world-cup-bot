@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 165 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 187 pytest (CI on push)
 
 ---
 
@@ -64,6 +64,15 @@ See OSINT `briefs/2026-05-29_world-cup-bot-cemini-steal-from-audit.md`.
 | LP promotion gates (DSR/MCPT) | OSINT lp-algorithm-live-promotion-gates | **DEFERRED** | Shadow net-PnL heuristic only for Issue 3 |
 | Postgres `pnl_attribution` | Cemini prod | **DEFERRED** | Import brief scopes reuse post shadow |
 
+### K91 posture + phase audit (2026-05-31) — shipped
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Conviction posture downgrades | **APPLIED** | `config/conviction.yaml`: `Canada`, `Japan`, `Scotland`, `Brazil` forced to `fade_watch` |
+| Phase overlap fix + tests | **APPLIED** | Router overlap precedence fixed; coverage in `tests/test_phase_router.py` |
+| CLI phase-status integration tests | **APPLIED** | `tests/test_phase_status_cli.py` covers overlap + forced override JSON output |
+| Shadow/router audit artifacts | **CAPTURED** | `exports/k91-phase-router-audit/` snapshots + preflight/shadow outputs |
+
 ---
 
 ## Out of scope (v1)
@@ -99,6 +108,7 @@ Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record
 | 2026-05-30 | (Phase B) | Manual fill bridge: `cross-venue-fill record|import-csv|reconcile` |
 | 2026-05-30 | (PR3) | Phase router replay JSONL, FIFA match gate, bilateral_threshold in plan |
 | 2026-05-30 | (Phase C) | Auto dual-leg `cross-venue-exec`, Kalshi orders, orphan resolve |
+| 2026-05-31 | `5d26bfd` | K91 conviction fade-watch downgrades + phase-status CLI tests + router audit exports |
 
 ## Sources
 

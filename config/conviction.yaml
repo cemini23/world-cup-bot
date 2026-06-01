@@ -6,7 +6,7 @@ version: 4
 
 # Mid-tier YES-heavy LP (target mid ~0.20–0.80)
 yes_conviction:
-  # Group B — Gemini DR Group B (Canada yes_conviction; Bosnia/Qatar → fade_watch)
+  # Group B baseline from K83 DR (Canada later downgraded by K91 per_team override)
   - Canada
   # Group C / E / F — DeadBall 2nd–3rd advance paths
   - Morocco
@@ -113,10 +113,10 @@ per_team:
     mode: skip
 
 # Research notes (not loaded by bot — documentation only)
-# K83 Group B DR: Canada yes_conviction $2500; Bosnia/Qatar fade_watch (8–14pp PM vs Kalshi)
+# K83 Group B DR baseline: Canada $2500; Bosnia/Qatar fade_watch (8–14pp PM vs Kalshi)
 # K83 Third-place DR: Ivory Coast +51pp mispricing → cap 2500; DR Congo skip (GD blowout risk)
 # K83 Market-gap live (May 29): advance-to-knockout PM↔Kalshi NOT pairable; group-winner gaps <5pp
-# K84 LP safety (May 30): Spain skip (Yamal/friendlies); Brazil reduce cap $500 (Neymar);
-#   Morocco human_review (Aguerd/depth unknown). [NEEDS RE-RUN 2026-06-06]
+# K84 LP safety (May 30): Spain skip; Brazil reduce cap $500; Morocco human_review.
 # K91 conviction audit (May 31): Canada/Japan/Scotland/Brazil forced fade_watch pre-kickoff.
+#   [NEEDS RE-RUN 2026-06-06]
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)
