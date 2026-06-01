@@ -153,7 +153,7 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             phase=4,
             title="Live pilot gate",
             detail=(
-                "DRY_RUN=false + preflight PASS + py-clob-client on egress only"
+                "DRY_RUN=false + preflight PASS + py-clob-client-v2 on egress only"
                 if not settings.dry_run
                 else "Keep DRY_RUN=true until Phases 1–3 complete"
             ),

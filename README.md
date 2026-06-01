@@ -50,7 +50,7 @@ git clone https://github.com/cemini23/world-cup-bot.git
 cd world-cup-bot
 cp .env.example .env   # fill in your own Polymarket keys
 pip install -e ".[dev]"
-pip install -e ".[live]" # watch + live POST (websockets, py-clob-client)
+pip install -e ".[live]" # watch + live POST (websockets, py-clob-client-v2)
 
 # Phase 0 — connectivity
 world-cup-bot preflight

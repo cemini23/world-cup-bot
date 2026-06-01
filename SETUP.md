@@ -41,12 +41,16 @@ Pair with periodic REST `/data/trades` reconciliation (every 30s in `watch`) bef
 world-cup-bot preflight
 ```
 
-Checks: geoblock, Gamma public-search, CLOB `/time`, L2 creds, optional `GET /data/orders` auth probe, `py-clob-client` when `DRY_RUN=false`.
+Checks: geoblock, Gamma public-search, CLOB `/time`, L2 creds, optional `GET /data/orders` auth probe, `py-clob-client-v2` when `DRY_RUN=false`.
+
+```bash
+pip install -e ".[live]"   # py-clob-client-v2 + websockets + eth-account
+```
 
 ## Live POST (DRY_RUN=false)
 
 ```bash
-pip install -e ".[live]"   # py-clob-client + websockets + eth-account
+pip install -e ".[live]"   # py-clob-client-v2 + websockets + eth-account
 world-cup-bot preflight      # must pass geoblock + deps from non-US egress
 world-cup-bot plan           # posts post-only GTC limits when DRY_RUN=false
 ```

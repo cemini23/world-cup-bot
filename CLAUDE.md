@@ -63,7 +63,7 @@ Derive L2 creds once: py-clob-client `create_or_derive_api_creds()` from private
 
 ```bash
 pip install -e ".[dev]"          # ruff + pytest
-pip install -e ".[live]"          # + websockets, py-clob-client, eth-account
+pip install -e ".[live]"          # + websockets, py-clob-client-v2, eth-account
 
 world-cup-bot scan [--conviction] [--liquidity]
 world-cup-bot liquidity-scan [--team TEAM]
@@ -125,7 +125,7 @@ watch: user-channel WS TRADE/MATCHED → fill_handler → exit intent → ledger
 reconcile loop (30s): GET /data/trades → same fill path (WS silent-fill blind spot)
 ```
 
-- **Auth layers:** Gamma reads = public + User-Agent. CLOB reads (book/mid) = public. L2 HMAC = `GET /data/orders`, `GET /data/trades`, POST order, rewards. Order EIP-712 signing = private key via py-clob-client.
+- **Auth layers:** Gamma reads = public + User-Agent. CLOB reads (book/mid) = public. L2 HMAC = `GET /data/orders`, `GET /data/trades`, POST order, rewards. Order EIP-712 signing = private key via **py-clob-client-v2** (`clob_live.py`).
 - **Ledger:** `data/local/ledger.jsonl` default; prod shadow uses `shadow_ledger.jsonl` via `WC_LEDGER_PATH`. PnL scoped by `logic_version`.
 - **Advisor:** may only skip, reduce notional, or flag — never raise above YAML caps (`prompts/advisor.md`).
 

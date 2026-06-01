@@ -8,7 +8,7 @@ Run everything with **`DRY_RUN=true`** until Phase 4. Prediction markets can los
 git clone https://github.com/cemini23/world-cup-bot.git && cd world-cup-bot
 cp .env.example .env          # fill keys locally — never commit
 pip install -e ".[dev]"
-pip install -e ".[live]"        # websockets + py-clob-client (watch / live POST)
+pip install -e ".[live]"        # websockets + py-clob-client-v2 (watch / live POST)
 world-cup-bot preflight         # geoblock WARN ok in shadow from US
 world-cup-bot scan --conviction --liquidity
 world-cup-bot ui                # optional dashboard → http://localhost:8765
@@ -87,7 +87,7 @@ world-cup-bot preflight         # L2 GET /data/orders auth probe passes
 
 - [ ] `geoblock` → PASS (not blocked)
 - [ ] `clob_auth` → PASS
-- [ ] `py_clob_client` → PASS when preparing for live
+- [ ] `py_clob_client_v2` → PASS when preparing for live (preflight when `DRY_RUN=false`)
 
 ## Phase 4 — Live pilot (optional, small size)
 

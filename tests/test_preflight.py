@@ -53,3 +53,26 @@ def test_preflight_geoblock_fail_when_live(monkeypatch):
     geo = next(c for c in report.checks if c.name == "geoblock")
     assert geo.status == CheckStatus.FAIL
     assert report.ok is False
+
+
+def test_preflight_live_requires_clob_v2(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_geoblock",
+        lambda: GeoblockStatus(blocked=False, ip="1.2.3.4", country="FI", region=""),
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_search_payload",
+        lambda *_a, **_k: {"events": [{"id": 1}]},
+    )
+    monkeypatch.setattr("world_cup_bot.preflight.fetch_clob_time", lambda *_a, **_k: 1700000000)
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.probe_clob_burst",
+        lambda *_a, **_k: ClobBurstProbe(5, 5, 0, {}),
+    )
+
+    report = run_preflight(Settings.from_env(), test_auth=False)
+    names = {c.name: c.status for c in report.checks}
+    assert names.get("py_clob_client_v2") == CheckStatus.PASS

@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" -e ".[live]"
       - name: Ruff check
         run: ruff check world_cup_bot tests
       - name: Ruff format
@@ -32,6 +32,8 @@ jobs:
         run: python scripts/check_hardcoded_thresholds.py
       - name: Exports sanitize
         run: python scripts/check_exports_sanitize.py
+      - name: CLOB v2 import guard
+        run: python scripts/check_clob_v2_import.py
       - name: Pytest
         run: pytest -q
 

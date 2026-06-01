@@ -255,20 +255,31 @@ def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightRep
             )
         )
 
-    # py-clob-client for live POST
+    # py-clob-client-v2 for live POST (V1 archived Apr 2026 — order_version_mismatch)
     if not settings.dry_run:
         try:
-            import py_clob_client  # noqa: F401
+            import py_clob_client_v2  # noqa: F401
 
             report.add(
-                PreflightCheck("py_clob_client", CheckStatus.PASS, "py-clob-client installed")
+                PreflightCheck(
+                    "py_clob_client_v2",
+                    CheckStatus.PASS,
+                    "py-clob-client-v2 installed",
+                )
+            )
+            report.add(
+                PreflightCheck(
+                    "py_clob_client",
+                    CheckStatus.PASS,
+                    "alias: py-clob-client-v2 (V1 deprecated)",
+                )
             )
         except ImportError:
             report.add(
                 PreflightCheck(
-                    "py_clob_client",
+                    "py_clob_client_v2",
                     CheckStatus.FAIL,
-                    "pip install -e '.[live]' required for live POST",
+                    "pip install -e '.[live]' required for live POST (py-clob-client-v2)",
                 )
             )
 
