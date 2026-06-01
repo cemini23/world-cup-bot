@@ -7,7 +7,9 @@ import os
 from dataclasses import replace
 
 from world_cup_bot.config import Settings
+from world_cup_bot.order_manager import OpenOrder, fetch_wc_open_orders
 from world_cup_bot.quoter import QuoteIntent, _shares_for_notional
+from world_cup_bot.scanner import AdvanceMarket
 
 logger = logging.getLogger(__name__)
 
@@ -92,13 +94,60 @@ def cap_intents_to_collateral(
     return selected
 
 
+def _open_buy_collateral_usd(orders: list[OpenOrder]) -> float:
+    return sum(o.price * o.size for o in orders if o.side == "BUY")
+
+
+def _collateral_locked_outside_intents(
+    open_orders: list[OpenOrder],
+    intents: list[QuoteIntent],
+) -> float:
+    """USDC tied up in resting orders we are not about to cancel-replace."""
+    refresh_assets = {i.token_id for i in intents}
+    locked = 0.0
+    for order in open_orders:
+        if order.side != "BUY":
+            continue
+        if order.asset_id in refresh_assets:
+            continue
+        locked += order.price * order.size
+    return locked
+
+
+def subtract_open_orders_enabled() -> bool:
+    raw = os.environ.get("WC_CAP_SUBTRACT_OPEN_ORDERS", "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
 def cap_intents_to_available_collateral(
     intents: list[QuoteIntent],
     settings: Settings,
+    *,
+    markets: list[AdvanceMarket] | None = None,
 ) -> list[QuoteIntent]:
     """Fetch live collateral and scale intents to fit."""
-    reserve = float(os.environ.get("WC_COLLATERAL_RESERVE_USD", "0") or "0")
+    reserve = float(os.environ.get("WC_COLLATERAL_RESERVE_USD", "2") or "0")
     balance = fetch_collateral_balance_usd(settings)
     budget = max(0.0, balance - reserve)
-    logger.info("collateral balance $%.2f reserve $%.2f budget $%.2f", balance, reserve, budget)
+    locked = 0.0
+    if subtract_open_orders_enabled() and markets and not settings.dry_run:
+        try:
+            open_orders = fetch_wc_open_orders(settings, markets)
+            locked = _collateral_locked_outside_intents(open_orders, intents)
+            budget = max(0.0, budget - locked)
+            open_total = _open_buy_collateral_usd(open_orders)
+            logger.info(
+                "open orders $%.2f locked-outside-intents $%.2f",
+                open_total,
+                locked,
+            )
+        except Exception as exc:
+            logger.warning("open-order collateral subtract skipped: %s", exc)
+    logger.info(
+        "collateral balance $%.2f reserve $%.2f locked $%.2f budget $%.2f",
+        balance,
+        reserve,
+        locked,
+        budget,
+    )
     return cap_intents_to_collateral(intents, budget)

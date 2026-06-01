@@ -646,7 +646,9 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     if balance_cap.cap_to_collateral_enabled() and not settings.dry_run:
         try:
-            capped = balance_cap.cap_intents_to_available_collateral(intents, settings)
+            capped = balance_cap.cap_intents_to_available_collateral(
+                intents, settings, markets=markets
+            )
         except RuntimeError as exc:
             return _plan_abort(settings, "balance_cap", str(exc))
         if not capped:

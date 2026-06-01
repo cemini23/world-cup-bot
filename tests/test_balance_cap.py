@@ -55,3 +55,16 @@ def test_cap_noop_when_under_budget() -> None:
     intents = [_intent("A", 20.0)]
     capped = cap_intents_to_collateral(intents, 100.0)
     assert capped == intents
+
+
+def test_locked_outside_intents_only_counts_other_tokens() -> None:
+    from world_cup_bot.balance_cap import _collateral_locked_outside_intents
+    from world_cup_bot.order_manager import OpenOrder
+
+    intents = [_intent("A", 10.0)]
+    intents[0] = replace(intents[0], token_id="token-a")
+    orders = [
+        OpenOrder("1", "token-a", "c", "BUY", 0.5, 50.0, "LIVE", "A"),
+        OpenOrder("2", "token-b", "c", "BUY", 0.5, 40.0, "LIVE", "B"),
+    ]
+    assert _collateral_locked_outside_intents(orders, intents) == 20.0
