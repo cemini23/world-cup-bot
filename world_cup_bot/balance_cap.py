@@ -35,25 +35,22 @@ def fetch_collateral_balance_usd(settings: Settings) -> float:
     return int(ba["balance"]) / 1_000_000
 
 
-def _scaled_intents(intents: list[QuoteIntent], scale: float) -> list[QuoteIntent]:
-    out: list[QuoteIntent] = []
-    for intent in intents:
-        target = intent.notional_usd * scale
-        shares = _shares_for_notional(
-            target, intent.price, intent.snapshot.rewards_min_shares
-        )
-        notional = round(shares * intent.price, 4)
-        out.append(
-            replace(intent, size_shares=shares, notional_usd=notional)
-        )
-    return out
+def _min_collateral(intent: QuoteIntent) -> float:
+    return intent.snapshot.rewards_min_shares * intent.price
+
+
+def _intent_at_notional(intent: QuoteIntent, notional_usd: float) -> QuoteIntent:
+    shares = _shares_for_notional(
+        notional_usd, intent.price, intent.snapshot.rewards_min_shares
+    )
+    return replace(intent, size_shares=shares, notional_usd=round(shares * intent.price, 4))
 
 
 def cap_intents_to_collateral(
     intents: list[QuoteIntent],
     budget_usd: float,
 ) -> list[QuoteIntent]:
-    """Proportionally scale intents so total BUY collateral stays within budget."""
+    """Fit intents within budget, respecting rewards min_shares per leg."""
     if not intents or budget_usd <= 0:
         return []
 
@@ -61,19 +58,18 @@ def cap_intents_to_collateral(
     if total <= budget_usd:
         return intents
 
-    lo, hi = 0.0, 1.0
-    best: list[QuoteIntent] = []
-    for _ in range(48):
-        mid = (lo + hi) / 2
-        scaled = _scaled_intents(intents, mid)
-        used = sum(i.notional_usd for i in scaled)
-        if used <= budget_usd:
-            best = scaled
-            lo = mid
-        else:
-            hi = mid
+    # Greedy pack: cheapest min-collateral legs first (max coverage on small wallets).
+    remaining = budget_usd
+    selected: list[QuoteIntent] = []
+    for intent in sorted(intents, key=_min_collateral):
+        floor = _min_collateral(intent)
+        if floor > remaining + 0.01:
+            continue
+        placed = _intent_at_notional(intent, floor)
+        selected.append(placed)
+        remaining -= placed.notional_usd
 
-    if not best:
+    if not selected:
         logger.warning(
             "balance cap: no intents fit within $%.2f (requested $%.2f)",
             budget_usd,
@@ -81,16 +77,23 @@ def cap_intents_to_collateral(
         )
         return []
 
-    used = sum(i.notional_usd for i in best)
+    # Spread leftover budget evenly across selected legs (still honoring min_shares).
+    if remaining > 0.05:
+        extra_each = remaining / len(selected)
+        selected = [
+            _intent_at_notional(i, i.notional_usd + extra_each) for i in selected
+        ]
+
+    used = sum(i.notional_usd for i in selected)
     logger.info(
-        "balance cap: scaled %d intents $%.2f → $%.2f (budget $%.2f, scale %.3f)",
-        len(best),
+        "balance cap: kept %d/%d intents $%.2f → $%.2f (budget $%.2f)",
+        len(selected),
+        len(intents),
         total,
         used,
         budget_usd,
-        lo,
     )
-    return best
+    return selected
 
 
 def cap_intents_to_available_collateral(
