@@ -30,6 +30,8 @@ jobs:
         run: ruff format --check world_cup_bot tests
       - name: Threshold grep
         run: python scripts/check_hardcoded_thresholds.py
+      - name: Exports sanitize
+        run: python scripts/check_exports_sanitize.py
       - name: Pytest
         run: pytest -q
 
