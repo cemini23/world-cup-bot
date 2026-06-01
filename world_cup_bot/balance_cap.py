@@ -40,9 +40,7 @@ def _min_collateral(intent: QuoteIntent) -> float:
 
 
 def _intent_at_notional(intent: QuoteIntent, notional_usd: float) -> QuoteIntent:
-    shares = _shares_for_notional(
-        notional_usd, intent.price, intent.snapshot.rewards_min_shares
-    )
+    shares = _shares_for_notional(notional_usd, intent.price, intent.snapshot.rewards_min_shares)
     return replace(intent, size_shares=shares, notional_usd=round(shares * intent.price, 4))
 
 
@@ -80,9 +78,7 @@ def cap_intents_to_collateral(
     # Spread leftover budget evenly across selected legs (still honoring min_shares).
     if remaining > 0.05:
         extra_each = remaining / len(selected)
-        selected = [
-            _intent_at_notional(i, i.notional_usd + extra_each) for i in selected
-        ]
+        selected = [_intent_at_notional(i, i.notional_usd + extra_each) for i in selected]
 
     used = sum(i.notional_usd for i in selected)
     logger.info(
