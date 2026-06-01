@@ -109,6 +109,16 @@ Phase A does **not** change shadow LP notional or SHADOW gates. Enable `--record
 | 2026-05-30 | (PR3) | Phase router replay JSONL, FIFA match gate, bilateral_threshold in plan |
 | 2026-05-30 | (Phase C) | Auto dual-leg `cross-venue-exec`, Kalshi orders, orphan resolve |
 | 2026-05-31 | `5d26bfd` | K91 conviction fade-watch downgrades + phase-status CLI tests + router audit exports |
+| 2026-06-01 | (K93) | `conviction.yaml` v5 list hygiene; `weekly-osint-pipeline` research mode; advisor restrictive-mode hint |
+
+### K93 OSINT ingest adoptions (2026-06-01)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Conviction YAML v5 hygiene | **APPLIED** | Drop K91 fade_watch teams from `yes_conviction` / `bilateral_only` lists |
+| Weekly Monokern research mode | **APPLIED** | `research run weekly-osint-pipeline` + prompt |
+| Harness-benefit advisor hint | **APPLIED** | Restrictive modes when news deltas conflict with YAML |
+| OSINT wiki cross-links | **APPLIED** | Entity + OPEN-GAPS + prod brief |
 
 ## Sources
 

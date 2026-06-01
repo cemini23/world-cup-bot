@@ -7,6 +7,7 @@ Three lanes:
 | **Operational** | [advisor.md](advisor.md) | Daily quote/skip/reduce before `plan --advisor` |
 | **Gemini Deep Research** | [gemini-deep-research/](gemini-deep-research/) | Paste into **gemini.google.com → Deep Research** |
 | **Agent JSON** | `deep-research-*.md` | Cursor/Claude with `research run <mode> --json` |
+| **Weekly OSINT** | `deep-research-weekly-osint-pipeline.md` | Monokern/NotebookLM weekly pass (K93); not daily ingest |
 
 ## Gemini Deep Research (recommended for web research)
 
@@ -26,6 +27,7 @@ See [gemini-deep-research/README.md](gemini-deep-research/README.md).
 world-cup-bot research list
 world-cup-bot research run group-conviction --group B --json
 world-cup-bot research run cross-venue --json
+world-cup-bot research run weekly-osint-pipeline --json
 ```
 
 Deep research agent prompts expect **external search** (Exa, YouTube, sportsbooks, Kalshi catalog). The bot supplies live Gamma context; you supply fresh primary sources.

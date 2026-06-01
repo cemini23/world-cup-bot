@@ -356,7 +356,9 @@ def _default_system_prompt() -> str:
     return (
         "You advise a Polymarket FIFA 2026 advance-to-knockout LP bot. "
         "You may only recommend skip, reduce size, or human_review — never increase "
-        "notional above config caps. Return JSON array with team, verdict, confidence, "
+        "notional above config caps. When injury/news deltas conflict with YAML tiers, "
+        "prefer restrictive modes (fade_watch/skip) over capital-deploying modes. "
+        "Return JSON array with team, verdict, confidence, "
         "notional_multiplier (0-1), reasons, risk_factors, signal_quality."
     )
 

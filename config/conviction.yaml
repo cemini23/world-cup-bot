@@ -2,18 +2,14 @@
 # Prices from Gamma at runtime; this file only gates WHICH teams to quote.
 # Tiers from public research (Gemini Deep Research + community LP analysis, May 2026).
 
-version: 4
+version: 5
 
 # Mid-tier YES-heavy LP (target mid ~0.20–0.80)
 yes_conviction:
-  # Group B baseline from K83 DR (Canada later downgraded by K91 per_team override)
-  - Canada
   # Group C / E / F — DeadBall 2nd–3rd advance paths
   - Morocco
-  - Scotland
   - Ecuador
   - Ivory Coast
-  - Japan
   # Group D
   - Turkey
   - Paraguay
@@ -34,7 +30,6 @@ bilateral_only:
   - Spain
   - France
   - Germany
-  - Brazil
   - Argentina
   - England
   - Portugal
@@ -117,6 +112,8 @@ per_team:
 # K83 Third-place DR: Ivory Coast +51pp mispricing → cap 2500; DR Congo skip (GD blowout risk)
 # K83 Market-gap live (May 29): advance-to-knockout PM↔Kalshi NOT pairable; group-winner gaps <5pp
 # K84 LP safety (May 30): Spain skip; Brazil reduce cap $500; Morocco human_review.
-# K91 conviction audit (May 31): Canada/Japan/Scotland/Brazil forced fade_watch pre-kickoff.
+# K91 conviction audit (May 31): Canada/Japan/Scotland/Brazil → per_team fade_watch (alert-only).
+# K93 YAML hygiene: removed those teams from yes_conviction / bilateral_only to avoid stale list drift.
+# K93 research cadence: `world-cup-bot research run weekly-osint-pipeline` (Monokern/NotebookLM lane).
 #   [NEEDS RE-RUN 2026-06-06]
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)

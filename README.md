@@ -26,7 +26,7 @@
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
 
-K91 pre-kickoff risk posture (2026-05-31): `Canada`, `Japan`, `Scotland`, and `Brazil` are currently forced `fade_watch` (alert-only) in `config/conviction.yaml` pending the scheduled LP safety re-run.
+K91 pre-kickoff risk posture (2026-05-31): `Canada`, `Japan`, `Scotland`, and `Brazil` are `fade_watch` via `per_team` overrides (alert-only) pending LP safety re-run **2026-06-06**. K93: `conviction.yaml` **v5** removes them from aggressive tier lists; weekly external research via `world-cup-bot research run weekly-osint-pipeline`.
 
 ### Go-live safety
 

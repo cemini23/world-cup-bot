@@ -1,5 +1,5 @@
 from market_helpers import make_market
-from world_cup_bot import conviction
+from world_cup_bot import conviction, team_names
 from world_cup_bot.conviction import TeamMode, load_conviction_config
 
 
@@ -98,6 +98,15 @@ def test_fade_watch_overrides_bilateral_list_conflicts():
     result = conviction.evaluate_market(m, cfg)
     assert result.mode == TeamMode.FADE_WATCH
     assert not result.quote
+
+
+def test_k93_yaml_hygiene_no_k91_teams_on_aggressive_lists():
+    cfg = load_conviction_config()
+    aggressive_yes = {team_names.normalize_team(t) for t in cfg.yes_conviction}
+    aggressive_bilateral = {team_names.normalize_team(t) for t in cfg.bilateral_only}
+    for team in ("Canada", "Japan", "Scotland"):
+        assert team_names.normalize_team(team) not in aggressive_yes
+    assert team_names.normalize_team("Brazil") not in aggressive_bilateral
 
 
 def test_k91_conviction_audit_fade_watch_downgrades():

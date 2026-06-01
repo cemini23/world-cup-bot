@@ -60,6 +60,7 @@ class ResearchMode(StrEnum):
     KNOCKOUT_MARKET_MAP = "knockout-market-map"
     INPLAY_PREGAME_RISKS = "inplay-pregame-risks"
     TOURNAMENT_PHASE_ROUTER = "tournament-phase-router"
+    WEEKLY_OSINT_PIPELINE = "weekly-osint-pipeline"
 
 
 MODE_PROMPT_FILES: dict[ResearchMode, str] = {
@@ -73,6 +74,7 @@ MODE_PROMPT_FILES: dict[ResearchMode, str] = {
     ResearchMode.KNOCKOUT_MARKET_MAP: "deep-research-knockout-market-map.md",
     ResearchMode.INPLAY_PREGAME_RISKS: "deep-research-inplay-pregame-risks.md",
     ResearchMode.TOURNAMENT_PHASE_ROUTER: "deep-research-tournament-phase-router.md",
+    ResearchMode.WEEKLY_OSINT_PIPELINE: "deep-research-weekly-osint-pipeline.md",
 }
 
 GEMINI_PROMPT_FILES: dict[ResearchMode, str] = {
@@ -86,6 +88,7 @@ GEMINI_PROMPT_FILES: dict[ResearchMode, str] = {
     ResearchMode.KNOCKOUT_MARKET_MAP: "08-knockout-market-map.md",
     ResearchMode.INPLAY_PREGAME_RISKS: "09-inplay-pregame-lp-risks.md",
     ResearchMode.TOURNAMENT_PHASE_ROUTER: "10-tournament-phase-router-spec.md",
+    ResearchMode.WEEKLY_OSINT_PIPELINE: "11-weekly-osint-pipeline.md",
 }
 
 
@@ -379,6 +382,7 @@ def _output_schema_hint(mode: ResearchMode) -> str:
         ResearchMode.KNOCKOUT_MARKET_MAP: "MarketPhases YAML appendix JSON",
         ResearchMode.INPLAY_PREGAME_RISKS: "InplayPregameRisk JSON object",
         ResearchMode.TOURNAMENT_PHASE_ROUTER: "TournamentPhaseRouterSpec JSON object",
+        ResearchMode.WEEKLY_OSINT_PIPELINE: "WeeklyOsintPipeline JSON object",
     }
     return hints[mode]
 
