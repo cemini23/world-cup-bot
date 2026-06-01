@@ -11,5 +11,5 @@ def test_operating_defaults():
     assert cfg.liquidity.min_depth_within_reward_spread_usd == 50.0
     assert cfg.liquidity.min_ask_depth_within_reward_spread_usd == 15.0
     assert cfg.liquidity.min_combined_book_depth_usd == 150.0
-    assert cfg.liquidity.auto_clear_human_review is True
+    assert cfg.liquidity.auto_clear_human_review is False
     assert cfg.risk.max_daily_adverse_fill_usd == 500.0

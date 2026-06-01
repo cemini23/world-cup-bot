@@ -82,7 +82,9 @@ world-cup-bot scan --conviction --liquidity   # conviction table + PASS/FAIL dep
 world-cup-bot plan --liquidity-gate         # block/auto-clear human_review from depth
 ```
 
-Defaults (WC advance tuning): bid band ≥ **$50**, ask band ≥ **$15**, combined book ≥ **$150**. When `auto_clear_human_review: true`, depth-only pass can clear `human_review` in conviction YAML; injury/thesis gates remain.
+Defaults (WC advance tuning): bid band ≥ **$50**, ask band ≥ **$15**, combined book ≥ **$150**. `auto_clear_human_review` defaults **false** — depth alone does not clear `human_review` in conviction YAML unless you opt in via `config/operating.yaml`.
+
+Per-market notional caps: **`config/conviction.yaml`** (`limits` + `per_team`) with a hard ceiling from **`MAX_NOTIONAL_PER_MARKET_USD`** in `.env` (whichever is lower).
 
 ## Shadow gate
 

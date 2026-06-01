@@ -30,7 +30,7 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 **Pass criteria:**
 
 - [ ] At least **3 separate days** with `plan --record` while `DRY_RUN=true`
-- [ ] Conviction rows match your research; `human_review` teams only quote when CLOB depth passes (if `auto_clear_human_review` in `operating.yaml`)
+- [ ] Conviction rows match your research; `human_review` teams stay blocked unless you enable `auto_clear_human_review` in `operating.yaml`
 - [ ] No teams inside **cancel window** get quote intents (`calendar --cancel-window`)
 - [ ] `cancel --cancel-window` runs on timer / before each `plan` (auto-pull resting quotes)
 - [ ] Review `config/conviction.yaml` caps vs bankroll

@@ -15,6 +15,10 @@ The maintainers may run a **private** deployment wired to their own infrastructu
 
 Your fork uses **your** `.env` and **your** keys only.
 
+## Outbound URL policy
+
+Core GET traffic (Gamma, CLOB, Kalshi, fixture upstream) is restricted to an allowlist in `world_cup_bot/http_client.py`. Operator webhooks must use **HTTPS** to Discord or Slack hosts only. Do not point `ADVISOR_BASE_URL` at untrusted hosts on live timers.
+
 ## Reporting
 
 Open a GitHub issue for vulnerabilities in this OSS code. Do not post secrets in issues.

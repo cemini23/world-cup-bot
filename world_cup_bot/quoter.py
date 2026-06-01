@@ -114,7 +114,9 @@ def build_quotes(
         return []
 
     scale = max(0.0, min(1.0, notional_multiplier))
-    max_notional = config.max_notional(market.team) * scale
+    yaml_cap = config.max_notional(market.team) * scale
+    env_cap = settings.max_notional_per_market_usd
+    max_notional = min(yaml_cap, env_cap) if env_cap > 0 else yaml_cap
     if max_notional <= 0:
         return []
     min_shares = snapshot.rewards_min_shares

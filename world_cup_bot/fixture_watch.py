@@ -77,6 +77,9 @@ def fetch_upstream_fixtures(
     *,
     timeout: float = 30,
 ) -> dict[str, Any]:
+    from world_cup_bot.http_client import validate_fixture_upstream_url
+
+    validate_fixture_upstream_url(url)
     with urlopen_get(url, timeout=timeout) as resp:
         payload = json.loads(resp.read().decode())
     if not isinstance(payload, dict):

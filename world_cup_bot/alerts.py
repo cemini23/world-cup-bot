@@ -39,6 +39,14 @@ def notify(
     if not cfg.enabled:
         return False
 
+    from world_cup_bot.http_client import HttpUrlNotAllowedError, validate_webhook_url
+
+    try:
+        validate_webhook_url(cfg.webhook_url)
+    except HttpUrlNotAllowedError as exc:
+        logger.warning("webhook blocked event=%s: %s", event, exc)
+        return False
+
     payload: dict[str, Any] = {
         "event": event,
         "message": message,

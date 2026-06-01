@@ -48,7 +48,7 @@ sudo bash deploy/systemd/install-systemd.sh --profile monitor --enable
 # 3. Trading host (after SHADOW Phase 2+)
 sudo bash deploy/systemd/install-systemd.sh --profile trading
 # systemctl enable --now world-cup-bot-watch.service   # Phase 2
-# systemctl enable --now world-cup-bot-live-plan.timer # Phase 4 — operator GO only
+# systemctl enable --now world-cup-bot-live-plan.timer # Phase 4 — set WC_LIVE_PLAN_ACK=1 in .env first
 ```
 
 ## SHADOW phase → enable matrix
@@ -101,6 +101,8 @@ sudo systemctl restart world-cup-bot-cross-venue.service
 sudo systemctl disable --now world-cup-bot-live-plan.timer
 # or: systemctl edit world-cup-bot-live-plan.service → Environment=WC_DRY_RUN=true
 ```
+
+**Enable guard:** `world-cup-bot-live-plan.timer` refuses to run unless `WC_LIVE_PLAN_ACK=1` is set in `.env` (SHADOW Phase 4 operator sign-off).
 
 ## Optional second env file
 

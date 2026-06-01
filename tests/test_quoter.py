@@ -43,6 +43,19 @@ def test_yes_heavy_single_leg():
     assert intents[0].order_id.startswith("dry-turkey-yes-")
 
 
+def test_env_max_notional_caps_yaml_per_team():
+    cfg = load_conviction_config()
+    settings = _settings(max_notional_per_market_usd=500.0)
+    m = make_market("Spain", mid=0.93, bilateral=True)
+    result = conviction.ConvictionResult(
+        m, TeamMode.BILATERAL_ONLY, True, "bilateral_only high mid"
+    )
+    intents = quoter.build_quotes(result, cfg, settings)
+    assert len(intents) == 2
+    total = sum(i.notional_usd for i in intents)
+    assert total <= 500.0 + 0.01
+
+
 def test_bilateral_two_legs():
     cfg = load_conviction_config()
     settings = _settings()

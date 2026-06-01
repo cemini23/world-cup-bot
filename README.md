@@ -19,7 +19,7 @@
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
 | **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); **paper arb ledger** (`--record`, `cross-venue-pnl`); optional webhook |
 | **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
-| **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; auto-clear `human_review` when configured |
+| **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; optional auto-clear `human_review` (default off) |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
 | **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
 | **Research CLI** | Gemini Deep Research + agent JSON bundles in `prompts/` |
@@ -34,7 +34,9 @@ K91 pre-kickoff risk posture (2026-05-31): `Canada`, `Japan`, `Scotland`, and `B
 - Cancel-replace stale quotes before new posts
 - Kill-switch on cancel-window fills → halt team + pull quotes
 - Queue depletion + volatility pull in fill watch (configurable in `operating.yaml`)
-- Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack JSON POST)
+- Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack HTTPS only)
+- **`MAX_NOTIONAL_PER_MARKET_USD`** — env hard ceiling on per-market quote size (min with YAML caps)
+- Live plan timer requires **`WC_LIVE_PLAN_ACK=1`** in `.env` after SHADOW Phase 4 (see `deploy/systemd/README.md`)
 
 ## What it is not
 

@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (operator surface), [SHADOW.md](SHADOW.md) (go-live gates), [CLAUDE.md](CLAUDE.md) (agent schema).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 196 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 209 pytest (CI on push)
 
 ---
 
