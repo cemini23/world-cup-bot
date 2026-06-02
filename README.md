@@ -1,6 +1,6 @@
 # World Cup Bot
 
-[![CI](https://img.shields.io/github/actions/workflow/status/cemini23/world-cup-bot/ci.yml?branch=main&label=CI)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/cemini23/world-cup-bot/ci.yml?branch=main&label=CI&updated=20260602T184818Z)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
 <!-- ci-badge-updated:2026-06-02T18:48:18Z -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
