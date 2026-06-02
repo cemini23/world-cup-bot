@@ -252,7 +252,15 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
                 )
 
         if result.exit_intent:
-            submit_exit(result.exit_intent, dry_run=ctx.dry_run, settings=ctx.settings)
+            try:
+                submit_exit(result.exit_intent, dry_run=ctx.dry_run, settings=ctx.settings)
+            except Exception as exc:
+                logger.error(
+                    "exit POST failed for %s %s (fill continues): %s",
+                    fill.team,
+                    fill.side,
+                    exc,
+                )
 
         if ctx.settings is not None and (result.kill_switch or result.pull_quotes):
             from world_cup_bot.order_manager import apply_fill_safety_actions

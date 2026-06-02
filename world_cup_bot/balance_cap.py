@@ -30,7 +30,7 @@ def fetch_collateral_balance_usd(settings: Settings) -> float:
     except LiveClobNotConfiguredError as exc:
         raise RuntimeError(f"balance fetch: {exc}") from exc
 
-    sig_type = int(os.environ.get("POLYMARKET_SIGNATURE_TYPE", "0"))
+    sig_type = int(os.environ.get("POLYMARKET_SIGNATURE_TYPE", "2"))
     ba = client.get_balance_allowance(
         BalanceAllowanceParams(asset_type=AssetType.COLLATERAL, signature_type=sig_type)
     )

@@ -147,8 +147,24 @@ def post_quote_intent(client: Any, intent: QuoteIntent) -> dict[str, Any]:
 
 def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
     """Post resting limit sell to exit a fill (GTC, not post-only)."""
-    from py_clob_client_v2.clob_types import OrderArgs
+    from py_clob_client_v2.clob_types import AssetType, BalanceAllowanceParams, OrderArgs
     from py_clob_client_v2.order_builder.constants import SELL
+
+    sig_type = _signature_type()
+    try:
+        client.update_balance_allowance(
+            BalanceAllowanceParams(
+                asset_type=AssetType.CONDITIONAL,
+                token_id=intent.token_id,
+                signature_type=sig_type,
+            )
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "conditional allowance refresh before exit failed (%s); continuing",
+            exc,
+        )
 
     order_args = OrderArgs(
         token_id=intent.token_id,
