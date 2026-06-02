@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly](https://outlierweekly.substack.com) Issue 3. Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) and [SHADOW.md](SHADOW.md) before live LP.
+**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) and [SHADOW.md](SHADOW.md) before live LP.
 
 ## Public launch (2026-06-03)
 
@@ -15,7 +15,7 @@ World Cup Bot is **open source today** — fork, shadow-test on your machine, br
 1. `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight`
 2. Run [SHADOW.md](SHADOW.md) Phases 0–3 (`plan --record --liquidity-gate` with `DRY_RUN=true`)
 3. Use **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for all sessions (see SHADOW § split-ledger trap)
-4. Retail WC / PM context: [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) · Methodology: Outlier Weekly Issue 3
+4. Retail WC / PM context: [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) · Methodology: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot)
 
 ## What it does (v1)
 
@@ -148,7 +148,7 @@ See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contrib
 
 ## Related
 
-- Methodology newsletter: [Outlier Weekly](https://outlierweekly.substack.com)
+- Methodology newsletter: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) · [Outlier Weekly home](https://outlierweekly.substack.com)
 - **Retail / bankroll lens:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) — WC contract types, books vs PM, CLV ([prediction-markets crossover](https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/prediction-markets-crossover.md)). **This repo** = bot/LP automation only.
 - YouTube: [@Cemini23](https://www.youtube.com/@Cemini23)
 - Agent meta-wiki: [cemini-claude-code-CCC](https://github.com/cemini23/cemini-claude-code-CCC)

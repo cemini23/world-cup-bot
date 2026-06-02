@@ -9,7 +9,7 @@ Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live 
 ## Public launch — 2026-06-03
 
 - **Repo:** [github.com/cemini23/world-cup-bot](https://github.com/cemini23/world-cup-bot) · **Pages:** [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/)
-- **Distribution:** Outlier Weekly Issue 3 (free) — shadow-first LP stack, not financial advice
+- **Distribution:** [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) (free, live 2026-06-03) — shadow-first LP stack, not financial advice
 - **Companion:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) for retail WC / PM/Kalshi education
 - **Go-live:** Operators complete [SHADOW.md](SHADOW.md); live LP remains opt-in (`DRY_RUN=false`, non-US egress, `WC_LIVE_PLAN_ACK=1`)
 
