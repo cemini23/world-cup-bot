@@ -161,6 +161,7 @@ def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
         )
     except Exception as exc:
         import logging
+
         logging.getLogger(__name__).warning(
             "conditional allowance refresh before exit failed (%s); continuing",
             exc,
