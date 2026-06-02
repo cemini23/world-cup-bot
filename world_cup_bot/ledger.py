@@ -75,7 +75,11 @@ def _snapshot_fields(snapshot: MarketSnapshot) -> dict[str, Any]:
     return fields
 
 
-def fill_order_ids(path: Path) -> set[str]:
+def _as_path(path: Path | str) -> Path:
+    return path if isinstance(path, Path) else Path(path)
+
+
+def fill_order_ids(path: Path | str) -> set[str]:
     return {
         str(r["order_id"])
         for r in load_rows(path)
@@ -91,13 +95,15 @@ def reward_accrual_keys(path: Path) -> set[str]:
     }
 
 
-def append_row(path: Path, row: LedgerRow) -> None:
+def append_row(path: Path | str, row: LedgerRow) -> None:
+    path = _as_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(row.to_dict(), separators=(",", ":")) + "\n")
 
 
-def load_rows(path: Path) -> list[dict[str, Any]]:
+def load_rows(path: Path | str) -> list[dict[str, Any]]:
+    path = _as_path(path)
     if not path.is_file():
         return []
     rows: list[dict[str, Any]] = []

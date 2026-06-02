@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 _RECONCILE_TRADE_STATUSES = {
     "MATCHED",
+    "CONFIRMED",
+    "MINED",
     "TRADE_STATUS_MATCHED",
     "TRADE_STATUS_CONFIRMED",
     "TRADE_STATUS_MINED",
