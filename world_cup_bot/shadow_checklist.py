@@ -184,8 +184,7 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             detail=geoblock.detail if geoblock else "Run preflight from trading VPS",
             status=(
                 StepStatus.DONE
-                if geo_live_ok
-                or (geoblock is not None and geoblock.status == CheckStatus.PASS)
+                if geo_live_ok or (geoblock is not None and geoblock.status == CheckStatus.PASS)
                 else StepStatus.WARN
                 if settings.dry_run
                 else StepStatus.BLOCKED

@@ -37,6 +37,16 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] Daily adverse-fill budget understood (`config/operating.yaml` → `risk.max_daily_adverse_fill_usd`; default $500)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
+### One canonical ledger (split-ledger trap)
+
+`shadow-status` counts **calendar days in the ledger file it reads**. If manual CLI writes `data/local/ledger.jsonl` but systemd writes `/opt/cemini/logs/wc_ledger.jsonl`, Phase 1 can show **1 day** while you already have **3 days** across files.
+
+**Fix:** set the same path everywhere (`LEDGER_PATH` and `WC_LEDGER_PATH`), merge legacy rows into that file, then symlink repo `data/local/ledger.jsonl` → canonical path. On Cemini egress, always run gates via:
+
+```bash
+WC_LOAD_POLYMARKET_ENV=1 /opt/cemini/scripts/wc_run.sh shadow-status --min-phase 1
+```
+
 ## Production blind spots — audit before live
 
 When shadow PnL “looks good” but something still feels wrong, scan this table **top to bottom** before Phase 4. These are common LP-bot failure modes from production post-mortems (venue CSV vs internal journal, phantom fills, silent aborts) — not strategy edge problems.
