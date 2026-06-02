@@ -9,6 +9,12 @@ INSTALL_ROOT="${WC_INSTALL_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 set -a
 # shellcheck disable=SC1091
 [[ -f "$INSTALL_ROOT/.env" ]] && source "$INSTALL_ROOT/.env"
+# Polymarket / CLOB keys (Cemini prod layout: .env-polymarket beside install root)
+# shellcheck disable=SC1091
+if [[ "${WC_LOAD_POLYMARKET_ENV:-1}" == "1" ]]; then
+  [[ -f "$INSTALL_ROOT/.env-polymarket" ]] && source "$INSTALL_ROOT/.env-polymarket"
+  [[ -f "$INSTALL_ROOT/.env.polymarket" ]] && source "$INSTALL_ROOT/.env.polymarket"
+fi
 # Optional extra secrets file (e.g. trading-only keys on a second VPS)
 # shellcheck disable=SC1091
 [[ -f "$INSTALL_ROOT/.env.trading" ]] && source "$INSTALL_ROOT/.env.trading"

@@ -63,7 +63,11 @@ class Settings:
                 )
             ),
             ledger_path=str(
-                resolve_project_path(os.environ.get("LEDGER_PATH", "data/local/ledger.jsonl"))
+                resolve_project_path(
+                    os.environ.get("LEDGER_PATH")
+                    or os.environ.get("WC_LEDGER_PATH")
+                    or "data/local/ledger.jsonl"
+                )
             ),
             operating_config=str(
                 resolve_project_path(os.environ.get("OPERATING_CONFIG", "config/operating.yaml"))

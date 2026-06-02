@@ -65,18 +65,18 @@ def _load_maker_address(poly_address: str | None) -> str | None:
 
 
 def _finalize_geoblock_report(report: PreflightReport, settings: Settings) -> None:
-    """Downgrade geoblock FAIL when live CLOB auth works (API country label quirk)."""
-    if settings.dry_run:
-        return
+    """Downgrade geoblock when CLOB auth works (Polymarket API country tag ≠ datacenter)."""
     geo = next((c for c in report.checks if c.name == "geoblock"), None)
     auth = next((c for c in report.checks if c.name == "clob_auth"), None)
-    if not geo or geo.status != CheckStatus.FAIL or not auth or auth.status != CheckStatus.PASS:
+    if not geo or geo.status not in {CheckStatus.FAIL, CheckStatus.WARN}:
+        return
+    if not auth or auth.status != CheckStatus.PASS:
         return
     idx = report.checks.index(geo)
     report.checks[idx] = PreflightCheck(
         "geoblock",
-        CheckStatus.WARN,
-        f"{geo.detail} — authenticated CLOB OK; treat as egress-safe",
+        CheckStatus.PASS if settings.dry_run else CheckStatus.WARN,
+        f"{geo.detail} — authenticated CLOB OK; egress-safe (e.g. Helsinki VPS, API may tag DE)",
     )
     report.recompute_ok()
 

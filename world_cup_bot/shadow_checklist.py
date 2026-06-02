@@ -10,6 +10,7 @@ from pathlib import Path
 from world_cup_bot.config import Settings
 from world_cup_bot.ledger import load_rows
 from world_cup_bot.logic_version import load_strategy_version
+from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.preflight import CheckStatus, run_preflight
 from world_cup_bot.risk import shadow_net_pnl_ok
 
@@ -47,27 +48,63 @@ class ShadowStep:
     cli: str | None = None
 
 
+def _ledger_paths(settings: Settings) -> list[Path]:
+    """Canonical ledger plus optional legacy paths (split-ledger recovery)."""
+    paths: list[Path] = []
+    seen: set[str] = set()
+
+    def add(raw: str) -> None:
+        p = Path(raw)
+        if not p.is_file():
+            return
+        key = str(p.resolve())
+        if key in seen:
+            return
+        seen.add(key)
+        paths.append(p)
+
+    add(str(Path(settings.ledger_path)))
+    legacy = os.environ.get("WC_LEDGER_LEGACY_PATHS", "").strip()
+    for part in legacy.split(","):
+        part = part.strip()
+        if part:
+            add(str(resolve_project_path(part)))
+    return paths
+
+
 def _ledger_stats(settings: Settings) -> dict[str, int]:
-    path = Path(settings.ledger_path)
-    if not path.is_file():
-        return {"rows": 0, "quote_intents": 0, "fills": 0, "distinct_days": 0}
+    ledger_files = _ledger_paths(settings)
+    if not ledger_files:
+        return {
+            "rows": 0,
+            "quote_intents": 0,
+            "fills": 0,
+            "distinct_days": 0,
+            "ledger_paths": 0,
+        }
 
     spec = load_strategy_version(Path(settings.logic_version_config))
-    rows = load_rows(path)
-    scoped = [r for r in rows if r.get("logic_version") == spec.version_id]
     quote_events = frozenset({"quote_intent", "quote_intent_dry_run"})
-    quote_intents = sum(1 for r in scoped if r.get("event") in quote_events)
-    fills = sum(1 for r in scoped if r.get("event") == "order_fill")
+    quote_intents = 0
+    fills = 0
     days: set[str] = set()
-    for r in scoped:
-        ts = str(r.get("timestamp") or r.get("ts") or r.get("recorded_at") or "")
-        if len(ts) >= 10:
-            days.add(ts[:10])
+    rows = 0
+    for path in ledger_files:
+        scoped = [r for r in load_rows(path) if r.get("logic_version") == spec.version_id]
+        rows += len(scoped)
+        quote_intents += sum(1 for r in scoped if r.get("event") in quote_events)
+        fills += sum(1 for r in scoped if r.get("event") == "order_fill")
+        for r in scoped:
+            ts = str(r.get("timestamp") or r.get("ts") or r.get("recorded_at") or "")
+            if len(ts) >= 10:
+                days.add(ts[:10])
+
     return {
-        "rows": len(scoped),
+        "rows": rows,
         "quote_intents": quote_intents,
         "fills": fills,
         "distinct_days": len(days),
+        "ledger_paths": len(ledger_files),
     }
 
 
@@ -106,6 +143,12 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             detail=(
                 f"{stats['quote_intents']} quote intents across {stats['distinct_days']} day(s) "
                 f"(target: ≥3 days with --record)"
+                + (
+                    f" — merged {stats['ledger_paths']} ledger file(s); "
+                    "consolidate to one LEDGER_PATH / WC_LEDGER_PATH"
+                    if stats.get("ledger_paths", 1) > 1
+                    else ""
+                )
             ),
             status=(
                 StepStatus.DONE
@@ -142,6 +185,7 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             status=(
                 StepStatus.DONE
                 if geo_live_ok
+                or (geoblock is not None and geoblock.status == CheckStatus.PASS)
                 else StepStatus.WARN
                 if settings.dry_run
                 else StepStatus.BLOCKED
