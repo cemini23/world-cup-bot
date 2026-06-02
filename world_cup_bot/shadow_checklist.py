@@ -123,7 +123,14 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
     pk_present = bool(os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip())
 
     geoblock = pf.get("geoblock")
+    clob_auth_ok = pf.get("clob_auth") and pf["clob_auth"].status == CheckStatus.PASS
     geo_live_ok = geoblock and geoblock.status == CheckStatus.PASS
+    geo_egress_ok = geo_live_ok or (
+        geoblock is not None
+        and geoblock.status == CheckStatus.WARN
+        and clob_auth_ok
+        and "egress-safe" in geoblock.detail
+    )
 
     gamma_check = pf.get("gamma")
     gamma_detail = gamma_check.detail if gamma_check else "Run preflight"
@@ -184,10 +191,12 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             detail=geoblock.detail if geoblock else "Run preflight from trading VPS",
             status=(
                 StepStatus.DONE
-                if geo_live_ok or (geoblock is not None and geoblock.status == CheckStatus.PASS)
+                if geo_egress_ok
                 else StepStatus.WARN
-                if settings.dry_run
+                if settings.dry_run and geoblock is not None and geoblock.status == CheckStatus.WARN
                 else StepStatus.BLOCKED
+                if geoblock is not None and geoblock.status == CheckStatus.FAIL
+                else StepStatus.PENDING
             ),
             cli="world-cup-bot preflight",
         ),

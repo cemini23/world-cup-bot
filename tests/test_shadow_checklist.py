@@ -46,6 +46,29 @@ def test_build_shadow_steps_dry_run(monkeypatch):
     assert steps[-1].status == StepStatus.BLOCKED
 
 
+def test_egress_done_when_geoblock_warn_but_clob_auth_egress_safe(monkeypatch):
+    def _live_preflight(*_args, **_kwargs) -> PreflightReport:
+        return PreflightReport(
+            checks=[
+                PreflightCheck("gamma", CheckStatus.PASS, "Gamma OK"),
+                PreflightCheck(
+                    "geoblock",
+                    CheckStatus.WARN,
+                    "Order POST blocked from DE/ (1.2.3.4) — use non-US egress "
+                    "— authenticated CLOB OK; egress-safe (e.g. Helsinki VPS, API may tag DE)",
+                ),
+                PreflightCheck("clob_auth", CheckStatus.PASS, "GET /data/orders OK"),
+                PreflightCheck("l2_creds", CheckStatus.PASS, "L2 present"),
+            ],
+            ok=True,
+        )
+
+    monkeypatch.setattr("world_cup_bot.shadow_checklist.run_preflight", _live_preflight)
+    steps = build_shadow_steps(_settings(dry_run=False), test_auth=False)
+    egress = next(s for s in steps if s.id == "egress")
+    assert egress.status == StepStatus.DONE
+
+
 def test_ledger_stats_uses_event_field(tmp_path, monkeypatch):
     from datetime import UTC, datetime
 

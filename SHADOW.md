@@ -95,7 +95,8 @@ world-cup-bot preflight         # L2 GET /data/orders auth probe passes
 
 **Pass criteria:**
 
-- [ ] `geoblock` → PASS (not blocked)
+- [ ] `geoblock` → PASS, or WARN with `egress-safe` after authenticated CLOB probe (API country tag may differ from datacenter)
+- [ ] `shadow-status --min-phase 3` exits 0 on the egress host
 - [ ] `clob_auth` → PASS
 - [ ] `py_clob_client_v2` → PASS when preparing for live (preflight when `DRY_RUN=false`)
 
