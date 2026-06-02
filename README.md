@@ -13,7 +13,7 @@
 World Cup Bot is **open source today** — fork, shadow-test on your machine, bring your own keys. This is **not** a hosted service or a returns guarantee.
 
 1. `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight`
-2. Run [SHADOW.md](SHADOW.md) Phases 0–3 (`plan --record --liquidity-gate` with `DRY_RUN=true`)
+2. Run [SHADOW.md](SHADOW.md) Phases 0–3 (`plan --record --liquidity-gate` with `DRY_RUN=true`) — command map: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 3. Use **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for all sessions (see SHADOW § split-ledger trap)
 4. Retail WC / PM context: [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) · Methodology: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot)
 
@@ -149,6 +149,7 @@ See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contrib
 ## Related
 
 - Methodology newsletter: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) · [Outlier Weekly home](https://outlierweekly.substack.com)
+- Operator runbook: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 - **Retail / bankroll lens:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) — WC contract types, books vs PM, CLV ([prediction-markets crossover](https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/prediction-markets-crossover.md)). **This repo** = bot/LP automation only.
 - YouTube: [@Cemini23](https://www.youtube.com/@Cemini23)
 - Agent meta-wiki: [cemini-claude-code-CCC](https://github.com/cemini23/cemini-claude-code-CCC)
