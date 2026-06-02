@@ -145,28 +145,71 @@ def post_quote_intent(client: Any, intent: QuoteIntent) -> dict[str, Any]:
     return _check_post_response(resp)
 
 
-def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
-    """Post resting limit sell to exit a fill (GTC, not post-only)."""
-    from py_clob_client_v2.clob_types import AssetType, BalanceAllowanceParams, OrderArgs
-    from py_clob_client_v2.order_builder.constants import SELL
+# Backoff after fills while conditional token balance settles on CLOB.
+_EXIT_SETTLE_BACKOFF_S = (0.5, 1.0, 2.0, 4.0, 8.0)
+_CONDITIONAL_SCALE = 1_000_000
 
-    sig_type = _signature_type()
+
+def _conditional_units(shares: float) -> int:
+    return int(round(shares * _CONDITIONAL_SCALE))
+
+
+def _is_balance_allowance_error(exc: BaseException) -> bool:
+    from py_clob_client_v2.exceptions import PolyApiException
+
+    if isinstance(exc, LiveClobPostError):
+        return "not enough balance / allowance" in str(exc).lower()
+    if isinstance(exc, PolyApiException):
+        msg = exc.error_msg
+        text = str(msg.get("error") if isinstance(msg, dict) else msg).lower()
+        return "not enough balance / allowance" in text
+    return "not enough balance / allowance" in str(exc).lower()
+
+
+def _refresh_conditional_allowance(client: Any, token_id: str, sig_type: int) -> None:
+    import logging
+
+    from py_clob_client_v2.clob_types import AssetType, BalanceAllowanceParams
+
     try:
         client.update_balance_allowance(
             BalanceAllowanceParams(
                 asset_type=AssetType.CONDITIONAL,
-                token_id=intent.token_id,
+                token_id=token_id,
                 signature_type=sig_type,
             )
         )
     except Exception as exc:
-        import logging
-
         logging.getLogger(__name__).warning(
             "conditional allowance refresh before exit failed (%s); continuing",
             exc,
         )
 
+
+def _conditional_balance_raw(client: Any, token_id: str, sig_type: int) -> int:
+    from py_clob_client_v2.clob_types import AssetType, BalanceAllowanceParams
+
+    ba = client.get_balance_allowance(
+        BalanceAllowanceParams(
+            asset_type=AssetType.CONDITIONAL,
+            token_id=token_id,
+            signature_type=sig_type,
+        )
+    )
+    return int(ba.get("balance", "0") or 0)
+
+
+def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
+    """Post resting limit sell to exit a fill (GTC, not post-only)."""
+    import logging
+    import time
+
+    from py_clob_client_v2.clob_types import OrderArgs
+    from py_clob_client_v2.order_builder.constants import SELL
+
+    log = logging.getLogger(__name__)
+    sig_type = _signature_type()
+    needed = _conditional_units(intent.size_shares)
     order_args = OrderArgs(
         token_id=intent.token_id,
         price=intent.price,
@@ -174,14 +217,47 @@ def post_exit_intent(client: Any, intent: ExitIntent) -> dict[str, Any]:
         side=SELL,
     )
     options = order_options_for_token(client, intent.token_id)
-    try:
-        order = client.create_order(order_args, options)
-        resp = client.post_order(order)
-    except Exception as exc:
-        _raise_post_error(exc)
-    if not isinstance(resp, dict):
-        return {"response": resp}
-    return _check_post_response(resp)
+
+    for attempt, delay in enumerate(_EXIT_SETTLE_BACKOFF_S):
+        _refresh_conditional_allowance(client, intent.token_id, sig_type)
+        balance = _conditional_balance_raw(client, intent.token_id, sig_type)
+        if balance < needed:
+            if attempt < len(_EXIT_SETTLE_BACKOFF_S) - 1:
+                log.info(
+                    "exit %s %s: conditional balance %s < %s (attempt %s/%s); retry in %.1fs",
+                    intent.team,
+                    intent.side,
+                    balance,
+                    needed,
+                    attempt + 1,
+                    len(_EXIT_SETTLE_BACKOFF_S),
+                    delay,
+                )
+                time.sleep(delay)
+                continue
+        try:
+            order = client.create_order(order_args, options)
+            resp = client.post_order(order)
+        except Exception as exc:
+            if _is_balance_allowance_error(exc) and attempt < len(_EXIT_SETTLE_BACKOFF_S) - 1:
+                log.info(
+                    "exit %s %s: balance/allowance POST error (attempt %s/%s); retry in %.1fs",
+                    intent.team,
+                    intent.side,
+                    attempt + 1,
+                    len(_EXIT_SETTLE_BACKOFF_S),
+                    delay,
+                )
+                time.sleep(delay)
+                continue
+            _raise_post_error(exc)
+        if not isinstance(resp, dict):
+            return {"response": resp}
+        return _check_post_response(resp)
+
+    raise LiveClobPostError(
+        f"exit POST failed for {intent.team} {intent.side}: conditional balance never settled"
+    )
 
 
 def post_arb_order(

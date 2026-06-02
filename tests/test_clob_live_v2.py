@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
+from py_clob_client_v2.exceptions import PolyApiException
 
 from world_cup_bot.clob_live import (
     LiveClobPostError,
     build_clob_client,
     cancel_order_id,
     order_options_for_token,
+    post_exit_intent,
     post_quote_intent,
 )
 from world_cup_bot.config import Settings
+from world_cup_bot.fill_handler import ExitIntent
 from world_cup_bot.quoter import MarketSnapshot, QuoteIntent
 
 
@@ -109,8 +113,6 @@ def test_cancel_order_id_uses_order_payload():
 
 
 def test_order_version_mismatch_maps_to_live_clob_post_error():
-    from py_clob_client_v2.exceptions import PolyApiException
-
     client = MagicMock()
     client.get_tick_size.return_value = "0.01"
     client.get_neg_risk.return_value = False
@@ -119,3 +121,66 @@ def test_order_version_mismatch_maps_to_live_clob_post_error():
 
     with pytest.raises(LiveClobPostError, match="order_version_mismatch"):
         post_quote_intent(client, _intent())
+
+
+def _exit_intent(**overrides) -> ExitIntent:
+    base = dict(
+        team="Australia",
+        side="YES",
+        token_id="tok-aus",
+        order_id="exit-live-australia-yes-test",
+        price=0.44,
+        size_shares=10.0,
+        due_by=datetime.now(UTC),
+        reason="test exit",
+    )
+    base.update(overrides)
+    return ExitIntent(**base)
+
+
+def test_post_exit_intent_retries_until_conditional_balance_settles(monkeypatch):
+    client = MagicMock()
+    client.get_tick_size.return_value = "0.01"
+    client.get_neg_risk.return_value = False
+    client.create_order.return_value = {"signed": True}
+    client.post_order.return_value = {"orderID": "exit-1", "success": True}
+    client.get_balance_allowance.side_effect = [
+        {"balance": "0", "allowances": {}},
+        {"balance": "10000000", "allowances": {}},
+    ]
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "time.sleep",
+        lambda s: sleeps.append(s),
+    )
+
+    resp = post_exit_intent(client, _exit_intent())
+    assert resp["orderID"] == "exit-1"
+    assert client.post_order.call_count == 1
+    assert sleeps == [0.5]
+
+
+def test_post_exit_intent_retries_on_balance_allowance_post_error(monkeypatch):
+    client = MagicMock()
+    client.get_tick_size.return_value = "0.01"
+    client.get_neg_risk.return_value = False
+    client.create_order.return_value = {"signed": True}
+    client.get_balance_allowance.return_value = {"balance": "10000000", "allowances": {}}
+    client.post_order.side_effect = [
+        PolyApiException(
+            error_msg={
+                "error": "not enough balance / allowance: balance: 0, order amount: 10000000"
+            }
+        ),
+        {"orderID": "exit-2", "success": True},
+    ]
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "time.sleep",
+        lambda s: sleeps.append(s),
+    )
+
+    resp = post_exit_intent(client, _exit_intent())
+    assert resp["orderID"] == "exit-2"
+    assert client.post_order.call_count == 2
+    assert sleeps == [0.5]
