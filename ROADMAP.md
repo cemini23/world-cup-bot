@@ -50,6 +50,7 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 
 | Item | Notes |
 |------|-------|
+| **match_shock v1 scaffold** | `match_shock.py`, `config/shock_match.yaml`, backtest CLI, tests — see `docs/MATCH_SHOCK_V1.md` |
 | Dependency lockfile | Reproducible `[live]` installs (`requirements-lock.txt` or `uv.lock`) |
 | Non-root systemd user | Dedicated Unix user in `install-systemd.sh` |
 | Formal LP promotion gates | DSR/MCPT-style metrics beyond shadow net-PnL heuristic |

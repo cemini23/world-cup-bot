@@ -1,0 +1,95 @@
+# Module 8 — in-play match-market shock recovery (v2, paper-first)
+# Spec: docs/MATCH_SHOCK_V1.md + OSINT wiki Architecture - match_shock_v1.md
+# Source framework: @RohOnChain FIFA WC quant post (K94 ingest)
+# ISOLATION: never wire into quoter.py / advance-LP cancel window
+
+version: 1
+enabled: false  # master switch — live POST requires WC_MATCH_SHOCK_LIVE=1
+
+# --- unified bot mode handoff (LP pre-kickoff → shock in-play) ---
+# Same bot: advance markets use LP until min_hours; match markets use SHOCK after kickoff.
+# See world_cup_bot/trading_mode.py
+mode_handoff:
+  max_match_hours: 2.0       # stop shock ~105min after kickoff
+  shock_enabled: false       # set true or WC_SHOCK_ENABLED=1 when promoted
+
+# --- shock detection (2-minute sliding window) ---
+detection:
+  window_ms: 120000
+  min_drop_pct: 0.15
+  min_drop_abs: 0.08
+  cooldown_ms: 180000
+
+# --- five-dimension classifiers ---
+classifiers:
+  league:
+    deep_slugs: [epl, ucl, champions-league, la-liga, laliga, serie-a, bundesliga]
+    thin_slugs: [mls, ligue-2, championship]
+  favoritism:
+    heavy_fav_min: 0.85
+    moderate_fav_min: 0.75
+    slight_fav_min: 0.60
+    balanced_min: 0.45
+  book_depth:
+    top_heavy_ratio: 0.70
+    balanced_ratio: 0.50
+  match_time:
+    early_max_min: 15
+    mid_max_min: 60
+    late_max_min: 80
+  goal_state:
+    blowout_diff: 3
+
+# --- bucket distribution ---
+distribution:
+  min_samples_per_bucket: 5
+  default_percentiles_cents:
+    50: 6
+    75: 9
+    90: 13
+    95: 18
+  percentile_keys: [50, 75, 90, 95]
+
+# --- laddered entry ---
+ladder:
+  capital_usd: 50.0
+  order_ttl_ms: 60000
+  recovery_target_cents: 4
+  weights:
+    50: 0.10
+    75: 0.20
+    90: 0.30
+    95: 0.40
+
+# --- backtest filters (Roan: moderate_fav backtested best) ---
+backtest:
+  allowed_favoritism: [moderate_fav]  # empty = all buckets
+  allowed_league_tiers: [deep]
+  min_recovery_rate: 0.55  # paper promotion gate
+
+# --- market scope (WC 2026 match win / 90-min only) ---
+markets:
+  slug_patterns:
+    - "world-cup"
+    - "fifa-world-cup"
+    - "fifa"
+    - "wc-2026"
+    - "epl"
+    - "ucl"
+    - "champions-league"
+    - "la-liga"
+    - "vs-"
+  blocked_slug_patterns:
+    - "advance"
+    - "knockout"
+    - "group-winner"
+    - "to-win-the-world-cup"  # tournament winner — different dynamics
+
+paper:
+  ledger_suffix: match_shock_paper.jsonl
+  dedup_interval_ms: 300000
+
+live:
+  max_notional_per_shock_usd: 50
+  max_open_shocks: 2
+  max_daily_notional_usd: 500
