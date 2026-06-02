@@ -10,9 +10,11 @@ Run the bot **24/7 on your own VPS** — laptop not required. All paths are conf
 | `/opt/world-cup-bot/venv/` | `pip install -e ".[live]"` |
 | `/opt/world-cup-bot/.env` | Your secrets (`cp .env.example .env`) |
 | `/opt/world-cup-bot/bin/wc_run.sh` | Wrapper installed by `install-systemd.sh` |
-| `/opt/world-cup-bot/data/local/shadow_ledger.jsonl` | Shadow plan + pnl-daily ledger (systemd default) |
+| `/opt/world-cup-bot/data/local/shadow_ledger.jsonl` | Monitor profile: shadow `plan --record`, pnl-daily |
+| `/opt/world-cup-bot/data/local/ledger.jsonl` | Trading profile: watch + live plan |
 | `/opt/world-cup-bot/data/local/cross_venue_arb_ledger.jsonl` | Paper cross-venue arb intents (`--record`) |
-| `/opt/world-cup-bot/data/local/ledger.jsonl` | Optional live ledger path |
+
+Set the same `LEDGER_PATH` in `.env` as the file you use for `shadow-status`, or merge rows into one JSONL — split files make Phase 1 look stuck at “1 day” ([SHADOW.md](../../SHADOW.md)).
 | `/opt/world-cup-bot/logs/cross_venue_reconcile.log` | Weekly `cross-venue-fill reconcile --json` |
 | `/opt/world-cup-bot/logs/` | Timer stdout + cross-venue alerts |
 

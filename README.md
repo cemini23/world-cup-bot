@@ -6,7 +6,16 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** feature-complete v1 — **shadow mode first** (`DRY_RUN=true`). Public launch: [Outlier Weekly](https://outlierweekly.substack.com) Issue 3 (2026-06-03). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) for shipped features and planned work.
+**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly](https://outlierweekly.substack.com) Issue 3. Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) and [SHADOW.md](SHADOW.md) before live LP.
+
+## Public launch (2026-06-03)
+
+World Cup Bot is **open source today** — fork, shadow-test on your machine, bring your own keys. This is **not** a hosted service or a returns guarantee.
+
+1. `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight`
+2. Run [SHADOW.md](SHADOW.md) Phases 0–3 (`plan --record --liquidity-gate` with `DRY_RUN=true`)
+3. Use **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for all sessions (see SHADOW § split-ledger trap)
+4. Retail WC / PM context: [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) · Methodology: Outlier Weekly Issue 3
 
 ## What it does (v1)
 

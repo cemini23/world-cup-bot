@@ -15,6 +15,7 @@ Thank you for improving World Cup Bot. This project is **MIT-licensed** and welc
    pytest -q
    ```
 5. **Docs** — update README / SETUP / SHADOW / ROADMAP if CLI flags or env vars change.
+6. **Ledger** — never assume `data/local/ledger.jsonl` is the only file; document `LEDGER_PATH` / `WC_LEDGER_PATH` when touching shadow gates.
 
 ## Scope
 

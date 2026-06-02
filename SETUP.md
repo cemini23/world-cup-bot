@@ -20,6 +20,8 @@ Copy `.env.example` → `.env` and fill values locally.
 | `POLYMARKET_API_SECRET` | `watch` | L2 API secret |
 | `POLYMARKET_API_PASSPHRASE` | `watch` | L2 API passphrase |
 | `DRY_RUN` | yes | Keep `true` until you have shadow-tested |
+| `LEDGER_PATH` / `WC_LEDGER_PATH` | recommended | **Same path** for manual CLI and systemd — see [SHADOW.md](SHADOW.md) split-ledger section |
+| `WC_LOAD_POLYMARKET_ENV` | optional | Set `1` if L2 keys live in `.env-polymarket` (Cemini layout) |
 | `MAX_NOTIONAL_PER_MARKET_USD` | no | Hard ceiling per market (minimum with `conviction.yaml` caps; default `2000`) |
 | `WC_LIVE_PLAN_ACK` | live timer | Set to `1` in `.env` before enabling `world-cup-bot-live-plan.timer` |
 | `WC_ALERT_WEBHOOK_URL` | no | Discord/Slack HTTPS webhook for operator alerts |
@@ -45,6 +47,8 @@ world-cup-bot preflight
 ```
 
 Checks: geoblock, Gamma public-search, CLOB `/time`, L2 creds, optional `GET /data/orders` auth probe, `py-clob-client-v2` when `DRY_RUN=false`.
+
+**Geoblock note:** Polymarket’s API may label a non-US VPS (e.g. Helsinki) with a different country code. If `clob_auth` passes in shadow mode, preflight treats egress as safe — verify with your own smoke `plan` before live size.
 
 ```bash
 pip install -e ".[live]"   # py-clob-client-v2 + websockets + eth-account
@@ -203,7 +207,7 @@ sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --
 - **`trading`** — fill watch + live plan on a **non-US** VPS (order POST is geo-blocked from the US)
 - **`rewards-sync.timer`** — installed with monitor profile but **not** auto-enabled; enable after Phase 2 when L2 creds exist
 
-Shadow ledger on VPS: `WC_LEDGER_PATH=/opt/world-cup-bot/data/local/shadow_ledger.jsonl` (set in unit files).
+**Ledger paths on VPS:** systemd units set `WC_LEDGER_PATH` per job (`shadow_ledger.jsonl` for monitor plan/pnl-daily; `ledger.jsonl` for trading watch/live-plan). For `shadow-status`, point **one** canonical file via `.env` (`LEDGER_PATH` = `WC_LEDGER_PATH`) so Phase 1 day counts are not split — see [SHADOW.md](SHADOW.md).
 
 See [deploy/systemd/README.md](deploy/systemd/README.md) for install root, two-VPS split, and SHADOW phase gates. Default path: `/opt/world-cup-bot` — change with `--install-root`.
 

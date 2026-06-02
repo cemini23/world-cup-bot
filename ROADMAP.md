@@ -2,7 +2,16 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 209 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 210 pytest (CI on push)
+
+---
+
+## Public launch — 2026-06-03
+
+- **Repo:** [github.com/cemini23/world-cup-bot](https://github.com/cemini23/world-cup-bot) · **Pages:** [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/)
+- **Distribution:** Outlier Weekly Issue 3 (free) — shadow-first LP stack, not financial advice
+- **Companion:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) for retail WC / PM/Kalshi education
+- **Go-live:** Operators complete [SHADOW.md](SHADOW.md); live LP remains opt-in (`DRY_RUN=false`, non-US egress, `WC_LIVE_PLAN_ACK=1`)
 
 ---
 
@@ -18,6 +27,7 @@ Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live 
 | systemd profiles | Monitor (shadow + alerts) and trading (watch + live plan) — see [deploy/systemd/README.md](deploy/systemd/README.md) |
 | CLOB V2 | Live POST via `py-clob-client-v2`; preflight + CI import guard |
 | Security (2026-06) | Env notional ceiling, outbound URL allowlist, `WC_LIVE_PLAN_ACK` live-plan interlock |
+| Shadow / ledger (2026-06) | `WC_LEDGER_PATH` in Settings; split-ledger docs; geoblock PASS when CLOB auth OK on EU egress |
 | Cross-venue phases A–C | Paper ledger, manual fill bridge, auto dual-leg (off by default) |
 | Phase router (1b) | FSM, multi-phase scanner, settlement gate — **flags default OFF** |
 | Research CLI | Gemini Deep Research + agent JSON bundles in `prompts/` |
@@ -79,6 +89,7 @@ Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, non-US VP
 | 2026-05-31 | Conviction fade-watch downgrades; phase-status CLI tests |
 | 2026-06-01 | CLOB V2 migration; conviction YAML v5 hygiene; weekly research pipeline mode |
 | 2026-06-02 | Pre-drop security audit: notional env cap, URL allowlist, live-plan ack gate |
+| 2026-06-03 | **Public launch** (Outlier Weekly Issue 3); split-ledger SHADOW docs; `WC_LEDGER_PATH` fix |
 
 ---
 
