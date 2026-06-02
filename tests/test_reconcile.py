@@ -1,5 +1,7 @@
 """Tests for REST → WS trade reconciliation."""
 
+import pytest
+
 from market_helpers import make_market
 from world_cup_bot import ws_user
 from world_cup_bot.clob_auth import ClobAuth
@@ -8,11 +10,15 @@ from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.reconcile import ReconcileState, rest_trade_to_ws_message, run_reconcile_pass
 
 
-def test_rest_trade_to_ws_message():
+@pytest.mark.parametrize(
+    "status",
+    ["CONFIRMED", "MINED", "TRADE_STATUS_CONFIRMED", "TRADE_STATUS_MINED"],
+)
+def test_rest_trade_to_ws_message(status: str):
     trade = {
         "id": "trade-1",
         "market": "0x1",
-        "status": "TRADE_STATUS_CONFIRMED",
+        "status": status,
         "match_time": "1717248000",
         "maker_orders": [
             {

@@ -47,6 +47,22 @@ def _intent(**overrides) -> QuoteIntent:
     return QuoteIntent(**base)
 
 
+def test_load_rows_accepts_str_path(version_spec, ledger_path):
+    ledger.append_row(
+        str(ledger_path),
+        ledger.LedgerRow(
+            event="reward_accrual",
+            logic_version=version_spec.version_id,
+            strategy_key=version_spec.strategy_key,
+            timestamp="2026-05-30T12:00:00+00:00",
+            rewards_usd=1.0,
+        ),
+    )
+    rows = ledger.load_rows(str(ledger_path))
+    assert len(rows) == 1
+    assert rows[0]["event"] == "reward_accrual"
+
+
 def test_filter_scope_current(version_spec):
     rows = [
         {"logic_version": version_spec.version_id, "event": "order_fill", "pnl_usd": 10},
