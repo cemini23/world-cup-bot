@@ -8,7 +8,7 @@
   <meta name="keywords" content="world cup bot, world cup bot polymarket, world cup bot kalshi, polymarket world cup, kalshi world cup, FIFA 2026 prediction markets, liquidity provision bot">
   <link rel="canonical" href="https://cemini23.github.io/world-cup-bot/">
   <meta property="og:title" content="World Cup Bot — Polymarket &amp; Kalshi FIFA 2026 LP">
-  <meta property="og:description" content="Open-source shadow-first LP bot for World Cup advance markets on Polymarket. Cross-venue Kalshi alerts. MIT license.">
+  <meta property="og:description" content="MIT open-source World Cup advance-market LP bot. Shadow-first. Full methodology in Outlier Weekly Issue 3.">
   <meta property="og:url" content="https://cemini23.github.io/world-cup-bot/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
@@ -28,7 +28,12 @@
       "name": "cemini23",
       "url": "https://github.com/cemini23"
     },
-    "keywords": "world cup bot, polymarket, kalshi, prediction markets, FIFA 2026, liquidity provision"
+    "keywords": "world cup bot, polymarket, kalshi, prediction markets, FIFA 2026, liquidity provision",
+    "subjectOf": {
+      "@type": "Article",
+      "name": "I Open-Sourced the World Cup LP Bot I Shadow-Test First",
+      "url": "https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot"
+    }
   }
   </script>
   <style>
@@ -48,7 +53,7 @@
   <h1>World Cup Bot</h1>
   <p class="subtitle">Open-source Polymarket LP bot for FIFA 2026 advance markets — with Kalshi cross-venue alerts</p>
 
-  <p><strong>World Cup Bot</strong> is an MIT-licensed Python stack for liquidity provision on FIFA World Cup 2026 <em>advance to knockout</em> markets on <a href="https://polymarket.com">Polymarket</a>. It includes shadow-first deployment, a calendar cancel window before kickoff, versioned JSONL ledger, and optional <strong>Polymarket vs Kalshi</strong> gap alerts (alert-only, no auto execution).</p>
+  <p><strong>World Cup Bot</strong> is an MIT-licensed Python stack for liquidity provision on FIFA World Cup 2026 <em>advance to knockout</em> markets on <a href="https://polymarket.com">Polymarket</a>. It includes shadow-first deployment, a calendar cancel window before kickoff, versioned JSONL ledger, and optional <strong>Polymarket vs Kalshi</strong> gap alerts (alert-only, no auto execution). <strong>Launch writeup:</strong> <a href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot">Outlier Weekly Issue 3</a> (free, 2026-06-03).</p>
 
   <ul>
     <li>Conviction YAML + Gamma mids at runtime (no hardcoded prices)</li>
@@ -60,11 +65,13 @@
   <a class="cta" href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot" style="background:#1a1a1a;margin-left:0.5rem;">Issue 3 writeup</a>
 
   <h2 style="font-size:1.15rem;margin-top:2rem;">Get started (shadow-first)</h2>
-  <p>Public launch <strong>2026-06-03</strong>. Clone the repo, keep <code>DRY_RUN=true</code>, and follow <a href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md">SHADOW.md</a> before any live quotes. Use one ledger path for all <code>plan --record</code> sessions.</p>
+  <p>Public launch <strong>2026-06-03</strong>. Read <a href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot">Issue 3</a> for architecture and shadow gating, then clone the repo, keep <code>DRY_RUN=true</code>, and follow <a href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md">SHADOW.md</a> before any live quotes. Use one ledger path for all <code>plan --record</code> sessions.</p>
 
   <h2 style="font-size:1.15rem;margin-top:2rem;">Further reading</h2>
-  <p>World Cup Bot is execution code. The <a href="https://github.com/cemini23/Gambling-wiki">Gambling &amp; Betting Wiki</a> covers retail strategy: contract types, sportsbook vs Polymarket/Kalshi divergence, and World Cup 2026 format. Education only — not financial advice.</p>
+  <p>World Cup Bot is execution code. Strategy and contract context live in the links below. Education only — not financial advice.</p>
   <ul>
+    <li><a href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot">Outlier Weekly Issue 3</a> — methodology, modules, honest limits (Substack)</li>
+    <li><a href="https://github.com/cemini23/Gambling-wiki">Gambling &amp; Betting Wiki</a> — retail PM / sportsbook context</li>
     <li><a href="https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/world-cup-prediction-market-types.md">World Cup prediction market types</a></li>
     <li><a href="https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/world-cup-books-vs-pm-divergence.md">Books vs PM divergence</a></li>
     <li><a href="https://github.com/cemini23/Gambling-wiki/blob/main/wiki/entities/sports/world-cup-2026-betting.md">World Cup 2026 betting hub</a></li>
