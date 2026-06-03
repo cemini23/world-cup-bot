@@ -1,0 +1,12 @@
+[Unit]
+Description=World Cup Bot — weekly match-shock Gamma discovery
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+Environment=WC_SHOCK_ENABLED=1
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh match-shock-discover --out @INSTALL_ROOT@/data/local/match_markets.json >> @INSTALL_ROOT@/logs/cron_match_shock_discover.log 2>&1'
+User=root

@@ -30,6 +30,7 @@ class Settings:
     ws_market_url: str
     data_api_url: str
     match_shock_tape_dir: str
+    match_shock_ledger_path: str
     dry_run: bool
     min_hours_before_kickoff: float
     max_notional_per_market_usd: float
@@ -64,6 +65,13 @@ class Settings:
             match_shock_tape_dir=str(
                 resolve_project_path(
                     os.environ.get("WC_MATCH_SHOCK_TAPE_DIR", "data/local/shock_tapes")
+                )
+            ),
+            match_shock_ledger_path=str(
+                resolve_project_path(
+                    os.environ.get(
+                        "WC_MATCH_SHOCK_LEDGER_PATH", "data/local/match_shock_paper.jsonl"
+                    )
                 )
             ),
             dry_run=_bool("DRY_RUN", True),
@@ -128,3 +136,7 @@ def match_shock_enabled() -> bool:
 
 def match_shock_live() -> bool:
     return _bool("WC_MATCH_SHOCK_LIVE", False)
+
+
+def match_shock_live_ack() -> bool:
+    return _bool("WC_MATCH_SHOCK_LIVE_ACK", False)

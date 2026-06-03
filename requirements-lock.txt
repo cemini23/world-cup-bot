@@ -1,0 +1,15 @@
+# Pinned deps for reproducible installs — generated 2026-06-03
+# Install: pip install -r requirements-lock.txt && pip install -e .
+# Live POST: pip install -e ".[live]" (includes rows below marked live)
+
+PyYAML==6.0.3
+
+# [live] optional extra
+websockets==15.0.1
+py-clob-client-v2==1.0.1
+eth-account==0.13.7
+cryptography==48.0.0
+
+# [dev] optional extra
+pytest==9.0.3
+ruff==0.15.13

@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 250 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 265 pytest (CI on push)
 
 ---
 
@@ -25,6 +25,7 @@ Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live 
 | Shadow gate | `shadow-status --min-phase N` with ledger path + step progress (exit 1 on pending/blocked) |
 | Operator automation | `conviction-staleness`, `fixture-check`, `conviction-patch --stage`, cross-venue webhooks |
 | systemd profiles | Monitor (shadow + alerts) and trading (watch + live plan) — see [deploy/systemd/README.md](deploy/systemd/README.md) |
+| **Tournament ops + shock systemd** | `tournament-ops check`; match-shock discover/plan (monitor), record/live-plan (trading, manual) |
 | CLOB V2 | Live POST via `py-clob-client-v2`; preflight + CI import guard |
 | Security (2026-06) | Env notional ceiling, outbound URL allowlist, `WC_LIVE_PLAN_ACK` live-plan interlock |
 | Shadow / ledger (2026-06) | `WC_LEDGER_PATH` in Settings; split-ledger docs; geoblock PASS when CLOB auth OK on EU egress |
@@ -32,6 +33,7 @@ Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live 
 | Phase router (1b) | FSM, multi-phase scanner, settlement gate — **flags default OFF** |
 | Research CLI | Gemini Deep Research + agent JSON bundles in `prompts/` |
 | **Match-shock scaffold (8)** | Discover + Data API export + live WS tape + backtest CLI — see [`docs/MATCH_SHOCK_V1.md`](docs/MATCH_SHOCK_V1.md) |
+| **Match-shock complete (8)** | Plan loop, ledger, live POST (gated), bucket grid A–D, tournament-ops + systemd units |
 
 ---
 
@@ -51,10 +53,7 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 
 | Item | Notes |
 |------|-------|
-| **match_shock live POST** | Ladder order manager + `WC_MATCH_SHOCK_LIVE=1` gate |
-| **match_shock-plan loop** | In-play paper scanner during WC window |
-| Dependency lockfile | Reproducible `[live]` installs (`requirements-lock.txt` or `uv.lock`) |
-| Non-root systemd user | Dedicated Unix user in `install-systemd.sh` |
+| Dependency lockfile | Reproducible `[live]` installs — see `requirements-lock.txt` |
 | Formal LP promotion gates | DSR/MCPT-style metrics beyond shadow net-PnL heuristic |
 | Wiki enforcement hook | Optional `WC_WIKI_ENFORCEMENT=1` order-time policy (documented only in OSS) |
 

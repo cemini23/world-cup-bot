@@ -26,8 +26,8 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
-| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check |
-| **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable) |
+| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check, **tournament-ops**, **match-shock discover/plan** (paper) |
+| **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable), **match-shock record** (manual), **match-shock live plan** (manual, gated) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
 
@@ -105,6 +105,29 @@ sudo systemctl disable --now world-cup-bot-live-plan.timer
 ```
 
 **Enable guard:** `world-cup-bot-live-plan.timer` refuses to run unless `WC_LIVE_PLAN_ACK=1` is set in `.env` (SHADOW Phase 4 operator sign-off).
+
+## Match-shock (Module 8) — two-VPS split
+
+| Unit | Profile | Auto-enable | Purpose |
+|------|---------|-------------|---------|
+| `world-cup-bot-tournament-ops.timer` | monitor | yes | Daily bundled health check |
+| `world-cup-bot-match-shock-discover.timer` | monitor | yes | Weekly Gamma discovery → `match_markets.json` |
+| `world-cup-bot-match-shock-plan.timer` | monitor | yes | Paper plan scan every 15m (Jun–Jul WC window) |
+| `world-cup-bot-match-shock-record.service` | trading | **manual** | Live WS tape on egress (`WC_SHOCK_ENABLED=1`) |
+| `world-cup-bot-match-shock-live-plan.timer` | trading | **manual** | Live ladder POST — requires `WC_MATCH_SHOCK_LIVE=1` + `WC_MATCH_SHOCK_LIVE_ACK=1` |
+
+**Never** enable shock live POST on the same wallet as advance LP without operator sign-off and 3+ days paper ledger soak.
+
+```bash
+# Monitor (paper shock)
+systemctl status world-cup-bot-match-shock-plan.timer
+
+# Egress (after paper soak)
+systemctl enable --now world-cup-bot-match-shock-record.service
+# systemctl enable --now world-cup-bot-match-shock-live-plan.timer  # after WC_MATCH_SHOCK_LIVE_ACK=1
+```
+
+Optional non-root install: `sudo bash deploy/systemd/install-systemd.sh --profile monitor --run-as-user wc-bot`
 
 ## Optional second env file
 

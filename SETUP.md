@@ -29,6 +29,17 @@ Copy `.env.example` → `.env` and fill values locally.
 
 Derive L2 creds once from your private key (`py-clob-client-v2` `create_or_derive_api_creds()`), then store the three values above in `.env`.
 
+## Reproducible installs
+
+Optional pinned deps for CI/VPS parity:
+
+```bash
+pip install -r requirements-lock.txt
+pip install -e ".[live]"   # or pip install -e ".[dev]" for pytest/ruff
+```
+
+Regenerate after bumping `pyproject.toml` optional extras.
+
 ## Live fill watch (Module 4)
 
 ```bash

@@ -11,10 +11,11 @@ set -euo pipefail
 INSTALL_ROOT="/opt/world-cup-bot"
 PROFILE=""
 ENABLE=false
+RUN_AS_USER=""
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 usage() {
-  echo "Usage: $0 [--install-root PATH] --profile monitor|trading [--enable]" >&2
+  echo "Usage: $0 [--install-root PATH] --profile monitor|trading [--enable] [--run-as-user NAME]" >&2
   exit 1
 }
 
@@ -31,6 +32,10 @@ while [[ $# -gt 0 ]]; do
     --enable)
       ENABLE=true
       shift
+      ;;
+    --run-as-user)
+      RUN_AS_USER="${2:-}"
+      shift 2
       ;;
     -h | --help)
       usage
@@ -66,12 +71,17 @@ if [[ "$PROFILE" == "monitor" ]]; then
     world-cup-bot-conviction-staleness
     world-cup-bot-fixture-check
     world-cup-bot-cross-venue-reconcile
+    world-cup-bot-tournament-ops
+    world-cup-bot-match-shock-discover
+    world-cup-bot-match-shock-plan
   )
 else
   UNITS=(
     world-cup-bot-preflight
     world-cup-bot-watch
     world-cup-bot-live-plan
+    world-cup-bot-match-shock-record
+    world-cup-bot-match-shock-live-plan
   )
 fi
 
@@ -80,7 +90,11 @@ for unit in "${UNITS[@]}"; do
     src="${REPO_ROOT}/deploy/systemd/units/${unit}.${ext}"
     [[ -f "$src" ]] || continue
     dest="/etc/systemd/system/${unit}.${ext}"
-    sed "s|@INSTALL_ROOT@|${INSTALL_ROOT}|g" "$src" >"$dest"
+    content="$(sed "s|@INSTALL_ROOT@|${INSTALL_ROOT}|g" "$src")"
+    if [[ -n "$RUN_AS_USER" ]]; then
+      content="$(echo "$content" | sed "s|^User=root|User=${RUN_AS_USER}|")"
+    fi
+    echo "$content" >"$dest"
     chmod 0644 "$dest"
     echo "installed ${unit}.${ext} → $dest"
   done
@@ -93,6 +107,14 @@ touch "$INSTALL_ROOT/logs/cron_pnl.log"
 touch "$INSTALL_ROOT/logs/cron_rewards.log"
 touch "$INSTALL_ROOT/data/local/shadow_ledger.jsonl"
 touch "$INSTALL_ROOT/data/local/ledger.jsonl"
+touch "$INSTALL_ROOT/data/local/match_shock_paper.jsonl"
+touch "$INSTALL_ROOT/data/local/match_markets.json"
+mkdir -p "$INSTALL_ROOT/data/local/shock_tapes"
+touch "$INSTALL_ROOT/logs/cron_tournament_ops.log"
+touch "$INSTALL_ROOT/logs/cron_match_shock_discover.log"
+touch "$INSTALL_ROOT/logs/cron_match_shock_plan.log"
+touch "$INSTALL_ROOT/logs/match_shock_record.jsonl"
+touch "$INSTALL_ROOT/logs/cron_match_shock_live_plan.log"
 
 systemctl daemon-reload
 
@@ -107,13 +129,17 @@ if [[ "$ENABLE" == true ]]; then
       world-cup-bot-pnl-daily.timer \
       world-cup-bot-conviction-staleness.timer \
       world-cup-bot-fixture-check.timer \
-      world-cup-bot-cross-venue-reconcile.timer
+      world-cup-bot-cross-venue-reconcile.timer \
+      world-cup-bot-tournament-ops.timer \
+      world-cup-bot-match-shock-discover.timer \
+      world-cup-bot-match-shock-plan.timer
     echo "Monitor profile enabled (read-only + shadow timers)."
     echo "Rewards sync unit installed but timer NOT enabled — enable after Phase 2 + L2 creds:"
     echo "  systemctl enable --now world-cup-bot-rewards-sync.timer"
   else
     systemctl enable --now world-cup-bot-preflight.timer
     echo "Trading profile: preflight timer enabled. Enable watch/live-plan after SHADOW.md gates."
+    echo "Match-shock record/live-plan units installed but NOT enabled — see deploy/systemd/README.md"
   fi
 else
   echo "Units installed (not enabled). Re-run with --enable or systemctl enable manually."

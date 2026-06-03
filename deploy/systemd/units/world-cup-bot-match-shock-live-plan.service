@@ -1,0 +1,14 @@
+[Unit]
+Description=World Cup Bot — match-shock live plan (gated POST)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+EnvironmentFile=-@INSTALL_ROOT@/.env.trading
+Environment=WC_DRY_RUN=false
+Environment=WC_SHOCK_ENABLED=1
+Environment=WC_MATCH_SHOCK_LEDGER_PATH=@INSTALL_ROOT@/data/local/match_shock_paper.jsonl
+ExecStart=/bin/bash -c 'test "${WC_MATCH_SHOCK_LIVE:-}" = "1" || { echo "Refusing: set WC_MATCH_SHOCK_LIVE=1" >&2; exit 1; }; test "${WC_MATCH_SHOCK_LIVE_ACK:-}" = "1" || { echo "Refusing: set WC_MATCH_SHOCK_LIVE_ACK=1 after paper soak" >&2; exit 1; }; @INSTALL_ROOT@/bin/wc_run.sh preflight && @INSTALL_ROOT@/bin/wc_run.sh match-shock-plan --live --discover-json @INSTALL_ROOT@/data/local/match_markets.json >> @INSTALL_ROOT@/logs/cron_match_shock_live_plan.log 2>&1'
+User=root

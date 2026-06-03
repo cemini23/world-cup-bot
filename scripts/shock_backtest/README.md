@@ -101,6 +101,16 @@ Data API export populates `ts_ms`, `price`, `slug` only — sufficient for shock
 - **`--out-distributions`** — JSON map `bucket_key → [depth_cents, …]` for live lookup
 - **`--replay`** — paper win rate + PnL vs `backtest.min_recovery_rate` gate
 
+## Bucket grid A–D
+
+```bash
+python scripts/shock_backtest/run_bucket_grid.py \
+  tests/fixtures/shock_replay/sample_trades.jsonl \
+  --out-dir data/local/shock_backtest
+```
+
+Writes `replay_report.json` + `replay_report.md` (runs A–D per OSINT wiki matrix).
+
 ## Promotion gates
 
 | Gate | Threshold |

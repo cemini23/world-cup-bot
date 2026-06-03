@@ -208,6 +208,16 @@ python scripts/shock_backtest/run_bucket_backtest.py data/local/shock_tapes/comb
 
 # Live tape during WC (pip install -e ".[live]")
 WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record --discovery data/local/match_markets.json
+
+# Paper plan loop + bucket grid
+world-cup-bot match-shock-plan --tape data/local/shock_tapes/combined.jsonl
+python scripts/shock_backtest/run_bucket_grid.py data/local/shock_tapes/combined.jsonl
+
+# Daily tournament health (fixture + staleness + discover)
+world-cup-bot tournament-ops check
+
+# Live POST (egress only — after paper soak + WC_MATCH_SHOCK_LIVE_ACK=1)
+world-cup-bot match-shock-post --check-gates
 ```
 
 Spec: [docs/MATCH_SHOCK_V1.md](../docs/MATCH_SHOCK_V1.md) · backtest: [scripts/shock_backtest/README.md](../scripts/shock_backtest/README.md).

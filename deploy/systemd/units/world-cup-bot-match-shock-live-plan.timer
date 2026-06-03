@@ -1,0 +1,10 @@
+[Unit]
+Description=World Cup Bot match-shock live plan timer (manual enable)
+
+[Timer]
+OnBootSec=2h
+OnCalendar=*-06..07-* 10..23:0/15 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

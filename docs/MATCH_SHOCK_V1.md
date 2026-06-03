@@ -74,11 +74,17 @@ world_cup_bot/
   match_market_discovery.py          # Gamma public-search for beat/match slugs
   data_api_client.py                 # Polymarket Data API /trades pagination
   shock_tape_export.py               # Data API → JSONL
+  shock_tape.py                      # shared JSONL parse + scan + replay
+  match_shock_ledger.py              # dedicated JSONL events
+  match_shock_plan.py                # in-play paper scanner loop
+  match_shock_post.py                # gated live ladder POST
   ws_market.py                       # CLOB market-channel parser
   match_shock_record.py              # live WS → JSONL writer
   trading_mode.py                    # LP vs SHOCK mode handoff
+  tournament_ops.py                  # bundled fixture/staleness/discover check
 scripts/shock_backtest/
   run_bucket_backtest.py             # bucket distributions + replay
+  run_bucket_grid.py                 # grid runs A–D + replay_report
   data_api_export_shock_tapes.py     # standalone export script (same logic as CLI)
   export_pmxt_shock_tapes.py         # pmxt JSONL path
   pmxt_parquet_to_jsonl.py           # pmxt v2 parquet → JSONL
@@ -104,9 +110,10 @@ Separate ledger events: `match_shock_detected`, `match_shock_ladder_planned`, `m
 | Variable | Default | Meaning |
 |----------|---------|---------|
 | `WC_SHOCK_ENABLED` | unset | `1` enables match-shock record path |
-| `WC_MATCH_SHOCK_LIVE` | unset | `1` required for live limit POST (not implemented) |
+| `WC_MATCH_SHOCK_LIVE` | unset | `1` required for live limit POST |
+| `WC_MATCH_SHOCK_LIVE_ACK` | unset | `1` required before live plan timer (mirror `WC_LIVE_PLAN_ACK`) |
 | `WC_MATCH_SHOCK_TAPE_DIR` | `data/local/shock_tapes` | Default directory for export + live tapes |
-| `WC_MATCH_SHOCK_LEDGER_PATH` | `data/local/match_shock_paper.jsonl` | Paper/live JSONL (planned) |
+| `WC_MATCH_SHOCK_LEDGER_PATH` | `data/local/match_shock_paper.jsonl` | Paper/live JSONL |
 | `POLYMARKET_WS_MARKET_URL` | `wss://…/ws/market` | CLOB market channel |
 | `POLYMARKET_DATA_API_URL` | `https://data-api.polymarket.com` | Trade history export |
 
@@ -117,13 +124,13 @@ Separate ledger events: `match_shock_detected`, `match_shock_ladder_planned`, `m
 | `match-shock-discover [--out PATH] [--json]` | Gamma discovery → condition IDs + token IDs |
 | `match-shock-export [--discovery PATH] [--out-dir DIR] [--max-trades N]` | Data API → shock JSONL |
 | `match-shock-record [--discovery PATH] [--slug FILTER] [--dry-run] [--force]` | Live WS tape (needs `WC_SHOCK_ENABLED=1` or `--force`) |
+| `match-shock-plan [--discover-json PATH] [--tape PATH] [--live] [--loop]` | In-play paper scanner; optional live POST when gated |
+| `match-shock-post --slug S --token-id T --pre-price P [--submit]` | Ladder POST (default dry-run intents) |
+| `tournament-ops check [--strict] [--json]` | Fixture drift + conviction staleness + cross-venue discover |
 
-## Not yet built
+## Deferred (v1.1)
 
-- Live limit POST / order manager for shock ladders
-- `match-shock-plan` paper scanner loop
-- systemd timer for WC monitor profile
-- Match clock + score feed join (`elapsed_ms`, `goal_diff` precision)
+- Match clock + score feed join (`elapsed_ms`, `goal_diff` precision beyond tape defaults)
 
 ## Safety
 

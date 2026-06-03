@@ -22,6 +22,7 @@ def _settings() -> Settings:
         ws_market_url="wss://ws-subscriptions-clob.polymarket.com/ws/market",
         data_api_url="https://data-api.polymarket.com",
         match_shock_tape_dir="data/local/shock_tapes",
+        match_shock_ledger_path="data/local/match_shock_paper.jsonl",
         dry_run=True,
         min_hours_before_kickoff=10.0,
         max_notional_per_market_usd=2000.0,

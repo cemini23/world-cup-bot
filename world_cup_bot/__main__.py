@@ -1814,6 +1814,118 @@ def _cmd_match_shock_record(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_tournament_ops_check(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.tournament_ops import exit_code_for_result, run_tournament_ops_check
+
+    result = run_tournament_ops_check(
+        settings,
+        threshold_pp=args.threshold_pp,
+        strict_discover=args.strict,
+        fixture_local=Path(args.fixture_local) if args.fixture_local else None,
+        fixture_upstream_url=args.fixture_upstream_url,
+    )
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        for check in result.checks:
+            print(f"  [{check.status.value:4}] {check.title}: {check.detail}")
+        if result.ok and not result.has_warnings:
+            print("\nTournament ops: PASS")
+        elif result.ok:
+            print("\nTournament ops: PASS with warnings")
+        else:
+            print("\nTournament ops: FAIL")
+    return exit_code_for_result(result)
+
+
+def _cmd_match_shock_plan(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.match_shock_plan import run_plan_loop, run_plan_once
+
+    kwargs = {
+        "discover_json": Path(args.discover_json) if args.discover_json else None,
+        "tape_path": Path(args.tape) if args.tape else None,
+        "distributions_path": Path(args.distributions) if args.distributions else None,
+        "shock_config_path": Path(args.config) if args.config else None,
+        "ledger_path": Path(args.ledger) if args.ledger else Path(settings.match_shock_ledger_path),
+        "live": args.live,
+        "status_path": Path(args.status_file) if args.status_file else None,
+    }
+    if args.loop:
+        run_plan_loop(
+            settings,
+            interval_sec=args.interval,
+            max_iterations=args.max_iterations,
+            **kwargs,
+        )
+        return 0
+    stats = run_plan_once(settings, **kwargs)
+    if args.json:
+        import dataclasses
+
+        print(json.dumps(dataclasses.asdict(stats), indent=2))
+    else:
+        print(
+            f"Plan scan: shocks={stats.shocks} ladders={stats.ladders} "
+            f"paper_fills={stats.paper_fills} live_posts={stats.live_posts} "
+            f"slugs={stats.slugs_scanned}"
+        )
+        for err in stats.errors:
+            print(f"  WARN: {err}")
+    return 1 if stats.errors and stats.shocks == 0 else 0
+
+
+def _cmd_match_shock_post(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.match_shock import BookLevel, ShockContext, plan_ladder
+    from world_cup_bot.match_shock_config import load_match_shock_config
+    from world_cup_bot.match_shock_post import check_live_post_gates, submit_ladder
+
+    shock_cfg = load_match_shock_config(Path(args.config) if args.config else None)
+    ctx = ShockContext(
+        slug=args.slug,
+        pre_price=args.pre_price,
+        bids=(BookLevel(args.bid_price, args.bid_size),),
+        elapsed_ms=args.elapsed_ms,
+        goal_diff=args.goal_diff,
+    )
+    plan = plan_ladder(ctx, {}, shock_cfg)
+    token_id = args.token_id
+    if not token_id:
+        print("token_id required for post", file=sys.stderr)
+        return 1
+
+    if args.check_gates:
+        gate = check_live_post_gates(settings, shock_cfg, test_auth=args.skip_auth)
+        print(json.dumps({"allowed": gate.allowed, "reason": gate.reason}, indent=2))
+        return 0 if gate.allowed else 1
+
+    dry_run = not args.submit
+    if args.submit:
+        gate = check_live_post_gates(settings, shock_cfg, test_auth=args.skip_auth)
+        if not gate.allowed:
+            print(f"Refusing submit: {gate.reason}", file=sys.stderr)
+            return 1
+
+    results = submit_ladder(
+        plan,
+        token_id=token_id,
+        slug=args.slug,
+        settings=settings,
+        cfg=shock_cfg,
+        ledger_path=Path(settings.match_shock_ledger_path),
+        dry_run=dry_run,
+        test_auth=args.skip_auth,
+    )
+    if args.json:
+        print(json.dumps(results, indent=2))
+    else:
+        for row in results:
+            print(row)
+    return 0
+
+
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     if phase_router_enabled():
@@ -2537,6 +2649,76 @@ def build_parser() -> argparse.ArgumentParser:
     )
     msr.add_argument("--log-level", default="INFO")
     msr.set_defaults(func=_cmd_match_shock_record)
+
+    msp = sub.add_parser(
+        "match-shock-plan",
+        help="In-play paper shock scanner (Module 8 plan loop)",
+    )
+    msp.add_argument(
+        "--discover-json",
+        help="Discovery JSON from match-shock-discover",
+    )
+    msp.add_argument("--tape", help="Shock JSONL tape (default: today's tape dir file)")
+    msp.add_argument("--distributions", help="Bucket distributions JSON for ladder lookup")
+    msp.add_argument("--config", help="Path to config/shock_match.yaml")
+    msp.add_argument(
+        "--ledger",
+        help="Match-shock ledger path (default: WC_MATCH_SHOCK_LEDGER_PATH)",
+    )
+    msp.add_argument(
+        "--status-file",
+        help="Heartbeat JSON (default: data/local/match_shock_plan.status)",
+    )
+    msp.add_argument(
+        "--live",
+        action="store_true",
+        help="Submit ladder when WC_MATCH_SHOCK_LIVE=1 and gates pass",
+    )
+    msp.add_argument("--loop", action="store_true", help="Run until interrupted")
+    msp.add_argument("--interval", type=float, default=900.0, help="Loop interval seconds")
+    msp.add_argument("--max-iterations", type=int, default=None)
+    msp.add_argument("--json", action="store_true")
+    msp.set_defaults(func=_cmd_match_shock_plan)
+
+    mspo = sub.add_parser(
+        "match-shock-post",
+        help="Live shock ladder POST (gated; default dry-run intents)",
+    )
+    mspo.add_argument("--slug", required=True)
+    mspo.add_argument("--token-id", required=True, dest="token_id")
+    mspo.add_argument("--pre-price", type=float, required=True, dest="pre_price")
+    mspo.add_argument("--bid-price", type=float, default=0.28, dest="bid_price")
+    mspo.add_argument("--bid-size", type=float, default=100.0, dest="bid_size")
+    mspo.add_argument("--elapsed-ms", type=int, default=0, dest="elapsed_ms")
+    mspo.add_argument("--goal-diff", type=int, default=0, dest="goal_diff")
+    mspo.add_argument("--config", help="Path to config/shock_match.yaml")
+    mspo.add_argument(
+        "--submit",
+        action="store_true",
+        help="POST to CLOB when all live gates pass",
+    )
+    mspo.add_argument(
+        "--check-gates",
+        action="store_true",
+        help="Print gate status and exit",
+    )
+    mspo.add_argument("--skip-auth", action="store_true", help="Skip CLOB auth in preflight")
+    mspo.add_argument("--json", action="store_true")
+    mspo.set_defaults(func=_cmd_match_shock_post)
+
+    tops = sub.add_parser("tournament-ops", help="Bundled tournament health checks")
+    tops_sub = tops.add_subparsers(dest="tournament_ops_command")
+    topc = tops_sub.add_parser("check", help="Fixture drift + conviction staleness + discover")
+    topc.add_argument("--threshold-pp", type=float, default=15.0)
+    topc.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat new cross-venue pairs as FAIL (default: WARN)",
+    )
+    topc.add_argument("--fixture-local", help="Override local fixtures JSON path")
+    topc.add_argument("--fixture-upstream-url", dest="fixture_upstream_url")
+    topc.add_argument("--json", action="store_true")
+    topc.set_defaults(func=_cmd_tournament_ops_check)
 
     return parser
 

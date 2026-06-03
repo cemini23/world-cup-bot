@@ -1,0 +1,11 @@
+[Unit]
+Description=World Cup Bot — daily tournament ops health check
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=-@INSTALL_ROOT@/.env
+Environment=WC_DRY_RUN=true
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh tournament-ops check >> @INSTALL_ROOT@/logs/cron_tournament_ops.log 2>&1'
+User=root

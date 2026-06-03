@@ -1,0 +1,9 @@
+[Unit]
+Description=World Cup Bot match-shock paper plan (WC window)
+
+[Timer]
+OnCalendar=*-06..07-* 10..23:0/15 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

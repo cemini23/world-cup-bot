@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +15,8 @@ from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.match_market_discovery import discover_match_markets
 from world_cup_bot.match_shock import MATCH_SHOCK_SPEC
 from world_cup_bot.match_shock_config import load_match_shock_config
+from world_cup_bot.match_shock_ledger import recent_events
+from world_cup_bot.match_shock_plan import PLAN_STATUS_FILE
 from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.paths import PROJECT_ROOT
 from world_cup_bot.quoter import QuoteIntent
@@ -310,5 +313,20 @@ def match_shock_payload(settings: Settings, *, limit: int = 80) -> dict[str, Any
             "discover": "world-cup-bot match-shock-discover --out data/local/match_markets.json",
             "export": "world-cup-bot match-shock-export --discovery data/local/match_markets.json",
             "record": "WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record",
+            "plan": "world-cup-bot match-shock-plan --discover-json data/local/match_markets.json",
+            "post": "world-cup-bot match-shock-post --check-gates",
         },
+        "ledger_path": settings.match_shock_ledger_path,
+        "recent_ledger": recent_events(settings.match_shock_ledger_path, limit=10),
+        "plan_status": _read_json_file(PLAN_STATUS_FILE),
     }
+
+
+def _read_json_file(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return raw if isinstance(raw, dict) else None
+    except (OSError, json.JSONDecodeError):
+        return None
