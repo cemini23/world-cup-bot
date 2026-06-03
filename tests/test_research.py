@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from market_helpers import make_market
 from world_cup_bot.config import Settings
+from world_cup_bot.cross_venue_scanner import CrossVenueScanResult
 from world_cup_bot.research import (
     ResearchMode,
     build_gemini_deep_research_prompt,
@@ -69,12 +70,32 @@ def test_build_module6_scanner_bundle():
     assert "cross-venue-scan" in bundle.focus["cli"]
 
 
+def _empty_cross_venue_scan() -> CrossVenueScanResult:
+    return CrossVenueScanResult(
+        scanned_at="2026-06-03T00:00:00+00:00",
+        config_version=1,
+        alert_threshold_pp=5.0,
+        blockers=(),
+        rows=(),
+        discoveries=(),
+        pm_market_count=0,
+        kalshi_market_count=0,
+    )
+
+
 def test_build_cross_venue_bundle():
     markets = [make_market("USA", mid=0.70)]
-    with patch("world_cup_bot.research.scanner.discover_advance_markets", return_value=markets):
+    with (
+        patch("world_cup_bot.research.scanner.discover_advance_markets", return_value=markets),
+        patch(
+            "world_cup_bot.research.cross_venue_scanner.run_scan",
+            return_value=_empty_cross_venue_scan(),
+        ),
+    ):
         bundle = build_research_bundle(ResearchMode.CROSS_VENUE, _settings())
     assert "fade_watch_teams" in bundle.focus
     assert "USA" in bundle.focus["fade_watch_teams"]
+    assert bundle.focus["live_cross_venue_alerts"] == []
 
 
 def test_build_gemini_prompt_group():
