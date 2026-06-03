@@ -9,11 +9,11 @@ from typing import Any
 
 from world_cup_bot import cross_venue_scanner
 from world_cup_bot.config import Settings, match_shock_enabled, match_shock_live
-from world_cup_bot.match_shock_config import load_match_shock_config
-from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.conviction_staleness import scan_mid_staleness
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.fixture_watch import FixtureCheckResult, check_fixtures
+from world_cup_bot.match_shock_config import load_match_shock_config
+from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.scanner import discover_markets
 
 
@@ -180,10 +180,14 @@ def _check_match_shock_readiness(settings: Settings) -> TournamentCheck:
             detail="config/shock_match.yaml missing",
         )
     if not discovery.is_file():
-        warnings.append("run: world-cup-bot match-shock-discover --out data/local/match_markets.json")
+        warnings.append(
+            "run: world-cup-bot match-shock-discover --out data/local/match_markets.json"
+        )
     tape_files = sorted(tape_dir.glob("**/*.jsonl")) if tape_dir.is_dir() else []
     if not tape_files:
-        warnings.append("no shock tapes — match-shock-export or WC_SHOCK_ENABLED=1 match-shock-record")
+        warnings.append(
+            "no shock tapes — match-shock-export or WC_SHOCK_ENABLED=1 match-shock-record"
+        )
     if cfg.enabled and not match_shock_enabled():
         warnings.append("shock_match.enabled=true but WC_SHOCK_ENABLED unset")
     if match_shock_live() and not cfg.enabled:

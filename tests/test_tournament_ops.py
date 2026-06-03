@@ -10,10 +10,9 @@ from world_cup_bot.config import Settings
 from world_cup_bot.fixture_watch import FixtureCheckResult
 from world_cup_bot.tournament_ops import (
     CheckStatus,
-    TournamentCheck,
+    _check_match_shock_readiness,
     exit_code_for_result,
     run_tournament_ops_check,
-    _check_match_shock_readiness,
 )
 
 
@@ -134,28 +133,25 @@ def test_tournament_ops_discover_warn(settings):
 
 
 def test_match_shock_readiness_warns_without_tapes(settings, tmp_path):
-    discovery = tmp_path / "data" / "local" / "match_markets.json"
-    discovery.parent.mkdir(parents=True)
+    from world_cup_bot.paths import resolve_project_path as real_resolve
+
+    discovery = tmp_path / "match_markets.json"
     discovery.write_text("[]", encoding="utf-8")
-    with patch(
-        "world_cup_bot.tournament_ops.resolve_project_path",
-        side_effect=lambda p: discovery if "match_markets" in str(p) else tmp_path / str(p).split("/")[-1],
-    ):
-        # Use real resolve for config path
-        from world_cup_bot.paths import resolve_project_path as real_resolve
+    tape_dir = tmp_path / "tapes"
+    tape_dir.mkdir()
 
-        def _resolve(raw):
-            s = str(raw)
-            if s == "data/local/match_markets.json":
-                return discovery
-            if s == "config/shock_match.yaml":
-                return real_resolve(s)
-            if "tapes" in s or raw == settings.match_shock_tape_dir:
-                return tmp_path / "tapes"
-            return tmp_path / "shock.jsonl"
+    def _resolve(raw):
+        s = str(raw)
+        if s == "data/local/match_markets.json":
+            return discovery
+        if s == "config/shock_match.yaml":
+            return real_resolve(s)
+        if "tapes" in s:
+            return tape_dir
+        return tmp_path / "shock.jsonl"
 
-        with patch("world_cup_bot.tournament_ops.resolve_project_path", side_effect=_resolve):
-            check = _check_match_shock_readiness(settings)
+    with patch("world_cup_bot.tournament_ops.resolve_project_path", side_effect=_resolve):
+        check = _check_match_shock_readiness(settings)
     assert check.status == CheckStatus.WARN
     assert "tapes" in check.detail.lower()
 
