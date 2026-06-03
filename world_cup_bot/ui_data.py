@@ -283,9 +283,7 @@ def match_shock_payload(settings: Settings, *, limit: int = 80) -> dict[str, Any
     shock_cfg = load_match_shock_config()
     markets = discover_match_markets(settings.gamma_url)
     open_count = sum(1 for m in markets if m.accepting_orders)
-    wc_2026_count = sum(
-        1 for m in markets if "wc-2026" in m.slug or "world-cup-2026" in m.slug
-    )
+    wc_2026_count = sum(1 for m in markets if "wc-2026" in m.slug or "world-cup-2026" in m.slug)
     tape_dir = Path(settings.match_shock_tape_dir)
     rows = [
         {
