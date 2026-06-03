@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from market_helpers import make_market
 from world_cup_bot.config import Settings
-from world_cup_bot.ui_data import calendar_payload, meta_payload, plan_payload
+from world_cup_bot.ui_data import calendar_payload, match_shock_payload, meta_payload, plan_payload
 from world_cup_bot.ui_server import UiHandler, _index_bytes
 
 
@@ -39,12 +39,58 @@ def test_index_html_exists():
     body = _index_bytes()
     assert b"World Cup Bot" in body
     assert b"read-only" in body.lower()
+    assert b"Match shock" in body
 
 
 def test_meta_payload():
     payload = meta_payload(_settings())
     assert payload["dry_run"] is True
     assert payload["logic_version"] == "wc_advance_lp_v4"
+    assert payload["match_shock_version"] == "wc_match_shock_v1"
+    assert payload["match_shock_enabled"] is False
+
+
+def test_match_shock_payload_mocked():
+    from world_cup_bot.match_market_discovery import MatchMarket
+
+    sample = [
+        MatchMarket(
+            slug="epl-test-beat",
+            question="Will Team A beat Team B?",
+            condition_id="0xabc",
+            yes_token_id="y",
+            no_token_id="n",
+            event_slug="ev",
+            search_query="epl beat",
+            accepting_orders=True,
+        )
+    ]
+    with patch("world_cup_bot.ui_data.discover_match_markets", return_value=sample):
+        payload = match_shock_payload(_settings())
+    assert payload["market_count"] == 1
+    assert payload["open_count"] == 1
+    assert payload["markets"][0]["slug"] == "epl-test-beat"
+
+
+def test_ui_match_shock_endpoint():
+    original = UiHandler.settings_factory
+    UiHandler.settings_factory = staticmethod(_settings)  # type: ignore[assignment]
+    server = ThreadingHTTPServer(("127.0.0.1", 0), UiHandler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with patch("world_cup_bot.ui_data.discover_match_markets", return_value=[]):
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{port}/api/match-shock", timeout=5
+            ) as resp:
+                data = json.loads(resp.read().decode())
+        assert data["logic_version"] == "wc_match_shock_v1"
+        assert "market_count" in data
+    finally:
+        server.shutdown()
+        server.server_close()
+        UiHandler.settings_factory = original
 
 
 def test_calendar_payload_offline():

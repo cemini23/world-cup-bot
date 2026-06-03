@@ -8,9 +8,12 @@ from pathlib import Path
 from typing import Any
 
 from world_cup_bot import advisor, calendar_guard, conviction, liquidity_scanner, quoter, scanner
-from world_cup_bot.config import Settings
+from world_cup_bot.config import Settings, match_shock_enabled
 from world_cup_bot.ledger import load_rows, summarize_by_version, summarize_pnl
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.match_market_discovery import discover_match_markets
+from world_cup_bot.match_shock import MATCH_SHOCK_SPEC
+from world_cup_bot.match_shock_config import load_match_shock_config
 from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.paths import PROJECT_ROOT
 from world_cup_bot.quoter import QuoteIntent
@@ -73,10 +76,14 @@ def conviction_summary_payload(settings: Settings) -> dict[str, Any]:
 
 def meta_payload(settings: Settings) -> dict[str, Any]:
     spec = load_strategy_version(Path(settings.logic_version_config))
+    shock_cfg = load_match_shock_config()
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "strategy_key": spec.strategy_key,
         "logic_version": spec.version_id,
+        "match_shock_version": MATCH_SHOCK_SPEC.version_id,
+        "match_shock_enabled": shock_cfg.enabled and match_shock_enabled(),
+        "match_shock_yaml_enabled": shock_cfg.enabled,
         "dry_run": settings.dry_run,
         "gamma_url": settings.gamma_url,
         "advisor_configured": advisor.AdvisorSettings.from_env().configured,
@@ -254,4 +261,56 @@ def advisor_context_payload(settings: Settings) -> dict[str, Any]:
         "generated_at": datetime.now(UTC).isoformat(),
         "advisor_configured": advisor_settings.configured,
         "context": ctx.to_dict(),
+    }
+
+
+def _tape_dir_stats(tape_dir: Path) -> dict[str, Any]:
+    if not tape_dir.is_dir():
+        return {"path": str(tape_dir), "files": 0, "lines": 0}
+    files = sorted(tape_dir.glob("*.jsonl"))
+    lines = 0
+    for path in files:
+        try:
+            with path.open(encoding="utf-8") as handle:
+                for _ in handle:
+                    lines += 1
+        except OSError:
+            continue
+    return {"path": str(tape_dir), "files": len(files), "lines": lines}
+
+
+def match_shock_payload(settings: Settings, *, limit: int = 80) -> dict[str, Any]:
+    shock_cfg = load_match_shock_config()
+    markets = discover_match_markets(settings.gamma_url)
+    open_count = sum(1 for m in markets if m.accepting_orders)
+    wc_2026_count = sum(
+        1 for m in markets if "wc-2026" in m.slug or "world-cup-2026" in m.slug
+    )
+    tape_dir = Path(settings.match_shock_tape_dir)
+    rows = [
+        {
+            "slug": m.slug,
+            "question": m.question[:120],
+            "accepting_orders": m.accepting_orders,
+            "condition_id": m.condition_id[:18] + "…",
+        }
+        for m in markets[:limit]
+    ]
+    return {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "logic_version": MATCH_SHOCK_SPEC.version_id,
+        "yaml_enabled": shock_cfg.enabled,
+        "env_enabled": match_shock_enabled(),
+        "active": shock_cfg.enabled and match_shock_enabled(),
+        "market_count": len(markets),
+        "open_count": open_count,
+        "wc_2026_count": wc_2026_count,
+        "display_limit": limit,
+        "tape": _tape_dir_stats(tape_dir),
+        "markets": rows,
+        "cli": {
+            "discover": "world-cup-bot match-shock-discover --out data/local/match_markets.json",
+            "export": "world-cup-bot match-shock-export --discovery data/local/match_markets.json",
+            "record": "WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record",
+        },
     }

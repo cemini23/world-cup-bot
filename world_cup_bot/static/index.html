@@ -203,11 +203,12 @@
       <div class="logo" aria-hidden="true">WC</div>
       <div>
         <h1>World Cup Bot</h1>
-        <span class="sub">FIFA 2026 advance-market LP · read-only dashboard</span>
+        <span class="sub">FIFA 2026 LP + Module 8 match-shock · read-only dashboard</span>
       </div>
     </div>
     <div class="status-row">
       <span class="pill" id="pill-version"><span class="dot"></span><span id="version-text">…</span></span>
+      <span class="pill" id="pill-shock"><span class="dot"></span><span id="shock-text">shock off</span></span>
       <span class="pill dry" id="pill-dry"><span class="dot"></span><span id="dry-text">DRY RUN</span></span>
       <span class="pill" id="pill-advisor"><span class="dot"></span><span id="advisor-text">advisor off</span></span>
     </div>
@@ -217,7 +218,8 @@
     Shadow checklist — see <a class="doc-link" href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md" target="_blank" rel="noopener">SHADOW.md</a>.
     CLI: <code style="color:var(--accent)">world-cup-bot preflight</code> ·
     <code style="color:var(--accent)">plan --record</code> ·
-    <code style="color:var(--accent)">watch</code>.
+    <code style="color:var(--accent)">match-shock-discover</code>.
+    Module 8 is paper-first — see <code>docs/MATCH_SHOCK_V1.md</code>.
   </p>
 
   <nav id="tabs">
@@ -226,6 +228,7 @@
     <button type="button" data-tab="plan">Plan</button>
     <button type="button" data-tab="calendar">Calendar</button>
     <button type="button" data-tab="pnl">PnL</button>
+    <button type="button" data-tab="match-shock">Match shock</button>
     <button type="button" data-tab="advisor">Advisor</button>
   </nav>
 
@@ -298,6 +301,28 @@
       </div>
     </section>
 
+    <section id="panel-match-shock" class="panel">
+      <p class="advisor-note">
+        Module 8 — in-play match-market shock recovery (<code>wc_match_shock_v1</code>).
+        Discovery uses Gamma public-search; export/record run from CLI only.
+        Disabled unless <code>config/shock_match.yaml</code> and <code>WC_SHOCK_ENABLED=1</code>.
+      </p>
+      <div class="cards" id="shock-cards"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Slug</th><th>Question</th><th>Orders</th></tr>
+          </thead>
+          <tbody id="shock-body"></tbody>
+        </table>
+      </div>
+      <div id="shock-empty" class="empty" style="display:none;margin-top:12px">
+        <h3>No match markets discovered</h3>
+        <p>Run <code>world-cup-bot match-shock-discover</code> in a terminal.</p>
+      </div>
+      <p style="color:var(--text-dim);font-size:12px;margin-top:14px" id="shock-cli"></p>
+    </section>
+
     <section id="panel-advisor" class="panel">
       <p class="advisor-note">
         Copy JSON into Claude, ChatGPT, Cursor, or Ollama with <code>prompts/advisor.md</code>.
@@ -353,8 +378,12 @@
       const advPill = document.getElementById("pill-advisor");
       document.getElementById("advisor-text").textContent = m.advisor_configured ? "advisor ready" : "advisor off";
       advPill.classList.toggle("ok", m.advisor_configured);
+      const shockPill = document.getElementById("pill-shock");
+      const shockOn = m.match_shock_enabled;
+      document.getElementById("shock-text").textContent = shockOn ? "shock on" : "shock off";
+      shockPill.className = "pill " + (shockOn ? "ok" : "");
       document.getElementById("footer-meta").textContent =
-        `localhost · ${m.logic_version} · ${m.dry_run ? "shadow" : "live mode"} · Gamma live`;
+        `localhost · ${m.logic_version} · ${m.match_shock_version} · ${m.dry_run ? "shadow" : "live mode"}`;
     }
 
     async function loadReady() {
@@ -447,12 +476,41 @@
         <td class="num">${v.fills}</td><td class="num">${v.net_pnl_usd.toFixed(2)}</td></tr>`).join("");
     }
 
+    async function loadMatchShock() {
+      const d = await fetchJson("/api/match-shock");
+      document.getElementById("shock-cards").innerHTML =
+        card("Match markets", d.market_count) +
+        card("Open", d.open_count) +
+        card("WC 2026 slugs", d.wc_2026_count) +
+        card("Local tape lines", d.tape.lines, true);
+      const tbody = document.getElementById("shock-body");
+      const empty = document.getElementById("shock-empty");
+      if (!d.markets.length) {
+        tbody.innerHTML = "";
+        empty.style.display = "block";
+      } else {
+        empty.style.display = "none";
+        tbody.innerHTML = d.markets.map(r => `<tr>
+          <td style="font-family:var(--mono);font-size:11px;max-width:200px;word-break:break-all">${r.slug}</td>
+          <td style="color:var(--text-dim);max-width:280px">${r.question}</td>
+          <td>${tag(r.accepting_orders, "open", "closed")}</td>
+        </tr>`).join("");
+      }
+      const status = d.active ? "active" : (d.yaml_enabled ? "yaml on, env off" : "disabled");
+      document.getElementById("shock-cli").innerHTML =
+        `Status: <strong>${status}</strong> · tape dir: <code>${d.tape.path}</code> · ` +
+        `CLI: <code>${d.cli.discover}</code>`;
+    }
+
     async function loadAdvisor() {
       const d = await fetchJson("/api/advisor/context");
       document.getElementById("advisor-pre").textContent = JSON.stringify(d.context, null, 2);
     }
 
-    const loaders = { ready: loadReady, markets: loadMarkets, plan: loadPlan, calendar: loadCalendar, pnl: loadPnl, advisor: loadAdvisor };
+    const loaders = {
+      ready: loadReady, markets: loadMarkets, plan: loadPlan, calendar: loadCalendar,
+      pnl: loadPnl, "match-shock": loadMatchShock, advisor: loadAdvisor,
+    };
 
     async function refreshTab(tab) {
       if (busy) return;

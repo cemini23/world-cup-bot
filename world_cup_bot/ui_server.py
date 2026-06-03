@@ -19,6 +19,7 @@ from world_cup_bot.ui_data import (
     calendar_payload,
     conviction_summary_payload,
     markets_payload,
+    match_shock_payload,
     meta_payload,
     plan_payload,
     pnl_payload,
@@ -93,6 +94,9 @@ class UiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/conviction/summary":
                 self._send_json(200, conviction_summary_payload(settings))
+                return
+            if path == "/api/match-shock":
+                self._send_json(200, match_shock_payload(settings))
                 return
             self._send_json(404, {"error": "not_found", "path": path})
         except Exception as exc:
