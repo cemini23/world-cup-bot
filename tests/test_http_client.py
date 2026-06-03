@@ -18,6 +18,10 @@ def test_build_get_request_includes_user_agent():
     assert req.get_header("Accept") == "application/json"
 
 
+def test_validate_get_allows_data_api():
+    validate_get_url("https://data-api.polymarket.com/trades?limit=1")
+
+
 def test_validate_get_rejects_unknown_host():
     with pytest.raises(HttpUrlNotAllowedError, match="not allowlisted"):
         validate_get_url("https://evil.example.com/path")

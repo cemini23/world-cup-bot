@@ -21,6 +21,8 @@ TO_DATE=""
 SKIP_BACKTEST=0
 KEEP_PARQUET=0
 INSPECT_LATEST=0
+CONVERT_ONLY=0
+SLOT=""
 
 log() { echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] $*"; }
 
@@ -29,6 +31,8 @@ while [[ $# -gt 0 ]]; do
     --hours) HOURS="$2"; shift 2 ;;
     --from) FROM_DATE="$2"; shift 2 ;;
     --to) TO_DATE="$2"; shift 2 ;;
+    --slot) SLOT="$2"; shift 2 ;;
+    --convert-only) CONVERT_ONLY=1; shift ;;
     --skip-backtest) SKIP_BACKTEST=1; shift ;;
     --keep-parquet) KEEP_PARQUET=1; shift ;;
     --inspect-latest) INSPECT_LATEST=1; shift ;;
@@ -91,7 +95,15 @@ build_hours() {
 }
 
 hours_file=$(mktemp)
-build_hours | sort -u > "$hours_file"
+if [[ -n "$SLOT" ]]; then
+  echo "$SLOT" > "$hours_file"
+elif [[ "$CONVERT_ONLY" -eq 1 && -z "$FROM_DATE" ]]; then
+  ls -1 "$staging"/polymarket_orderbook_*.parquet 2>/dev/null \
+    | sed -n 's|.*/polymarket_orderbook_\(.*\)\.parquet|\1|p' \
+    | sort -u > "$hours_file" || true
+else
+  build_hours | sort -u > "$hours_file"
+fi
 log "Processing $(wc -l < "$hours_file" | tr -d ' ') UTC hour(s)"
 
 while read -r slot; do
@@ -105,18 +117,23 @@ while read -r slot; do
   url="${ARCHIVE_BASE}/${fname}"
   dest="$staging/$fname"
 
-  log "GET $url"
-  if ! curl -fsSL --retry 3 --retry-delay 10 -o "$dest.part" "$url"; then
-    log "WARN failed download $url"
-    rm -f "$dest.part"
+  if [[ "$CONVERT_ONLY" -eq 0 ]]; then
+    log "GET $url"
+    if ! curl -fsSL --retry 3 --retry-delay 10 -o "$dest.part" "$url"; then
+      log "WARN failed download $url"
+      rm -f "$dest.part"
+      continue
+    fi
+    if ! head -c 4 "$dest.part" | grep -q 'PAR1'; then
+      log "WARN not parquet (bad URL or HTML) — $url"
+      rm -f "$dest.part"
+      continue
+    fi
+    mv "$dest.part" "$dest"
+  elif [[ ! -f "$dest" ]]; then
+    log "WARN missing parquet for convert-only: $dest"
     continue
   fi
-  if ! head -c 4 "$dest.part" | grep -q 'PAR1'; then
-    log "WARN not parquet (bad URL or HTML) — $url"
-    rm -f "$dest.part"
-    continue
-  fi
-  mv "$dest.part" "$dest"
 
   log "convert $fname"
   if ! "$PY" "$SHOCK/pmxt_parquet_to_jsonl.py" "$dest" --out "$raw_jsonl" --append --config "$CONFIG"; then

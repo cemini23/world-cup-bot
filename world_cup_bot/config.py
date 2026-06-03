@@ -27,6 +27,9 @@ class Settings:
     gamma_url: str
     clob_url: str
     ws_user_url: str
+    ws_market_url: str
+    data_api_url: str
+    match_shock_tape_dir: str
     dry_run: bool
     min_hours_before_kickoff: float
     max_notional_per_market_usd: float
@@ -50,6 +53,18 @@ class Settings:
             ws_user_url=os.environ.get(
                 "POLYMARKET_WS_USER_URL",
                 "wss://ws-subscriptions-clob.polymarket.com/ws/user",
+            ),
+            ws_market_url=os.environ.get(
+                "POLYMARKET_WS_MARKET_URL",
+                "wss://ws-subscriptions-clob.polymarket.com/ws/market",
+            ),
+            data_api_url=os.environ.get(
+                "POLYMARKET_DATA_API_URL", "https://data-api.polymarket.com"
+            ).rstrip("/"),
+            match_shock_tape_dir=str(
+                resolve_project_path(
+                    os.environ.get("WC_MATCH_SHOCK_TAPE_DIR", "data/local/shock_tapes")
+                )
             ),
             dry_run=_bool("DRY_RUN", True),
             min_hours_before_kickoff=_float("MIN_HOURS_BEFORE_KICKOFF", 10.0),
@@ -105,3 +120,11 @@ def phase_settlement_gate_enabled() -> bool:
 def phase_fifa_match_gate_enabled() -> bool:
     """When true with router enabled, block knockout until group fixtures complete."""
     return _bool("WC_FIFA_MATCH_GATE", False)
+
+
+def match_shock_enabled() -> bool:
+    return _bool("WC_SHOCK_ENABLED", False)
+
+
+def match_shock_live() -> bool:
+    return _bool("WC_MATCH_SHOCK_LIVE", False)

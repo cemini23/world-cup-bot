@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · **Tests:** 210 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 250 pytest (CI on push)
 
 ---
 
@@ -31,6 +31,7 @@ Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live 
 | Cross-venue phases A–C | Paper ledger, manual fill bridge, auto dual-leg (off by default) |
 | Phase router (1b) | FSM, multi-phase scanner, settlement gate — **flags default OFF** |
 | Research CLI | Gemini Deep Research + agent JSON bundles in `prompts/` |
+| **Match-shock scaffold (8)** | Discover + Data API export + live WS tape + backtest CLI — see [`docs/MATCH_SHOCK_V1.md`](docs/MATCH_SHOCK_V1.md) |
 
 ---
 
@@ -50,7 +51,8 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 
 | Item | Notes |
 |------|-------|
-| **match_shock v1 scaffold** | `match_shock.py`, `config/shock_match.yaml`, backtest CLI, tests — see `docs/MATCH_SHOCK_V1.md` |
+| **match_shock live POST** | Ladder order manager + `WC_MATCH_SHOCK_LIVE=1` gate |
+| **match_shock-plan loop** | In-play paper scanner during WC window |
 | Dependency lockfile | Reproducible `[live]` installs (`requirements-lock.txt` or `uv.lock`) |
 | Non-root systemd user | Dedicated Unix user in `install-systemd.sh` |
 | Formal LP promotion gates | DSR/MCPT-style metrics beyond shadow net-PnL heuristic |

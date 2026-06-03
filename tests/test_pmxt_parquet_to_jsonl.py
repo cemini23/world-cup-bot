@@ -71,7 +71,39 @@ def test_parquet_convert_condition_id_with_resolver(tmp_path: Path):
         exclude=(),
         append=False,
         resolver=FakeResolver(),
+        prefetch=False,
     )
     assert stats["events_out"] >= 1
     first = json.loads(out.read_text().strip().splitlines()[0])
     assert first["slug"] == "epl-test-fc-vs-other-fc"
+
+
+def test_prefetch_football_filter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    cid = "0x00000977017fa72fb6b1908ae694000d3b51f442c2552656b10bdbbfd16ff707"
+    table = pa.table(
+        {
+            "market": [cid.encode(), cid.encode()],
+            "timestamp_received": [1_000_000_000_000, 1_000_000_001_000],
+            "price": [0.30, 0.31],
+            "best_bid": [0.29, 0.30],
+            "best_ask": [0.31, 0.32],
+        }
+    )
+    pq_path = tmp_path / "v2.parquet"
+    pq.write_table(table, pq_path)
+    out = tmp_path / "out.jsonl"
+
+    def fake_prefetch(ids, *, include, exclude, batch_size=40, sleep_s=0.02):
+        assert len(ids) == 1
+        return {cid.lower(): "epl-test-fc-vs-other-fc"}
+
+    monkeypatch.setattr(conv, "prefetch_football_slugs", fake_prefetch)
+    stats = conv.convert_files(
+        [pq_path],
+        out,
+        include=("epl",),
+        exclude=(),
+        append=False,
+    )
+    assert stats["football_markets"] == 1
+    assert stats["events_out"] >= 2

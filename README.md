@@ -32,6 +32,7 @@ World Cup Bot is **open source today** — fork, shadow-test on your machine, br
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
 | **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
 | **Research CLI** | Gemini Deep Research + agent JSON bundles in `prompts/` |
+| **Match-shock (8)** | In-play shock recovery scaffold — discover, Data API export, live WS tape; **disabled by default** — see [`docs/MATCH_SHOCK_V1.md`](docs/MATCH_SHOCK_V1.md) |
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
 
@@ -93,9 +94,14 @@ world-cup-bot cross-venue-fill reconcile         # match intents vs manual fills
 world-cup-bot cross-venue-exec attempt --force --dry-run  # Phase C sim (caps apply)
 world-cup-bot venue-reconcile compare polymarket-export.csv  # blind-spot #2
 world-cup-bot ui                         # optional dashboard → http://localhost:8765
+
+# Module 8 — match-shock (paper-first; WC_SHOCK_ENABLED=1 for live tape)
+world-cup-bot match-shock-discover --out data/local/match_markets.json
+world-cup-bot match-shock-export --discovery data/local/match_markets.json
+WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record --discovery data/local/match_markets.json
 ```
 
-More commands: `world-cup-bot --help` · research modes: `world-cup-bot research list`
+More commands: `world-cup-bot --help` · research modes: `world-cup-bot research list` · shock backtest: `scripts/shock_backtest/README.md`
 
 Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).
 

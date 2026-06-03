@@ -15,6 +15,7 @@ GET_HOST_ALLOWLIST = frozenset(
     {
         "gamma-api.polymarket.com",
         "clob.polymarket.com",
+        "data-api.polymarket.com",
         "polymarket.com",
         "api.elections.kalshi.com",
         "raw.githubusercontent.com",

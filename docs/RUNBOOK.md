@@ -197,6 +197,23 @@ See [deploy/systemd/README.md](../deploy/systemd/README.md).
 
 ---
 
+## Module 8 — match-shock (paper-first, optional)
+
+Orthogonal to advance LP. **Disabled by default** — does not affect SHADOW Phase 1–4 gates.
+
+```bash
+world-cup-bot match-shock-discover --out data/local/match_markets.json
+world-cup-bot match-shock-export --discovery data/local/match_markets.json
+python scripts/shock_backtest/run_bucket_backtest.py data/local/shock_tapes/combined.jsonl --replay
+
+# Live tape during WC (pip install -e ".[live]")
+WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record --discovery data/local/match_markets.json
+```
+
+Spec: [docs/MATCH_SHOCK_V1.md](../docs/MATCH_SHOCK_V1.md) · backtest: [scripts/shock_backtest/README.md](../scripts/shock_backtest/README.md).
+
+---
+
 ## Honest limits
 
 Adverse selection is real. Shadow mode proves wiring, not edge. Reward sync is not alpha. Cross-venue paper ledger is not executed arb. This still fails when news flow front-runs your resting bid.

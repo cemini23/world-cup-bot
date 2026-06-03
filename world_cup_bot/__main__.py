@@ -49,6 +49,8 @@ from world_cup_bot.clob_auth import (
 )
 from world_cup_bot.config import (
     Settings,
+    match_shock_enabled,
+    match_shock_live,
     phase_fifa_match_gate_enabled,
     phase_router_enabled,
     phase_router_lp_gate,
@@ -1686,6 +1688,132 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
     return 0 if result.status in {"complete", "dry_run", "submitted"} else 1
 
 
+def _cmd_match_shock_discover(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.match_market_discovery import (
+        discover_match_markets,
+        write_discovery_json,
+    )
+
+    markets = discover_match_markets(settings.gamma_url)
+    if args.out:
+        write_discovery_json(markets, Path(args.out))
+    if args.json:
+        payload = {
+            "count": len(markets),
+            "markets": [
+                {
+                    "slug": m.slug,
+                    "question": m.question,
+                    "condition_id": m.condition_id,
+                    "yes_token_id": m.yes_token_id,
+                    "accepting_orders": m.accepting_orders,
+                }
+                for m in markets
+            ],
+        }
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"Discovered {len(markets)} match market(s):")
+        for m in markets:
+            status = "open" if m.accepting_orders else "closed"
+            print(f"  {m.slug[:60]:60}  {status}  cid={m.condition_id[:18]}…")
+    return 0
+
+
+def _cmd_match_shock_export(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.match_market_discovery import (
+        discover_match_markets,
+        load_discovery_json,
+        write_discovery_json,
+    )
+    from world_cup_bot.shock_tape_export import export_markets
+
+    discovery_path = Path(args.discovery) if args.discovery else None
+    if discovery_path and discovery_path.is_file():
+        markets = load_discovery_json(discovery_path)
+    else:
+        markets = discover_match_markets(settings.gamma_url)
+        if args.discover_out:
+            write_discovery_json(markets, Path(args.discover_out))
+
+    if not markets:
+        print("No match markets discovered.", file=sys.stderr)
+        return 1
+
+    out_dir = Path(args.out_dir or settings.match_shock_tape_dir)
+    stats = export_markets(
+        markets,
+        out_dir,
+        max_trades_per_market=args.max_trades,
+        data_api=settings.data_api_url,
+    )
+    if args.json:
+        print(json.dumps({"export": stats, "out_dir": str(out_dir.resolve())}, indent=2))
+    else:
+        print(
+            f"Exported {stats['trades']} trades from "
+            f"{stats['markets_with_trades']}/{stats['markets']} markets → {out_dir}"
+        )
+    return 0 if stats["trades"] > 0 else 1
+
+
+def _cmd_match_shock_record(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.match_market_discovery import (
+        discover_match_markets,
+        load_discovery_json,
+    )
+    from world_cup_bot.match_shock_record import (
+        RecordSession,
+        default_tape_path,
+        run_record_session,
+    )
+
+    if not match_shock_enabled() and not args.force:
+        print(
+            "Match-shock recording disabled — set WC_SHOCK_ENABLED=1 or pass --force",
+            file=sys.stderr,
+        )
+        return 1
+
+    discovery_path = Path(args.discovery) if args.discovery else None
+    if discovery_path and discovery_path.is_file():
+        markets = load_discovery_json(discovery_path)
+    else:
+        markets = discover_match_markets(settings.gamma_url)
+
+    if args.slug:
+        markets = [m for m in markets if m.slug == args.slug or args.slug in m.slug]
+    if not markets:
+        print("No markets to record.", file=sys.stderr)
+        return 1
+
+    tape_dir = Path(settings.match_shock_tape_dir)
+    out_path = Path(args.out) if args.out else default_tape_path(tape_dir)
+    session = RecordSession(
+        out_path=out_path,
+        markets=markets,
+        record=not args.dry_run,
+    )
+
+    logging.getLogger().setLevel(getattr(logging, args.log_level.upper(), logging.INFO))
+    print(
+        f"Recording {len(session.asset_ids)} asset(s) → {out_path} "
+        f"(dry_run={args.dry_run}, live={match_shock_live()})"
+    )
+
+    async def _run() -> None:
+        await run_record_session(ws_url=settings.ws_market_url, session=session)
+
+    try:
+        asyncio.run(_run())
+    except KeyboardInterrupt:
+        print(f"\nStopped — ticks written: {session.stats.ticks_written}")
+    return 0
+
+
 def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     if phase_router_enabled():
@@ -2350,6 +2478,65 @@ def build_parser() -> argparse.ArgumentParser:
     cvres.add_argument("--dry-run", action="store_true")
     cvres.add_argument("--json", action="store_true")
     cvres.set_defaults(func=_cmd_cross_venue_exec)
+
+    msd = sub.add_parser(
+        "match-shock-discover",
+        help="Gamma discovery for in-play match / beat markets (Module 8)",
+    )
+    msd.add_argument(
+        "--out",
+        help="Write discovery JSON (condition_id + token ids for export/record)",
+    )
+    msd.add_argument("--json", action="store_true", help="Machine-readable output")
+    msd.set_defaults(func=_cmd_match_shock_discover)
+
+    mse = sub.add_parser(
+        "match-shock-export",
+        help="Data API trade history → shock JSONL tapes (Dome EOL replacement)",
+    )
+    mse.add_argument(
+        "--discovery",
+        help="JSON from match-shock-discover (else live Gamma discover)",
+    )
+    mse.add_argument(
+        "--discover-out",
+        help="When discovering live, also write discovery JSON here",
+    )
+    mse.add_argument(
+        "--out-dir",
+        help="Output directory (default: WC_MATCH_SHOCK_TAPE_DIR)",
+    )
+    mse.add_argument(
+        "--max-trades",
+        type=int,
+        default=5000,
+        help="Cap trades per market (default: 5000)",
+    )
+    mse.add_argument("--json", action="store_true")
+    mse.set_defaults(func=_cmd_match_shock_export)
+
+    msr = sub.add_parser(
+        "match-shock-record",
+        help="Live CLOB market-channel WS → shock JSONL tape",
+    )
+    msr.add_argument(
+        "--discovery",
+        help="JSON from match-shock-discover (else live Gamma discover)",
+    )
+    msr.add_argument("--slug", help="Filter to one market slug substring")
+    msr.add_argument("--out", help="Tape path (default: data/local/shock_tapes/YYYY-MM-DD.jsonl)")
+    msr.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Connect and parse but do not append to file",
+    )
+    msr.add_argument(
+        "--force",
+        action="store_true",
+        help="Record even when WC_SHOCK_ENABLED=0",
+    )
+    msr.add_argument("--log-level", default="INFO")
+    msr.set_defaults(func=_cmd_match_shock_record)
 
     return parser
 

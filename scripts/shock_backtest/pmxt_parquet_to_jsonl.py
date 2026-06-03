@@ -38,12 +38,15 @@ PRICE_COLUMNS = ("price", "mid", "best_bid", "bestBid", "close", "last_price")
 BID_COLUMNS = ("bids", "bid_levels", "bidLevels")
 ASK_COLUMNS = ("asks", "ask_levels", "askLevels")
 GAMMA_API = "https://gamma-api.polymarket.com/markets"
+GAMMA_BATCH_SIZE = 40
+GAMMA_SLEEP_S = 0.02
+READ_BATCH_SIZE = 200_000
 
 
 class SlugResolver:
     """Map Polymarket condition_id → slug via Gamma API (cached)."""
 
-    def __init__(self, *, gamma_api: str = GAMMA_API, sleep_s: float = 0.05) -> None:
+    def __init__(self, *, gamma_api: str = GAMMA_API, sleep_s: float = GAMMA_SLEEP_S) -> None:
         self.gamma_api = gamma_api
         self.sleep_s = sleep_s
         self._cache: dict[str, str | None] = {}
@@ -59,18 +62,98 @@ class SlugResolver:
         return slug
 
     def _fetch_slug(self, condition_id: str) -> str | None:
-        qs = urllib.parse.urlencode({"condition_ids": condition_id, "limit": "1"})
-        url = f"{self.gamma_api}?{qs}"
-        try:
-            with urllib.request.urlopen(url, timeout=20) as resp:
-                payload = json.loads(resp.read().decode())
-        except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+        rows = _gamma_fetch_markets([condition_id], gamma_api=self.gamma_api)
+        if not rows:
             return None
-        if not payload:
-            return None
-        row = payload[0] if isinstance(payload, list) else payload
-        slug = row.get("slug") if isinstance(row, dict) else None
+        slug = rows[0].get("slug")
         return str(slug).strip() if slug else None
+
+
+class PrefetchedSlugResolver:
+    """O(1) slug lookup from a pre-built condition_id → slug map."""
+
+    def __init__(self, slug_by_condition: dict[str, str]) -> None:
+        self._map = {k.lower(): v for k, v in slug_by_condition.items()}
+
+    def resolve(self, condition_id: str) -> str | None:
+        return self._map.get(condition_id.lower())
+
+
+def _gamma_fetch_markets(
+    condition_ids: list[str],
+    *,
+    gamma_api: str = GAMMA_API,
+) -> list[dict[str, Any]]:
+    if not condition_ids:
+        return []
+    params: list[tuple[str, str]] = [("condition_ids", cid) for cid in condition_ids]
+    params.append(("limit", str(max(len(condition_ids), 1))))
+    url = f"{gamma_api}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"User-Agent": "cemini-wc-bot-pmxt-etl/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = json.loads(resp.read().decode())
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+        return []
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        return [payload]
+    return []
+
+
+def prefetch_football_slugs(
+    condition_ids: set[str],
+    *,
+    include: tuple[str, ...],
+    exclude: tuple[str, ...],
+    batch_size: int = GAMMA_BATCH_SIZE,
+    sleep_s: float = GAMMA_SLEEP_S,
+) -> dict[str, str]:
+    """Batch-resolve condition_ids via Gamma; return football condition_id → slug."""
+    football: dict[str, str] = {}
+    ids = sorted(condition_ids)
+    for start in range(0, len(ids), batch_size):
+        chunk = ids[start : start + batch_size]
+        found: set[str] = set()
+        for row in _gamma_fetch_markets(chunk):
+            cid = str(row.get("conditionId") or row.get("condition_id") or "").lower()
+            slug = str(row.get("slug") or "").strip()
+            if not cid or not slug:
+                continue
+            found.add(cid)
+            if _slug_allowed(slug, include, exclude):
+                football[cid] = slug
+        for cid in chunk:
+            key = cid.lower()
+            if key in found:
+                continue
+            for row in _gamma_fetch_markets([cid]):
+                slug = str(row.get("slug") or "").strip()
+                if slug and _slug_allowed(slug, include, exclude):
+                    football[key] = slug
+                break
+        if sleep_s and start + batch_size < len(ids):
+            time.sleep(sleep_s)
+    return football
+
+
+def collect_unique_condition_ids(path: Path) -> set[str]:
+    """Pass 1 — scan market/condition_id column only (memory-safe on large files)."""
+    pq = _require_pyarrow()
+    pf = pq.ParquetFile(path)
+    colmap = build_column_map(pf.schema_arrow.names)
+    cond_col = colmap.get("condition_id")
+    if not cond_col:
+        raise ValueError(f"No condition_id column in {path.name}")
+    unique: set[str] = set()
+    for batch in pf.iter_batches(batch_size=READ_BATCH_SIZE, columns=[cond_col]):
+        column = batch.column(0)
+        for i in range(batch.num_rows):
+            cid = _normalize_condition_id(column[i].as_py())
+            if cid:
+                unique.add(cid.lower())
+    return unique
 
 
 def _require_pyarrow():
@@ -290,31 +373,60 @@ def inspect_parquet(path: Path) -> None:
         print(json.dumps({"row": i, "sample": row}, default=str)[:2000])
 
 
+def _convert_columns(pf, colmap: dict[str, str | None]) -> list[str]:
+    names = set(pf.schema_arrow.names)
+    cols: list[str] = []
+    for c in (
+        colmap.get("condition_id"),
+        colmap.get("slug"),
+        colmap.get("ts"),
+        colmap.get("price"),
+        colmap.get("bids"),
+        colmap.get("asks"),
+        "best_bid",
+        "best_ask",
+        colmap.get("data"),
+    ):
+        if c and c in names and c not in cols:
+            cols.append(c)
+    return cols or list(names)
+
+
 def iter_parquet_events(
     path: Path,
     *,
-    resolver: SlugResolver | None = None,
+    resolver: SlugResolver | PrefetchedSlugResolver | None = None,
+    allowed_condition_ids: set[str] | None = None,
 ) -> Iterator[dict[str, Any]]:
     pq = _require_pyarrow()
     pf = pq.ParquetFile(path)
-    colmap: dict[str, str | None] | None = None
-    for batch in pf.iter_batches(batch_size=50_000):
+    colmap = build_column_map(pf.schema_arrow.names)
+    if not colmap.get("slug") and not colmap.get("condition_id"):
+        raise ValueError(
+            f"No slug/condition_id column in {path.name}; "
+            f"columns={pf.schema_arrow.names}. Run --inspect first."
+        )
+    if not colmap.get("slug") and not resolver:
+        resolver = SlugResolver()
+
+    columns = _convert_columns(pf, colmap)
+    cond_col = colmap.get("condition_id")
+    allowed = {c.lower() for c in allowed_condition_ids} if allowed_condition_ids else None
+
+    for batch in pf.iter_batches(batch_size=READ_BATCH_SIZE, columns=columns):
         names = batch.schema.names
-        if colmap is None:
-            colmap = build_column_map(names)
-            if not colmap.get("slug") and not colmap.get("condition_id"):
-                raise ValueError(
-                    f"No slug/condition_id column in {path.name}; "
-                    f"columns={names}. Run --inspect first."
-                )
-            if not colmap.get("slug") and not resolver:
-                resolver = SlugResolver()
+        batch_colmap = build_column_map(names)
+        cond_idx = names.index(cond_col) if cond_col and cond_col in names else None
         for i in range(batch.num_rows):
+            if allowed and cond_idx is not None:
+                cid = _normalize_condition_id(batch[cond_idx][i].as_py())
+                if not cid or cid.lower() not in allowed:
+                    continue
             row = {name: batch[name][i].as_py() for name in names}
-            slug = _resolve_row_slug(row, colmap, resolver)
+            slug = _resolve_row_slug(row, batch_colmap, resolver)
             if not slug:
                 continue
-            yield from _row_to_events(row, colmap, slug=slug)
+            yield from _row_to_events(row, batch_colmap, slug=slug)
 
 
 def convert_files(
@@ -324,19 +436,51 @@ def convert_files(
     include: tuple[str, ...],
     exclude: tuple[str, ...],
     append: bool,
-    resolver: SlugResolver | None = None,
+    resolver: SlugResolver | PrefetchedSlugResolver | None = None,
+    prefetch: bool = True,
 ) -> dict[str, int]:
-    stats = {"files": 0, "rows_in": 0, "events_out": 0, "events_skipped": 0}
+    stats: dict[str, int] = {
+        "files": 0,
+        "rows_in": 0,
+        "events_out": 0,
+        "events_skipped": 0,
+        "unique_condition_ids": 0,
+        "football_markets": 0,
+    }
     mode = "a" if append and out_path.is_file() else "w"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    slug_resolver = resolver or SlugResolver()
     with out_path.open(mode, encoding="utf-8") as out_f:
         for path in inputs:
             stats["files"] += 1
-            for ev in iter_parquet_events(path, resolver=slug_resolver):
+            slug_resolver = resolver
+            allowed_ids: set[str] | None = None
+
+            schema = build_column_map(_require_pyarrow().ParquetFile(path).schema_arrow.names)
+            if prefetch and schema.get("condition_id") and not schema.get("slug"):
+                unique_ids = collect_unique_condition_ids(path)
+                stats["unique_condition_ids"] += len(unique_ids)
+                football_map = prefetch_football_slugs(
+                    unique_ids,
+                    include=include,
+                    exclude=exclude,
+                )
+                stats["football_markets"] += len(football_map)
+                if not football_map:
+                    continue
+                slug_resolver = PrefetchedSlugResolver(football_map)
+                allowed_ids = set(football_map.keys())
+
+            if slug_resolver is None:
+                slug_resolver = SlugResolver()
+
+            for ev in iter_parquet_events(
+                path,
+                resolver=slug_resolver,
+                allowed_condition_ids=allowed_ids,
+            ):
                 stats["rows_in"] += 1
                 slug = str(ev.get("slug") or "")
-                if not _slug_allowed(slug, include, exclude):
+                if allowed_ids is None and not _slug_allowed(slug, include, exclude):
                     stats["events_skipped"] += 1
                     continue
                 out_f.write(json.dumps(ev, separators=(",", ":")) + "\n")
@@ -353,6 +497,11 @@ def main() -> int:
     parser.add_argument("--config", type=Path, default=None)
     parser.add_argument("--include", action="append", default=None)
     parser.add_argument("--exclude", action="append", default=None)
+    parser.add_argument(
+        "--no-prefetch",
+        action="store_true",
+        help="Disable pass-1 unique-id scan + batch Gamma (legacy per-row resolve)",
+    )
     args = parser.parse_args()
 
     if args.inspect:
@@ -376,9 +525,11 @@ def main() -> int:
         include=include,
         exclude=exclude,
         append=args.append,
+        prefetch=not args.no_prefetch,
     )
     print(json.dumps({"convert": stats, "out": str(args.out.resolve())}, indent=2))
-    return 0 if stats["events_out"] > 0 or stats["rows_in"] > 0 else 1
+    ok = stats["events_out"] > 0 or stats["football_markets"] > 0 or stats["rows_in"] > 0
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
