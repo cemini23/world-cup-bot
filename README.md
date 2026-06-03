@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** see badge · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v4` (advance LP) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
+**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v4` (advance LP) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 

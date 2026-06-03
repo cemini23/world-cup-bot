@@ -56,7 +56,7 @@ jobs:
               raise SystemExit("README CI badge line not found")
 
           text, n = re.subn(
-              r"\*\*CI:\*\* (?:passing|failing)",
+              r"\*\*CI:\*\* (?:passing|failing|see badge)",
               f"**CI:** {label}",
               text,
               count=1,
