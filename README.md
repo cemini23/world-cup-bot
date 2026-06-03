@@ -1,7 +1,7 @@
 # World Cup Bot
 
-[![CI](https://img.shields.io/github/actions/workflow/status/cemini23/world-cup-bot/ci.yml?branch=main&label=CI&updated=20260603T224037Z)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
-<!-- ci-badge-updated:2026-06-03T22:40:37Z -->
+[![CI](https://img.shields.io/github/actions/workflow/status/cemini23/world-cup-bot/ci.yml?branch=main&label=CI&updated=20260603T224410Z)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
+<!-- ci-badge-updated:2026-06-03T22:44:10Z -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
