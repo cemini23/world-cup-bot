@@ -214,8 +214,8 @@ Run on **your own Linux VPS** so the bot stays up when your laptop is off. Examp
 sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --profile monitor --enable
 ```
 
-- **`monitor`** — cross-venue alerts, shadow plan (`--liquidity-gate`), scan, calendar, discover, **pnl-daily** (shadow ledger only), conviction-staleness, fixture-check
-- **`trading`** — fill watch + live plan on a **non-US** VPS (order POST is geo-blocked from the US)
+- **`monitor`** — cross-venue alerts, shadow plan (`--liquidity-gate`), scan, calendar, discover, **pnl-daily**, conviction-staleness, fixture-check, **tournament-ops**, match-shock discover/plan (paper)
+- **`trading`** — fill watch + live plan on a **non-US** VPS (order POST geo-blocked from the US); match-shock record/live-plan and cross-venue exec are **manual** enable only
 - **`rewards-sync.timer`** — installed with monitor profile but **not** auto-enabled; enable after Phase 2 when L2 creds exist
 
 **Ledger paths on VPS:** systemd units set `WC_LEDGER_PATH` per job (`shadow_ledger.jsonl` for monitor plan/pnl-daily; `ledger.jsonl` for trading watch/live-plan). For `shadow-status`, point **one** canonical file via `.env` (`LEDGER_PATH` = `WC_LEDGER_PATH`) so Phase 1 day counts are not split — see [SHADOW.md](SHADOW.md).

@@ -11,13 +11,15 @@ Not financial advice. Default is shadow mode (`DRY_RUN=true`). Live order POST r
 ```
 WORLD CUP BOT — RUNBOOK SNAPSHOT
 Effective: 2026-06-04
-Repo: github.com/cemini23/world-cup-bot @ main
+Repo: github.com/cemini23/world-cup-bot @ main (≥ 86bc57a)
+Public launch: 2026-06-03 — Outlier Weekly Issue 3
 
 Package: world-cup-bot 0.1.0
 Conviction config: config/conviction.yaml version 5
 LP logic: wc_advance_lp_v4 (deployed 2026-05-30)
 Cross-venue paper: wc_cross_venue_paper_v1
 Cross-venue auto-exec: wc_cross_venue_exec_v1 (off by default)
+Match-shock: wc_match_shock_v1 (off by default; see Module 8 section)
 Cross-venue config: config/cross_venue.yaml version 1
 ```
 
@@ -194,16 +196,16 @@ sudo bash deploy/systemd/install-systemd.sh --install-root /opt/world-cup-bot --
 
 | Profile | Host | Runs |
 |---------|------|------|
-| **monitor** | US OK | shadow plan, scan, calendar, cross-venue alerts, daily PnL |
-| **trading** | Non-US only | live plan (manual enable after Phase 4) |
+| **monitor** | US OK | shadow plan, scan, calendar, cross-venue alerts + paper arb, **tournament-ops**, match-shock discover/plan, daily PnL |
+| **trading** | Non-US only | preflight, watch, live plan (Phase 4 — manual), match-shock record/live-plan (manual), cross-venue exec (manual) |
 
 See [deploy/systemd/README.md](../deploy/systemd/README.md).
 
 ---
 
-## Module 8 — match-shock (paper-first, optional)
+## Module 8 — match-shock (optional, orthogonal to advance LP)
 
-Orthogonal to advance LP. **Disabled by default** — does not affect SHADOW Phase 1–4 gates.
+In-play match-market shock recovery (`wc_match_shock_v1`). **Does not gate SHADOW Phases 1–4** for advance LP. Master switch: `config/shock_match.yaml` → `enabled: false`. Historical data uses Polymarket **Data API** (Dome API EOL 2026-04-28).
 
 ```bash
 world-cup-bot match-shock-discover --out data/local/match_markets.json

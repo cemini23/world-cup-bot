@@ -6,16 +6,20 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** failing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic version: `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1`. See [ROADMAP.md](ROADMAP.md) and [SHADOW.md](SHADOW.md) before live LP.
+**CI:** see badge · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v4` (advance LP) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 
-World Cup Bot is **open source today** — fork, shadow-test on your machine, bring your own keys. This is **not** a hosted service or a returns guarantee.
+World Cup Bot is **open source** for operators who run their own infrastructure. Fork the repo, shadow-test with your API keys, and promote to live LP only after the phased checklist passes. This project is **not** a hosted service, managed account, or performance guarantee.
 
-1. `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight`
-2. Run [SHADOW.md](SHADOW.md) Phases 0–3 (`plan --record --liquidity-gate` with `DRY_RUN=true`) — command map: [docs/RUNBOOK.md](docs/RUNBOOK.md)
-3. Use **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for all sessions (see SHADOW § split-ledger trap)
-4. Retail WC / PM context: [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) · Methodology: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot)
+| Step | Action |
+|------|--------|
+| 1 | `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight` |
+| 2 | Complete [SHADOW.md](SHADOW.md) Phases 0–3 with `DRY_RUN=true` (`plan --record --liquidity-gate`) |
+| 3 | Keep **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for every recorded session ([SHADOW.md](SHADOW.md) § split-ledger trap) |
+| 4 | Read [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) for architecture; use [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) for retail WC / PM context |
+
+Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixtures, conviction staleness, cross-venue discovery, match-shock readiness).
 
 ## What it does (v1)
 
@@ -32,7 +36,7 @@ World Cup Bot is **open source today** — fork, shadow-test on your machine, br
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
 | **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
 | **Research CLI** | Gemini Deep Research + agent JSON bundles in `prompts/` |
-| **Match-shock (8)** | In-play shock recovery scaffold — discover, Data API export, live WS tape; **disabled by default** — see [`docs/MATCH_SHOCK_V1.md`](docs/MATCH_SHOCK_V1.md) |
+| **Match-shock (8)** | In-play shock recovery (orthogonal to advance LP) — discover, Data API export, live WS tape, paper/live plan, gated POST; **disabled by default** — [`docs/MATCH_SHOCK_V1.md`](docs/MATCH_SHOCK_V1.md) |
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
 
@@ -95,7 +99,10 @@ world-cup-bot cross-venue-exec attempt --force --dry-run  # Phase C sim (caps ap
 world-cup-bot venue-reconcile compare polymarket-export.csv  # blind-spot #2
 world-cup-bot ui                         # optional dashboard → http://localhost:8765
 
-# Module 8 — match-shock (paper-first; WC_SHOCK_ENABLED=1 for live tape)
+# Pre-kickoff health (fixtures, staleness, cross-venue, match-shock tapes)
+world-cup-bot tournament-ops check
+
+# Module 8 — match-shock (paper-first; live tape needs WC_SHOCK_ENABLED=1)
 world-cup-bot match-shock-discover --out data/local/match_markets.json
 world-cup-bot match-shock-export --discovery data/local/match_markets.json
 WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record --discovery data/local/match_markets.json

@@ -11,10 +11,11 @@ pip install -e ".[dev]"
 pip install -e ".[live]"        # websockets + py-clob-client-v2 (watch / live POST)
 world-cup-bot preflight         # geoblock WARN ok in shadow from US
 world-cup-bot scan --conviction --liquidity
+world-cup-bot tournament-ops check   # optional — fixtures, staleness, cross-venue, match-shock readiness
 world-cup-bot ui                # optional dashboard → http://localhost:8765
 ```
 
-**Pass criteria:** Gamma returns markets; preflight has no `FAIL` except geoblock when shadowing from US (WARN is OK).
+**Pass criteria:** Gamma returns markets; preflight has no `FAIL` except geoblock when shadowing from US (WARN is OK). `tournament-ops check` may WARN until match-shock discovery/tapes exist — expected before Module 8 setup.
 
 **Optional — 24/7 VPS:** install [deploy/systemd/](deploy/systemd/README.md) (`monitor` profile on any host; `trading` profile on non-US for live POST).
 
