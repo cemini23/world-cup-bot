@@ -126,7 +126,7 @@ Separate ledger events: `match_shock_detected`, `match_shock_ladder_planned`, `m
 | `match-shock-record [--discovery PATH] [--slug FILTER] [--dry-run] [--force]` | Live WS tape (needs `WC_SHOCK_ENABLED=1` or `--force`) |
 | `match-shock-plan [--discover-json PATH] [--tape PATH] [--live] [--loop]` | In-play paper scanner; optional live POST when gated |
 | `match-shock-post --slug S --token-id T --pre-price P [--submit]` | Ladder POST (default dry-run intents) |
-| `tournament-ops check [--strict] [--json]` | Fixture drift + conviction staleness + cross-venue discover |
+| `tournament-ops check [--strict] [--json]` | Fixture drift + conviction staleness + cross-venue discover + **match-shock readiness** |
 
 ## Deferred (v1.1)
 

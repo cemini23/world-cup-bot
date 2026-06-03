@@ -61,6 +61,13 @@ ladder:
     90: 0.30
     95: 0.40
 
+# --- WC 2026 operator sizing (K97 @RohOnChain re-share) ---
+# Open question before kickoff: retail influx may widen shock dips OR add liquidity that
+# dampens recovery. Tune ladder capital_usd / max_notional_* after bucket grid A–D, not before.
+operator:
+  wc_volume_hypothesis: unset  # larger_overreactions | deeper_liquidity | unset
+  sizing_note: "Re-run bucket grid when WC match slugs have live tapes; default paper until gates pass."
+
 # --- backtest filters (Roan: moderate_fav backtested best) ---
 backtest:
   allowed_favoritism: [moderate_fav]  # empty = all buckets

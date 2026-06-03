@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from world_cup_bot import cross_venue_scanner
-from world_cup_bot.config import Settings
+from world_cup_bot.config import Settings, match_shock_enabled, match_shock_live
+from world_cup_bot.match_shock_config import load_match_shock_config
+from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.conviction_staleness import scan_mid_staleness
 from world_cup_bot.cross_venue_config import load_cross_venue_config
 from world_cup_bot.fixture_watch import FixtureCheckResult, check_fixtures
@@ -161,6 +163,56 @@ def _check_cross_venue_discover(
     )
 
 
+def _check_match_shock_readiness(settings: Settings) -> TournamentCheck:
+    """Module 8 pre-kickoff hygiene — discovery, tapes, promotion gates (K94/K97)."""
+    cfg = load_match_shock_config()
+    tape_dir = resolve_project_path(settings.match_shock_tape_dir)
+    discovery = resolve_project_path("data/local/match_markets.json")
+    ledger = resolve_project_path(settings.match_shock_ledger_path)
+    shock_cfg_path = resolve_project_path("config/shock_match.yaml")
+
+    warnings: list[str] = []
+    if not shock_cfg_path.is_file():
+        return TournamentCheck(
+            id="match_shock_readiness",
+            title="Match-shock readiness (Module 8)",
+            status=CheckStatus.FAIL,
+            detail="config/shock_match.yaml missing",
+        )
+    if not discovery.is_file():
+        warnings.append("run: world-cup-bot match-shock-discover --out data/local/match_markets.json")
+    tape_files = sorted(tape_dir.glob("**/*.jsonl")) if tape_dir.is_dir() else []
+    if not tape_files:
+        warnings.append("no shock tapes — match-shock-export or WC_SHOCK_ENABLED=1 match-shock-record")
+    if cfg.enabled and not match_shock_enabled():
+        warnings.append("shock_match.enabled=true but WC_SHOCK_ENABLED unset")
+    if match_shock_live() and not cfg.enabled:
+        warnings.append("WC_MATCH_SHOCK_LIVE=1 but shock_match.yaml enabled=false")
+    if match_shock_live() and not ledger.is_file():
+        warnings.append("live mode set but no shock ledger yet — paper soak first")
+
+    detail_parts = [
+        f"yaml enabled={cfg.enabled}",
+        f"discovery={'yes' if discovery.is_file() else 'no'}",
+        f"tapes={len(tape_files)}",
+    ]
+    if warnings:
+        return TournamentCheck(
+            id="match_shock_readiness",
+            title="Match-shock readiness (Module 8)",
+            status=CheckStatus.WARN,
+            detail="; ".join(detail_parts + warnings),
+            data={"warnings": warnings, "tape_count": len(tape_files)},
+        )
+    return TournamentCheck(
+        id="match_shock_readiness",
+        title="Match-shock readiness (Module 8)",
+        status=CheckStatus.PASS,
+        detail="; ".join(detail_parts),
+        data={"tape_count": len(tape_files)},
+    )
+
+
 def run_tournament_ops_check(
     settings: Settings,
     *,
@@ -173,6 +225,7 @@ def run_tournament_ops_check(
         _check_fixtures(local_path=fixture_local, upstream_url=fixture_upstream_url),
         _check_conviction_staleness(settings, threshold_pp=threshold_pp),
         _check_cross_venue_discover(settings, strict=strict_discover),
+        _check_match_shock_readiness(settings),
     )
     return TournamentOpsResult(checks=checks)
 
