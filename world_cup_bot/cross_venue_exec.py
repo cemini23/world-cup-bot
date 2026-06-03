@@ -19,7 +19,7 @@ from world_cup_bot.cross_venue_paper import (
 )
 from world_cup_bot.cross_venue_scanner import CrossVenueScanRow
 from world_cup_bot.http_client import urlopen_get
-from world_cup_bot.kalshi_auth import KalshiAuth, KalshiAuthError
+from world_cup_bot.kalshi_auth import KalshiAuth, KalshiAuthError, load_kalshi_auth
 from world_cup_bot.kalshi_orders import (
     KalshiOrderError,
     KalshiOrderResult,
@@ -27,7 +27,7 @@ from world_cup_bot.kalshi_orders import (
     cancel_order,
     create_limit_order,
 )
-from world_cup_bot.ledger import LedgerRow, append_row
+from world_cup_bot.ledger import LedgerRow, append_row, load_rows
 from world_cup_bot.logic_version import StrategyVersionSpec
 
 EXEC_SPEC = StrategyVersionSpec(
@@ -53,6 +53,40 @@ class AutoArbConfig:
     kalshi_first: bool = True
     min_fee_adjusted_gap_pp: float = 0.5
     slippage_buffer_pp: float = 0.25
+    exec_dedup_interval_sec: float = 3600.0
+
+
+@dataclass(frozen=True)
+class ExecGateResult:
+    allowed: bool
+    reason: str
+    dry_run: bool
+
+
+@dataclass(frozen=True)
+class ExecAttemptResult:
+    team: str
+    market_type: str
+    status: str  # complete | dry_run | orphan | aborted | skipped | blocked | error
+    reason: str | None
+    dry_run: bool
+    correlation_id: str | None = None
+    result: DualLegResult | None = None
+
+    @property
+    def attempted(self) -> bool:
+        return self.status not in {"skipped", "blocked"}
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "team": self.team,
+            "market_type": self.market_type,
+            "status": self.status,
+            "reason": self.reason,
+            "dry_run": self.dry_run,
+            "correlation_id": self.correlation_id,
+            "result": self.result.to_dict() if self.result else None,
+        }
 
 
 @dataclass(frozen=True)
@@ -147,8 +181,11 @@ class PmArbClient(Protocol):
 
 def auto_arb_from_cross_venue(cfg: CrossVenueConfig) -> AutoArbConfig:
     raw = cfg.auto_arb
+    dedup = 3600.0
+    if cfg.paper_arb is not None:
+        dedup = cfg.paper_arb.dedup_interval_sec
     if raw is None:
-        return AutoArbConfig()
+        return AutoArbConfig(exec_dedup_interval_sec=dedup)
     return AutoArbConfig(
         max_notional_usd=raw.max_notional_usd,
         max_daily_notional_usd=raw.max_daily_notional_usd,
@@ -156,12 +193,46 @@ def auto_arb_from_cross_venue(cfg: CrossVenueConfig) -> AutoArbConfig:
         kalshi_first=raw.kalshi_first,
         min_fee_adjusted_gap_pp=raw.min_fee_adjusted_gap_pp,
         slippage_buffer_pp=raw.slippage_buffer_pp,
+        exec_dedup_interval_sec=dedup,
     )
+
+
+def cross_venue_exec_ack() -> bool:
+    raw = os.environ.get("WC_CROSS_VENUE_EXEC_ACK", "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
 
 
 def cross_venue_auto_exec_enabled() -> bool:
     raw = os.environ.get("WC_CROSS_VENUE_AUTO_EXEC", "").strip().lower()
     return raw in {"1", "true", "yes", "on"}
+
+
+def check_exec_gates(
+    *,
+    dry_run: bool,
+    force: bool = False,
+    test_auth: bool = False,
+    settings: Any | None = None,
+) -> ExecGateResult:
+    """Gate live dual-leg POST — mirror WC_LIVE_PLAN_ACK / WC_MATCH_SHOCK_LIVE_ACK."""
+    auto_on = cross_venue_auto_exec_enabled()
+    effective_dry = dry_run or not auto_on
+    if not auto_on and not force:
+        return ExecGateResult(False, "WC_CROSS_VENUE_AUTO_EXEC not set", True)
+    if not effective_dry and not cross_venue_exec_ack():
+        return ExecGateResult(False, "WC_CROSS_VENUE_EXEC_ACK not set", effective_dry)
+    if not effective_dry and settings is not None:
+        from world_cup_bot.preflight import run_preflight
+
+        pf = run_preflight(settings, test_auth=test_auth)
+        if not pf.ok:
+            failed = [c.detail for c in pf.checks if c.status.value == "fail"]
+            return ExecGateResult(
+                False,
+                f"preflight failed: {'; '.join(failed) or 'unknown'}",
+                effective_dry,
+            )
+    return ExecGateResult(True, "ok", effective_dry)
 
 
 def fetch_pm_token_ids(
@@ -569,6 +640,208 @@ def resolve_orphan_cancel_kalshi(
         ),
     )
     return resp
+
+
+def _intent_key(row: CrossVenueScanRow) -> str:
+    return f"{row.market_type}:{row.team}"
+
+
+def _recent_exec_intent_keys(
+    rows: list[dict[str, Any]],
+    *,
+    window_sec: float,
+) -> set[str]:
+    cutoff = datetime.now(UTC).timestamp() - window_sec
+    seen: set[str] = set()
+    for row in reversed(rows):
+        if row.get("event") not in {
+            EVENT_EXEC_START,
+            EVENT_EXEC_COMPLETE,
+            EVENT_EXEC_ORPHAN,
+        }:
+            continue
+        ts_raw = str(row.get("timestamp") or "")
+        try:
+            ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            continue
+        if ts < cutoff:
+            break
+        extra = row.get("extra") or row
+        key = None
+        if isinstance(extra, dict):
+            key = extra.get("intent_key")
+            if not key and extra.get("team") and extra.get("market_type"):
+                key = f"{extra.get('market_type')}:{extra.get('team')}"
+        if not key and row.get("team") and isinstance(extra, dict) and extra.get("market_type"):
+            key = f"{extra.get('market_type')}:{row.get('team')}"
+        elif not key and row.get("team"):
+            key = str(row.get("team"))
+        if key:
+            seen.add(str(key))
+    return seen
+
+
+def attempt_exec_for_row(
+    row: CrossVenueScanRow,
+    *,
+    settings: Any,
+    cfg: CrossVenueConfig,
+    auto: AutoArbConfig | None = None,
+    ledger_path: Path | None = None,
+    force: bool = False,
+    dry_run: bool | None = None,
+    notional: float | None = None,
+    test_auth: bool = False,
+) -> ExecAttemptResult:
+    """Build plan + execute dual-leg for one alert row."""
+    auto_cfg = auto or auto_arb_from_cross_venue(cfg)
+    path = ledger_path or default_exec_ledger_path()
+    rows = load_rows(path)
+    intent = _intent_key(row)
+
+    settings_dry = bool(getattr(settings, "dry_run", True))
+    base_dry = settings_dry if dry_run is None else dry_run
+    gate = check_exec_gates(
+        dry_run=base_dry,
+        force=force,
+        test_auth=test_auth,
+        settings=settings,
+    )
+    if not gate.allowed:
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="blocked",
+            reason=gate.reason,
+            dry_run=gate.dry_run,
+        )
+
+    effective_dry = gate.dry_run
+    if intent in _recent_exec_intent_keys(rows, window_sec=auto_cfg.exec_dedup_interval_sec):
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="skipped",
+            reason=f"dedup window {auto_cfg.exec_dedup_interval_sec:.0f}s",
+            dry_run=effective_dry,
+        )
+
+    leg_notional = notional if notional is not None else auto_cfg.max_notional_usd
+    ok, cap_detail = check_exec_caps(rows, auto_cfg, notional_usd=leg_notional)
+    if not ok:
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="blocked",
+            reason=cap_detail,
+            dry_run=effective_dry,
+        )
+
+    try:
+        plan = build_dual_leg_plan(
+            row,
+            cfg,
+            auto_cfg,
+            gamma_url=str(getattr(settings, "gamma_url", "")),
+            notional_usd=leg_notional,
+        )
+    except (ValueError, RuntimeError) as exc:
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="error",
+            reason=str(exc),
+            dry_run=effective_dry,
+        )
+
+    kalshi_auth = None
+    pm_client = None
+    if not effective_dry:
+        from world_cup_bot.clob_live import LivePmArbClient, build_clob_client
+
+        kalshi_auth = load_kalshi_auth()
+        pm_client = LivePmArbClient(build_clob_client(settings))
+
+    try:
+        result = execute_dual_leg(
+            plan,
+            ledger_path=path,
+            kalshi_auth=kalshi_auth,
+            kalshi_base_url=str(getattr(settings, "kalshi_base_url", "")),
+            pm_client=pm_client,
+            dry_run=effective_dry,
+            kalshi_first=auto_cfg.kalshi_first,
+        )
+    except (KalshiAuthError, KalshiOrderError, RuntimeError) as exc:
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="error",
+            reason=str(exc),
+            dry_run=effective_dry,
+            correlation_id=plan.correlation_id,
+        )
+
+    return ExecAttemptResult(
+        team=row.team,
+        market_type=row.market_type,
+        status=result.status,
+        reason=result.reason,
+        dry_run=effective_dry,
+        correlation_id=plan.correlation_id,
+        result=result,
+    )
+
+
+def auto_exec_on_alerts(
+    alert_rows: list[CrossVenueScanRow],
+    *,
+    settings: Any,
+    cfg: CrossVenueConfig,
+    force: bool = False,
+    max_attempts: int = 1,
+    notional: float | None = None,
+    test_auth: bool = False,
+) -> list[ExecAttemptResult]:
+    """Attempt dual-leg exec on best alert(s) after a scan cycle."""
+    if not alert_rows:
+        return []
+    if not cross_venue_auto_exec_enabled() and not force:
+        return []
+
+    ranked = sorted(
+        alert_rows,
+        key=lambda r: float(r.gap_pp or 0),
+        reverse=True,
+    )
+    auto = auto_arb_from_cross_venue(cfg)
+    out: list[ExecAttemptResult] = []
+    for row in ranked[: max(1, max_attempts)]:
+        if row.blocked:
+            out.append(
+                ExecAttemptResult(
+                    team=row.team,
+                    market_type=row.market_type,
+                    status="skipped",
+                    reason=row.block_reason or "blocked",
+                    dry_run=bool(getattr(settings, "dry_run", True)),
+                )
+            )
+            continue
+        attempt = attempt_exec_for_row(
+            row,
+            settings=settings,
+            cfg=cfg,
+            auto=auto,
+            force=force,
+            notional=notional,
+            test_auth=test_auth,
+        )
+        out.append(attempt)
+        if attempt.status in {"complete", "dry_run", "orphan"}:
+            break
+    return out
 
 
 def default_exec_ledger_path() -> Path:

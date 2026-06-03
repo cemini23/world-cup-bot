@@ -16,7 +16,7 @@ paper_arb:
   dedup_interval_sec: 3600
   min_fee_adjusted_gap_pp: 0.5
 
-# Phase C auto dual-leg — requires WC_CROSS_VENUE_AUTO_EXEC=1 and DRY_RUN=false
+# Phase C auto dual-leg — requires WC_CROSS_VENUE_AUTO_EXEC=1, DRY_RUN=false, WC_CROSS_VENUE_EXEC_ACK=1
 auto_arb:
   max_notional_usd: 100
   max_daily_notional_usd: 500

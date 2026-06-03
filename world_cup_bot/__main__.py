@@ -56,7 +56,7 @@ from world_cup_bot.config import (
     phase_router_lp_gate,
     phase_settlement_gate_enabled,
 )
-from world_cup_bot.cross_venue_config import load_cross_venue_config
+from world_cup_bot.cross_venue_config import CrossVenueConfig, load_cross_venue_config
 from world_cup_bot.logic_version import PnlScope, load_strategy_version
 from world_cup_bot.market_phases import get_market_phases_config, install_sigusr1_reload
 from world_cup_bot.operating_config import apply_bilateral_threshold_override, load_operating_config
@@ -1610,11 +1610,14 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
         return 0
 
     # attempt
-    if not cross_venue_exec.cross_venue_auto_exec_enabled() and not args.force:
-        print(
-            "WC_CROSS_VENUE_AUTO_EXEC=0 — set env or pass --force for dry-run attempt",
-            file=sys.stderr,
-        )
+    gate = cross_venue_exec.check_exec_gates(
+        dry_run=settings.dry_run or args.dry_run,
+        force=args.force,
+        test_auth=args.skip_auth if hasattr(args, "skip_auth") else False,
+        settings=settings,
+    )
+    if not gate.allowed:
+        print(gate.reason, file=sys.stderr)
         return 1
 
     scan = cross_venue_scanner.run_scan(
@@ -1637,55 +1640,61 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
 
     row = alert_rows[0]
     notional = args.notional if args.notional is not None else auto.max_notional_usd
-    ok, detail = cross_venue_exec.check_exec_caps(rows, auto, notional_usd=notional)
-    if not ok:
-        print(f"Exec caps blocked: {detail}", file=sys.stderr)
-        return 1
-
-    try:
-        plan = cross_venue_exec.build_dual_leg_plan(
-            row,
-            cfg,
-            auto,
-            gamma_url=settings.gamma_url,
-            notional_usd=notional,
-        )
-    except (ValueError, RuntimeError) as exc:
-        print(f"Plan build failed: {exc}", file=sys.stderr)
-        return 1
-
-    auto_exec_on = cross_venue_exec.cross_venue_auto_exec_enabled()
-    dry_run = settings.dry_run or args.dry_run or not auto_exec_on
-    kalshi_auth = None
-    pm_client = None
-    if not dry_run:
-        from world_cup_bot.kalshi_auth import load_kalshi_auth
-
-        kalshi_auth = load_kalshi_auth()
-        from world_cup_bot.clob_live import LivePmArbClient, build_clob_client
-
-        pm_client = LivePmArbClient(build_clob_client(settings))
-
-    result = cross_venue_exec.execute_dual_leg(
-        plan,
-        ledger_path=ledger_path,
-        kalshi_auth=kalshi_auth,
-        kalshi_base_url=settings.kalshi_base_url,
-        pm_client=pm_client,
-        dry_run=dry_run,
-        kalshi_first=auto.kalshi_first,
+    attempt = cross_venue_exec.attempt_exec_for_row(
+        row,
+        settings=settings,
+        cfg=cfg,
+        auto=auto,
+        force=args.force,
+        dry_run=gate.dry_run or args.dry_run,
+        notional=notional,
+        test_auth=getattr(args, "skip_auth", False),
     )
-
     if args.json:
-        print(json.dumps(result.to_dict(), indent=2))
+        print(json.dumps(attempt.to_dict(), indent=2))
     else:
         print(cross_venue_exec.EXEC_SPEC.version_banner())
-        print(f"status={result.status} dry_run={dry_run} correlation={plan.correlation_id}")
-        if result.reason:
-            print(f"reason: {result.reason}")
-        if result.realized_pnl_usd is not None:
-            print(f"realized_pnl_usd=${result.realized_pnl_usd:.2f}")
-    return 0 if result.status in {"complete", "dry_run", "submitted"} else 1
+        print(
+            f"status={attempt.status} dry_run={attempt.dry_run} "
+            f"team={attempt.team} correlation={attempt.correlation_id}"
+        )
+        if attempt.reason:
+            print(f"reason: {attempt.reason}")
+        if attempt.result and attempt.result.realized_pnl_usd is not None:
+            print(f"realized_pnl_usd=${attempt.result.realized_pnl_usd:.2f}")
+    return 0 if attempt.status in {"complete", "dry_run", "submitted"} else 1
+
+
+def _print_cross_venue_exec_results(results: list[cross_venue_exec.ExecAttemptResult]) -> None:
+    for attempt in results:
+        if attempt.status == "skipped":
+            continue
+        print(
+            f"EXEC_AUTO {attempt.team} {attempt.market_type} "
+            f"status={attempt.status} dry_run={attempt.dry_run}"
+            + (f" reason={attempt.reason}" if attempt.reason else "")
+        )
+
+
+def _maybe_auto_exec_cross_venue(
+    result: cross_venue_scanner.CrossVenueScanResult,
+    *,
+    settings: Settings,
+    cfg: CrossVenueConfig,
+    args: argparse.Namespace,
+) -> list[cross_venue_exec.ExecAttemptResult]:
+    if args.no_auto_exec:
+        return []
+    if not cross_venue_exec.cross_venue_auto_exec_enabled():
+        return []
+    if not result.alerts:
+        return []
+    return cross_venue_exec.auto_exec_on_alerts(
+        result.alerts,
+        settings=settings,
+        cfg=cfg,
+        notional=args.notional,
+    )
 
 
 def _cmd_match_shock_discover(args: argparse.Namespace) -> int:
@@ -1989,6 +1998,11 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
                     "ledger_path": str(cross_venue_paper.default_cross_venue_ledger_path()),
                     "proposals": [p.to_dict() for p in rec.proposals],
                 }
+            exec_results = _maybe_auto_exec_cross_venue(
+                result, settings=settings, cfg=cfg, args=args
+            )
+            if exec_results:
+                payload["auto_exec"] = [r.to_dict() for r in exec_results]
             print(json.dumps(payload, indent=2))
         elif not args.alert_only:
             _print_cross_venue_scan(result)
@@ -1998,6 +2012,10 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
                     f"\nPaper arb: recorded {rec.recorded} intent(s), "
                     f"dedup skipped {rec.skipped_dedup} → {lp}"
                 )
+            exec_results = _maybe_auto_exec_cross_venue(
+                result, settings=settings, cfg=cfg, args=args
+            )
+            _print_cross_venue_exec_results(exec_results)
         else:
             for row in result.alerts:
                 line = (
@@ -2013,6 +2031,10 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
                     f"PAPER_ARB recorded {rec.recorded} → "
                     f"{cross_venue_paper.default_cross_venue_ledger_path()}"
                 )
+            exec_results = _maybe_auto_exec_cross_venue(
+                result, settings=settings, cfg=cfg, args=args
+            )
+            _print_cross_venue_exec_results(exec_results)
             if args.discover:
                 new = [d for d in result.discoveries if not d.in_config]
                 if new:
@@ -2456,7 +2478,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Hypothetical USD per leg (default: paper_arb.default_notional_usd in yaml)",
     )
-    cv.set_defaults(func=_cmd_cross_venue_scan, once=True, loop=False)
+    cv.add_argument(
+        "--no-auto-exec",
+        action="store_true",
+        help="Disable scan-loop Phase C auto exec even when WC_CROSS_VENUE_AUTO_EXEC=1",
+    )
+    cv.set_defaults(func=_cmd_cross_venue_scan, once=True, loop=False, no_auto_exec=False)
 
     cvpnl = sub.add_parser(
         "cross-venue-pnl",
@@ -2571,6 +2598,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Allow dry-run attempt when WC_CROSS_VENUE_AUTO_EXEC=0",
+    )
+    cvattempt.add_argument(
+        "--skip-auth",
+        action="store_true",
+        help="Skip CLOB auth check in preflight gate",
     )
     cvattempt.add_argument("--json", action="store_true")
     cvattempt.set_defaults(func=_cmd_cross_venue_exec)

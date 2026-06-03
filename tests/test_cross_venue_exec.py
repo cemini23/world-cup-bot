@@ -4,17 +4,27 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from world_cup_bot.cross_venue_config import CrossVenueConfig, DiscoveryConfig
 from world_cup_bot.cross_venue_exec import (
+    EVENT_EXEC_START,
+    EXEC_SPEC,
     AutoArbConfig,
     DualLegPlan,
+    ExecAttemptResult,
+    _recent_exec_intent_keys,
+    auto_exec_on_alerts,
     check_exec_caps,
+    check_exec_gates,
+    cross_venue_exec_ack,
     execute_dual_leg,
     list_orphans,
 )
+from world_cup_bot.cross_venue_scanner import CrossVenueScanRow
 from world_cup_bot.kalshi_orders import KalshiOrderRequest, KalshiOrderResult, build_kalshi_order
-from world_cup_bot.ledger import load_rows
+from world_cup_bot.ledger import LedgerRow, append_row, load_rows
 
 
 class _FakePmClient:
@@ -204,3 +214,101 @@ def test_execute_orphan_on_pm_failure(tmp_path: Path):
     assert cancelled == ["kal-orphan"]
     orphans = list_orphans(load_rows(ledger))
     assert len(orphans) == 1
+
+
+def _alert_row(*, team: str = "USA", gap: float = 6.0) -> CrossVenueScanRow:
+    return CrossVenueScanRow(
+        team=team,
+        market_type="group_winner",
+        rules_hash="hash_v1",
+        gap_pp=gap,
+        pm_mid=0.68,
+        kalshi_mid=0.62,
+        alert=True,
+        pm_slug="will-usa-win-group-d",
+        pm_question="USA group D?",
+        kalshi_ticker="KXWCGROUPWIN-26D-USA",
+        kalshi_title="USA group winner",
+        kalshi_volume_24h=1000.0,
+        slug_changed=False,
+        slug_change_detail=None,
+        blocked=False,
+        block_reason=None,
+        notes=None,
+        source="config",
+    )
+
+
+def test_cross_venue_exec_ack_env(monkeypatch):
+    monkeypatch.delenv("WC_CROSS_VENUE_EXEC_ACK", raising=False)
+    assert not cross_venue_exec_ack()
+    monkeypatch.setenv("WC_CROSS_VENUE_EXEC_ACK", "1")
+    assert cross_venue_exec_ack()
+
+
+def test_check_exec_gates_blocks_without_auto_exec(monkeypatch):
+    monkeypatch.delenv("WC_CROSS_VENUE_AUTO_EXEC", raising=False)
+    gate = check_exec_gates(dry_run=False, force=False)
+    assert not gate.allowed
+    assert "AUTO_EXEC" in gate.reason
+
+
+def test_check_exec_gates_force_allows_dry_sim(monkeypatch):
+    monkeypatch.delenv("WC_CROSS_VENUE_AUTO_EXEC", raising=False)
+    gate = check_exec_gates(dry_run=True, force=True)
+    assert gate.allowed
+    assert gate.dry_run
+
+
+def test_check_exec_gates_live_requires_ack(monkeypatch):
+    monkeypatch.setenv("WC_CROSS_VENUE_AUTO_EXEC", "1")
+    monkeypatch.delenv("WC_CROSS_VENUE_EXEC_ACK", raising=False)
+    gate = check_exec_gates(dry_run=False, force=False)
+    assert not gate.allowed
+    assert "EXEC_ACK" in gate.reason
+
+
+def test_recent_exec_intent_keys_dedup_window(tmp_path: Path):
+    ledger = tmp_path / "l.jsonl"
+    ts = datetime.now(UTC).isoformat()
+    append_row(
+        ledger,
+        LedgerRow(
+            event=EVENT_EXEC_START,
+            logic_version=EXEC_SPEC.version_id,
+            strategy_key=EXEC_SPEC.strategy_key,
+            timestamp=ts,
+            team="USA",
+            extra={"intent_key": "group_winner:USA"},
+        ),
+    )
+    keys = _recent_exec_intent_keys(load_rows(ledger), window_sec=3600.0)
+    assert keys == {"group_winner:USA"}
+
+
+def test_auto_exec_on_alerts_respects_auto_exec_flag(monkeypatch):
+    monkeypatch.delenv("WC_CROSS_VENUE_AUTO_EXEC", raising=False)
+    settings = SimpleNamespace(dry_run=True, gamma_url="https://gamma.example")
+    out = auto_exec_on_alerts([_alert_row()], settings=settings, cfg=_cfg())
+    assert out == []
+
+
+def test_auto_exec_on_alerts_picks_best_gap(monkeypatch):
+    monkeypatch.setenv("WC_CROSS_VENUE_AUTO_EXEC", "1")
+    settings = SimpleNamespace(dry_run=True, gamma_url="https://gamma.example")
+
+    def _fake_attempt(row, **kwargs):
+        return ExecAttemptResult(
+            team=row.team,
+            market_type=row.market_type,
+            status="dry_run",
+            reason=None,
+            dry_run=True,
+            correlation_id=f"corr-{row.team}",
+        )
+
+    rows = [_alert_row(team="USA", gap=5.0), _alert_row(team="England", gap=8.0)]
+    with patch("world_cup_bot.cross_venue_exec.attempt_exec_for_row", side_effect=_fake_attempt):
+        out = auto_exec_on_alerts(rows, settings=settings, cfg=_cfg(), max_attempts=1)
+    assert len(out) == 1
+    assert out[0].team == "England"

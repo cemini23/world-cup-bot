@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 265 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 272 pytest (CI on push)
 
 ---
 
@@ -78,7 +78,7 @@ Current conservative posture: `Canada`, `Japan`, `Scotland`, and `Brazil` remain
 - In-play quoting during live matches
 - Kalshi auto-trading in the default configuration (alerts + optional gated exec only)
 
-Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, non-US VPS, Kalshi + Polymarket credentials, and SHADOW Phase 4 operator approval.
+Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, `WC_CROSS_VENUE_EXEC_ACK=1`, non-US VPS, Kalshi + Polymarket credentials, and SHADOW Phase 4 operator approval. Closed loop: `cross-venue-scan --loop` with auto-exec (systemd `world-cup-bot-cross-venue-exec.service` on trading profile).
 
 ---
 

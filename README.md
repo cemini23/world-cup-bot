@@ -128,7 +128,7 @@ world-cup-bot cross-venue-pnl --refresh    # mark-to-market vs current gaps
 world-cup-bot cross-venue-pnl --json       # scriptable summary
 ```
 
-Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. **Phase C** (auto dual-leg, off by default): set `WC_CROSS_VENUE_AUTO_EXEC=1` + `DRY_RUN=false` on non-US VPS, then `cross-venue-exec attempt`. Pilot caps in `auto_arb:` block.
+Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. **Phase C** (auto dual-leg, off by default): set `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `DRY_RUN=false` on non-US VPS. Scan loop auto-attempts one dual-leg per cycle when auto-exec is on (`cross-venue-scan --loop --alert-only --record`; disable with `--no-auto-exec`). Manual one-off: `cross-venue-exec attempt`. Trading systemd: `world-cup-bot-cross-venue-exec.service`. Pilot caps in `auto_arb:` block.
 
 ## 24/7 on a VPS
 

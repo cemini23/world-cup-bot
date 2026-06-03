@@ -82,6 +82,7 @@ else
     world-cup-bot-live-plan
     world-cup-bot-match-shock-record
     world-cup-bot-match-shock-live-plan
+    world-cup-bot-cross-venue-exec
   )
 fi
 
@@ -114,6 +115,7 @@ touch "$INSTALL_ROOT/logs/cron_tournament_ops.log"
 touch "$INSTALL_ROOT/logs/cron_match_shock_discover.log"
 touch "$INSTALL_ROOT/logs/cron_match_shock_plan.log"
 touch "$INSTALL_ROOT/logs/match_shock_record.jsonl"
+touch "$INSTALL_ROOT/logs/cross_venue_exec.log"
 touch "$INSTALL_ROOT/logs/cron_match_shock_live_plan.log"
 
 systemctl daemon-reload
@@ -139,7 +141,7 @@ if [[ "$ENABLE" == true ]]; then
   else
     systemctl enable --now world-cup-bot-preflight.timer
     echo "Trading profile: preflight timer enabled. Enable watch/live-plan after SHADOW.md gates."
-    echo "Match-shock record/live-plan units installed but NOT enabled — see deploy/systemd/README.md"
+    echo "Cross-venue exec + match-shock record/live-plan units installed but NOT enabled — see deploy/systemd/README.md"
   fi
 else
   echo "Units installed (not enabled). Re-run with --enable or systemctl enable manually."

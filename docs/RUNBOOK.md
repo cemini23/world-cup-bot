@@ -139,6 +139,9 @@ world-cup-bot cross-venue-pnl --json
 world-cup-bot cross-venue-fill record --team USA --market-type group_winner --pm-price 0.68 --kalshi-price 0.64
 world-cup-bot cross-venue-fill reconcile
 world-cup-bot cross-venue-exec attempt --force --dry-run   # Phase C sim only
+# Closed loop (trading VPS): WC_CROSS_VENUE_AUTO_EXEC=1 WC_CROSS_VENUE_EXEC_ACK=1 DRY_RUN=false
+world-cup-bot cross-venue-scan --loop --alert-only --record   # auto-exec when env set
+world-cup-bot cross-venue-scan --once --record --no-auto-exec  # alerts + paper only
 ```
 
 | Command | What it does |
@@ -146,8 +149,9 @@ world-cup-bot cross-venue-exec attempt --force --dry-run   # Phase C sim only
 | `cross-venue-scan --once --record` | PM vs Kalshi gap alerts; paper intents to separate JSONL |
 | `cross-venue-pnl --refresh` | Mark paper intents vs live gaps |
 | `cross-venue-exec attempt` | Auto dual-leg (off unless `WC_CROSS_VENUE_AUTO_EXEC=1` + caps in yaml) |
+| `cross-venue-scan --loop --record` | Closed loop: paper + optional auto-exec when `WC_CROSS_VENUE_AUTO_EXEC=1` |
 
-Default path is **alert + paper ledger**, not auto execution.
+Default path is **alert + paper ledger**, not auto execution. Live auto-exec additionally requires `WC_CROSS_VENUE_EXEC_ACK=1`, preflight PASS, and `DRY_RUN=false`.
 
 ---
 

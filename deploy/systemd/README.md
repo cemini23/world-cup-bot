@@ -27,7 +27,7 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
 | **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check, **tournament-ops**, **match-shock discover/plan** (paper) |
-| **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable), **match-shock record** (manual), **match-shock live plan** (manual, gated) |
+| **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable), **match-shock record** (manual), **match-shock live plan** (manual, gated), **cross-venue exec loop** (manual, gated) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
 
@@ -61,7 +61,7 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | 1 | + shadow-plan timer (`--liquidity-gate` → shadow ledger) | — |
 | 2 | + optional rewards-sync timer (L2 creds) | `world-cup-bot-watch.service` |
 | 3 | — | preflight must PASS |
-| 4 | — | `world-cup-bot-live-plan.timer` (manual) |
+| 4 | — | `world-cup-bot-live-plan.timer` (manual); optional `world-cup-bot-cross-venue-exec.service` after paper soak |
 
 ## PnL vs rewards (split units)
 
@@ -86,7 +86,9 @@ PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB 
 /opt/world-cup-bot/bin/wc_run.sh fixture-check --notify
 /opt/world-cup-bot/bin/wc_run.sh conviction-patch dr-output.md --stage
 journalctl -u world-cup-bot-cross-venue -f
+journalctl -u world-cup-bot-cross-venue-exec -f
 tail -f /opt/world-cup-bot/logs/cross_venue_alerts.jsonl
+tail -f /opt/world-cup-bot/logs/cross_venue_exec.log
 ```
 
 ## Update after git pull
@@ -117,6 +119,28 @@ sudo systemctl disable --now world-cup-bot-live-plan.timer
 | `world-cup-bot-match-shock-live-plan.timer` | trading | **manual** | Live ladder POST — requires `WC_MATCH_SHOCK_LIVE=1` + `WC_MATCH_SHOCK_LIVE_ACK=1` |
 
 **Never** enable shock live POST on the same wallet as advance LP without operator sign-off and 3+ days paper ledger soak.
+
+## Cross-venue auto-exec (Phase C) — trading VPS only
+
+| Unit | Profile | Auto-enable | Purpose |
+|------|---------|-------------|---------|
+| `world-cup-bot-cross-venue.service` | monitor | yes | Alert + paper `--record` only (`WC_DRY_RUN=true`) |
+| `world-cup-bot-cross-venue-exec.service` | trading | **manual** | Scan loop + dual-leg POST when gap alerts fire |
+
+Enable guard (same pattern as live plan / match-shock):
+
+```bash
+# .env.trading on egress VPS
+WC_CROSS_VENUE_AUTO_EXEC=1
+WC_CROSS_VENUE_EXEC_ACK=1
+DRY_RUN=false
+
+sudo systemctl enable --now world-cup-bot-cross-venue-exec.service
+```
+
+Service refuses start unless `WC_CROSS_VENUE_EXEC_ACK=1`. Runs `preflight` before the loop. Logs → `logs/cross_venue_exec.log`; `EXEC_AUTO` lines also go to syslog.
+
+Kill switch: `systemctl disable --now world-cup-bot-cross-venue-exec.service` or unset `WC_CROSS_VENUE_AUTO_EXEC`.
 
 ```bash
 # Monitor (paper shock)
