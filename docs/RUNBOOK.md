@@ -230,6 +230,33 @@ Spec: [docs/MATCH_SHOCK_V1.md](../docs/MATCH_SHOCK_V1.md) · backtest: [scripts/
 
 ---
 
+## Pre-tournament operator checklist (2026-06-11 kickoff)
+
+Advance LP and cross-venue exec can run before the opening match. **Module 8 match-shock** needs a separate flip — do this on **egress** before the first WC match (Mexico vs South Africa, **2026-06-11** UTC).
+
+| When | Action | Verify |
+|------|--------|--------|
+| **Now (live trading)** | Cross-venue Phase C on egress: `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `cemini-wc-cross-venue-exec.service` enabled | `systemctl is-active cemini-wc-cross-venue-exec` |
+| **Before 2026-06-11** | Set `WC_SHOCK_ENABLED=1` in `.env-polymarket` (or trading env) | `tournament-ops check` — no “WC_SHOCK_ENABLED unset” warn |
+| **Before 2026-06-11** | `systemctl enable --now cemini-wc-match-shock-record.service` (or `world-cup-bot-match-shock-record.service`) | `logs/match_shock_record.jsonl` growing during live matches |
+| **Optional (Jun–Jul)** | `match-shock-plan.timer` — paper plan every 15m in WC window | `logs/cron_match_shock_plan.log` |
+| **After paper soak only** | Live ladder POST: `WC_MATCH_SHOCK_LIVE=1` + `WC_MATCH_SHOCK_LIVE_ACK=1` | `match-shock-post --check-gates` |
+
+```bash
+# Egress — cross-venue exec (should already be on)
+grep WC_CROSS_VENUE /opt/cemini/.env-polymarket
+systemctl status cemini-wc-cross-venue-exec.service
+
+# Before opening match — shock tape
+echo 'WC_SHOCK_ENABLED=1' >> /opt/cemini/.env-polymarket   # if not set
+systemctl enable --now cemini-wc-match-shock-record.service
+world-cup-bot tournament-ops check
+```
+
+**Do not** enable `match-shock-live-plan` on the same wallet as advance LP without explicit operator sign-off.
+
+---
+
 ## Honest limits
 
 Adverse selection is real. Shadow mode proves wiring, not edge. Reward sync is not alpha. Cross-venue paper ledger is not executed arb. This still fails when news flow front-runs your resting bid.

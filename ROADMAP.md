@@ -66,6 +66,7 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 | LP safety deep research | Weekly through tournament | `research run weekly-osint-pipeline` + human review before YAML edits |
 | Conviction refresh | After material news | `conviction-staleness --notify`, `fixture-check --notify` |
 | Cross-venue pair refresh | As slugs change | `cross-venue-scan --discover-only` → update `config/cross_venue.yaml` |
+| **Pre-tournament shock (Module 8)** | **Before 2026-06-11** (opening match) | See [docs/RUNBOOK.md](docs/RUNBOOK.md) § Pre-tournament — `WC_SHOCK_ENABLED=1`, enable `match-shock-record` on egress |
 
 Current conservative posture: `Canada`, `Japan`, `Scotland`, and `Brazil` remain **`fade_watch`** (alert-only) in `config/conviction.yaml` — K96 review **2026-06-04** confirmed; next review **2026-06-13** or after June friendlies.
 
