@@ -2697,6 +2697,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Include non-WC CLOB trades (default: WC advance condition ids only)",
     )
+    vraut.add_argument(
+        "--after-days",
+        type=int,
+        default=30,
+        help="CLOB trades lookback (default 30)",
+    )
     vraut.add_argument("--max-pages", type=int, default=20, help="CLOB pagination cap")
     vraut.add_argument("--json", action="store_true")
     vraut.set_defaults(func=_cmd_venue_reconcile)
