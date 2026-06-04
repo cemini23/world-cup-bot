@@ -527,7 +527,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         version_spec,
     )
     if not risk_ok:
-        return _plan_abort(settings, "daily_adverse_cap", risk_detail, version_spec=version_spec, record=args.record)
+        return _plan_abort(
+            settings,
+            "daily_adverse_cap",
+            risk_detail,
+            version_spec=version_spec,
+            record=args.record,
+        )
 
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     if phase_router_enabled():
@@ -633,7 +639,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                     return 1
 
     if not results:
-        return _plan_abort(settings, "advisor_gate_empty", "No targets after advisor gate.", version_spec=version_spec, record=args.record)
+        return _plan_abort(
+            settings,
+            "advisor_gate_empty",
+            "No targets after advisor gate.",
+            version_spec=version_spec,
+            record=args.record,
+        )
 
     # Calendar guard: cancel resting quotes for teams entering kickoff window
     cancel_result = order_manager.cancel_for_cancel_window(

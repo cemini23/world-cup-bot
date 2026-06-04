@@ -52,6 +52,8 @@ def test_submit_quotes_dry_run_no_l2_with_markets():
         reason="test",
         snapshot=snap,
     )
-    with patch("world_cup_bot.order_manager.load_clob_auth", side_effect=MissingClobAuthError("no L2")):
+    with patch(
+        "world_cup_bot.order_manager.load_clob_auth", side_effect=MissingClobAuthError("no L2")
+    ):
         out = submit_quotes([intent], settings, markets=[market])
     assert out == [intent]

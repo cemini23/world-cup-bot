@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import patch
 
 from world_cup_bot.fixture_watch import DEFAULT_UPSTREAM_URL, check_fixtures
 
@@ -23,6 +22,7 @@ def test_check_fixtures_none_upstream_uses_default(tmp_path: Path, monkeypatch):
     }
     local = tmp_path / "fixtures.json"
     local.write_text(json.dumps(data, sort_keys=True), encoding="utf-8")
+
     def _fetch(url):
         assert url == DEFAULT_UPSTREAM_URL
         return json.loads(json.dumps(data))

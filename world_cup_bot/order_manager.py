@@ -6,7 +6,12 @@ import logging
 from dataclasses import dataclass, field
 
 from world_cup_bot import calendar_guard
-from world_cup_bot.clob_auth import ClobAuth, MissingClobAuthError, load_clob_auth, load_poly_address
+from world_cup_bot.clob_auth import (
+    ClobAuth,
+    MissingClobAuthError,
+    load_clob_auth,
+    load_poly_address,
+)
 from world_cup_bot.clob_rest import fetch_open_orders
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import StrategyVersionSpec

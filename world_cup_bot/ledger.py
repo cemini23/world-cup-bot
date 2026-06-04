@@ -311,8 +311,6 @@ class PnlSummary:
     legacy_excluded: int
 
 
-
-
 def _fill_pnl_usd(row: dict[str, Any]) -> float:
     """PnL on order_fill rows: pnl_usd, else realized_pnl_usd alias."""
     if row.get("event") != "order_fill":
