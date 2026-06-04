@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>World Cup Bot — Open-Source Polymarket &amp; Kalshi FIFA 2026 LP Bot</title>
-  <meta name="description" content="World Cup Bot: MIT open-source liquidity provision for FIFA 2026 advance-to-knockout markets on Polymarket. Shadow-first LP with calendar cancel window, JSONL ledger, and Polymarket vs Kalshi gap alerts.">
+  <meta name="description" content="World Cup Bot: MIT open-source liquidity provision for FIFA 2026 advance-to-knockout markets on Polymarket. Shadow-first LP with calendar cancel window, JSONL ledger, and Polymarket vs Kalshi cross-venue scan with optional gated dual-leg auto-exec.">
   <meta name="keywords" content="world cup bot, world cup bot polymarket, world cup bot kalshi, polymarket world cup, kalshi world cup, FIFA 2026 prediction markets, liquidity provision bot">
   <link rel="canonical" href="https://cemini23.github.io/world-cup-bot/">
   <meta property="og:title" content="World Cup Bot — Polymarket &amp; Kalshi FIFA 2026 LP">
@@ -19,7 +19,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareSourceCode",
     "name": "World Cup Bot",
-    "description": "Open-source liquidity provision bot for FIFA World Cup 2026 advance-to-knockout markets on Polymarket, with Polymarket vs Kalshi cross-venue gap alerts.",
+    "description": "Open-source liquidity provision bot for FIFA World Cup 2026 advance-to-knockout markets on Polymarket, with Polymarket vs Kalshi cross-venue gap scan, paper ledger, and optional gated dual-leg auto-exec.",
     "codeRepository": "https://github.com/cemini23/world-cup-bot",
     "programmingLanguage": "Python",
     "license": "https://spdx.org/licenses/MIT.html",
@@ -51,14 +51,14 @@
 </head>
 <body>
   <h1>World Cup Bot</h1>
-  <p class="subtitle">Open-source Polymarket LP bot for FIFA 2026 advance markets — with Kalshi cross-venue alerts</p>
+  <p class="subtitle">Open-source Polymarket LP bot for FIFA 2026 advance markets — with Kalshi cross-venue scan + optional auto-exec</p>
 
-  <p><strong>World Cup Bot</strong> is an MIT-licensed Python stack for liquidity provision on FIFA World Cup 2026 <em>advance to knockout</em> markets on <a href="https://polymarket.com">Polymarket</a>. It includes shadow-first deployment, a calendar cancel window before kickoff, versioned JSONL ledger, and optional <strong>Polymarket vs Kalshi</strong> gap alerts (alert-only, no auto execution). <strong>Launch writeup:</strong> <a href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot">Outlier Weekly Issue 3</a> (free, 2026-06-03).</p>
+  <p><strong>World Cup Bot</strong> is an MIT-licensed Python stack for liquidity provision on FIFA World Cup 2026 <em>advance to knockout</em> markets on <a href="https://polymarket.com">Polymarket</a>. It includes shadow-first deployment, a calendar cancel window before kickoff, versioned JSONL ledger, and <strong>Polymarket vs Kalshi</strong> cross-venue gap scan with paper ledger (Phase A/B) and <strong>optional gated dual-leg auto-exec</strong> (Phase C, off by default). <strong>Launch writeup:</strong> <a href="https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot">Outlier Weekly Issue 3</a> (free, 2026-06-03).</p>
 
   <ul>
     <li>Conviction YAML + Gamma mids at runtime (no hardcoded prices)</li>
     <li>Shadow mode default (<code>DRY_RUN=true</code>) with phased <a href="https://github.com/cemini23/world-cup-bot/blob/main/SHADOW.md">SHADOW.md</a> checklist</li>
-    <li>Cross-venue scanner for PM / Kalshi cohort pairs (alerts + optional paper arb ledger)</li>
+    <li>Cross-venue scanner for PM / Kalshi cohort pairs — paper ledger by default; optional Phase C auto-exec on non-US egress</li>
     <li>Optional Module 8 in-play shock recovery — paper-first, off by default (<a href="https://github.com/cemini23/world-cup-bot/blob/main/docs/MATCH_SHOCK_V1.md">spec</a>)</li>
   </ul>
 

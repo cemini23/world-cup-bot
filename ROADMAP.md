@@ -82,7 +82,7 @@ K98 (`@osint-wiki` ingest) adds **BTC/ETH 15m up/down** telemetry on **cemini-pr
 - Hosted or managed service
 - Guaranteed edge or financial advice
 - In-play quoting during live matches
-- Kalshi auto-trading in the default configuration (alerts + optional gated exec only)
+- Kalshi auto-trading without explicit Phase C gates (`WC_CROSS_VENUE_AUTO_EXEC` + `WC_CROSS_VENUE_EXEC_ACK` + non-US egress)
 
 Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, `WC_CROSS_VENUE_EXEC_ACK=1`, non-US VPS, Kalshi + Polymarket credentials, and SHADOW Phase 4 operator approval. Closed loop: `cross-venue-scan --loop` with auto-exec (systemd `world-cup-bot-cross-venue-exec.service` on trading profile).
 

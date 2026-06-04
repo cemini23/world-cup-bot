@@ -132,20 +132,32 @@ world-cup-bot conviction-patch dr.md --stage  # DR JSON → staged YAML snippet 
 
 See [SHADOW.md](SHADOW.md) for the phased go-live checklist (≥3 dry-run days, watch, egress preflight).
 
-## Kalshi (optional)
+## Kalshi / cross-venue (Module 6)
 
-Module 6 cross-venue scanner is **alert-only** — read-only Gamma + Kalshi public APIs. No Kalshi credentials required for scanning.
+Module 6 **scans** PM vs Kalshi gaps using public Gamma + Kalshi market APIs — no Kalshi login required for scan/discover/paper.
+
+**Execution is phased and gated:**
+
+| Phase | Mode | Posts orders? |
+|-------|------|---------------|
+| A | `cross-venue-scan --record` | No — paper intents only |
+| B | `cross-venue-fill record\|reconcile` | Human-recorded legs |
+| C | `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `DRY_RUN=false` | Yes — auto dual-leg on alerts |
 
 ```bash
 world-cup-bot cross-venue-scan              # scan config pairs once
 world-cup-bot cross-venue-scan --discover-only   # new PM↔Kalshi pairs for YAML
 world-cup-bot cross-venue-scan --loop       # poll every poll_interval_sec (YAML)
-world-cup-bot cross-venue-scan --alert-only # stdout alerts + slug-change warnings only
+world-cup-bot cross-venue-scan --alert-only # compact stdout (alerts + slug warnings only)
+world-cup-bot cross-venue-scan --loop --record --no-auto-exec   # paper loop, no POST
+world-cup-bot cross-venue-exec attempt --dry-run   # sim Phase C gates + sizing
 ```
+
+`--alert-only` controls **CLI output verbosity** — it does not disable Phase C auto-exec when `WC_CROSS_VENUE_AUTO_EXEC=1`.
 
 When Polymarket slugs change or new WC markets appear, run `--discover-only`, review `rules_hash`, paste rows into `config/cross_venue.yaml`.
 
-Kalshi trading credentials remain optional (`.env` — not used by scanner v1).
+Phase C requires Kalshi trading credentials in `.env` (see `.env.example`) plus Polymarket L2 on **non-US egress**. See [deploy/systemd/README.md](deploy/systemd/README.md) for `world-cup-bot-cross-venue-exec.service`.
 
 ## Deep research prompts
 

@@ -2546,14 +2546,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     cv = sub.add_parser(
         "cross-venue-scan",
-        help="Module 6 - PM vs Kalshi gap alerts (read-only, no auto-trade)",
+        help="Module 6 - PM vs Kalshi gap scan, paper record, optional gated auto-exec",
     )
     cv.add_argument("--team", help="Filter to one team (e.g. USA, Switzerland)")
     cv.add_argument("--json", action="store_true", help="Print full scan result as JSON")
     cv.add_argument(
         "--alert-only",
         action="store_true",
-        help="Print only threshold alerts (+ slug warnings)",
+        help="Compact stdout: threshold alerts + slug warnings only (does not disable auto-exec)",
     )
     cv.add_argument(
         "--once",

@@ -1,4 +1,4 @@
-"""Phase A — paper cross-venue arb ledger (alert-only, no execution)."""
+"""Phase A — paper cross-venue arb ledger (no live POST unless Phase C auto-exec is enabled)."""
 
 from __future__ import annotations
 

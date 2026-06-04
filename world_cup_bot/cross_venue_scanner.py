@@ -1,4 +1,4 @@
-"""Module 6 — alert-only Polymarket vs Kalshi cross-venue gap scanner."""
+"""Module 6 — Polymarket vs Kalshi cross-venue gap scanner (scan + alert; exec in cross_venue_exec)."""
 
 from __future__ import annotations
 

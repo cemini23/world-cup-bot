@@ -4,7 +4,7 @@
 <!-- ci-badge-updated:2026-06-04T23:38:09Z -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap alerts (alert-only). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
+**World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap scan, paper ledger, and **optional gated dual-leg auto-exec** (Phase C, off by default). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
 **CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v4` (advance LP) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
@@ -30,7 +30,7 @@ Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixt
 | **Quoter (3)** | Post-only GTC limits; cancel-replace before submit; calendar auto-cancel |
 | **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull + vol cooldown; exit within ~60s |
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
-| **Cross-venue (6)** | PM vs Kalshi gap alerts (15 cohort pairs); **paper arb ledger** (`--record`, `cross-venue-pnl`); optional webhook |
+| **Cross-venue (6)** | PM vs Kalshi gap scan (15 cohort pairs); **Phase A** paper ledger (`--record`); **Phase B** manual fills; **Phase C** gated auto-exec; optional webhook |
 | **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
 | **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; optional auto-clear `human_review` (default off) |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
@@ -110,7 +110,7 @@ WC_SHOCK_ENABLED=1 world-cup-bot match-shock-record --discovery data/local/match
 
 More commands: `world-cup-bot --help` · research modes: `world-cup-bot research list` · shock backtest: `scripts/shock_backtest/README.md`
 
-Requires a Polymarket account with CLOB API access. Kalshi alerts need separate Kalshi API credentials (optional for LP-only mode).
+Requires a Polymarket account with CLOB API access. Cross-venue **scanning** uses public Gamma + Kalshi reads (no Kalshi login required). **Phase C auto-exec** needs Kalshi trading credentials + Polymarket L2 on non-US egress.
 
 **Calendar guard (Module 5)** uses vendored [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) fixtures (`data/worldcup2026-fixtures.json`, CC0) — not live prices. See `data/DATA_ATTRIBUTION.md`.
 
@@ -125,17 +125,36 @@ Follow [SHADOW.md](SHADOW.md):
 
 Gate check: `world-cup-bot shadow-status --min-phase 1` (exit 1 if steps pending; prints resolved ledger path).
 
-### Cross-venue paper arb (Phase A)
+### Cross-venue arb (Module 6)
 
-When a PM↔Kalshi gap crosses the alert threshold, `--record` appends a **paper intent** to `data/local/cross_venue_arb_ledger.jsonl` (override with `WC_CROSS_VENUE_LEDGER_PATH`). No orders are placed.
+Three phases — default shadow path is **scan + paper only**; live dual-leg POST is explicit opt-in.
+
+| Phase | What | Orders? |
+|-------|------|---------|
+| **A** | `cross-venue-scan --record` → paper intents in `cross_venue_arb_ledger.jsonl` | No |
+| **B** | `cross-venue-fill record\|import-csv\|reconcile` — manual fill bridge | Human legs only |
+| **C** | `cross-venue-exec attempt` or scan loop with auto-exec env | Yes — dual-leg when gated |
 
 ```bash
 world-cup-bot cross-venue-scan --once --record
 world-cup-bot cross-venue-pnl --refresh    # mark-to-market vs current gaps
 world-cup-bot cross-venue-pnl --json       # scriptable summary
+world-cup-bot cross-venue-exec attempt --force --dry-run   # sim gates + sizing
 ```
 
-Defaults in `config/cross_venue.yaml` → `paper_arb:` (500 USD notional, 3600s dedup per pair). **Phase B** (manual fills + reconcile): `cross-venue-fill record|import-csv|reconcile`. **Phase C** (auto dual-leg, off by default): set `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `DRY_RUN=false` on non-US VPS. Scan loop auto-attempts one dual-leg per cycle when auto-exec is on (`cross-venue-scan --loop --alert-only --record`; disable with `--no-auto-exec`). Manual one-off: `cross-venue-exec attempt`. Trading systemd: `world-cup-bot-cross-venue-exec.service`. Pilot caps in `auto_arb:` block.
+**Phase C live loop** (non-US VPS, after paper soak + SHADOW Phase 4 GO):
+
+```bash
+# .env — both required
+WC_CROSS_VENUE_AUTO_EXEC=1
+WC_CROSS_VENUE_EXEC_ACK=1
+DRY_RUN=false
+
+world-cup-bot cross-venue-scan --loop --alert-only --record   # one auto attempt per alert cycle
+# or: systemctl enable --now world-cup-bot-cross-venue-exec.service
+```
+
+Disable auto-exec for a single run: `--no-auto-exec`. Pilot caps in `config/cross_venue.yaml` → `auto_arb:` (default 100 USD/leg, 500 USD/day). Paper defaults in `paper_arb:` (500 USD notional, 3600s dedup).
 
 ## 24/7 on a VPS
 
@@ -143,8 +162,8 @@ Optional [systemd units](deploy/systemd/README.md):
 
 | Profile | Host | Runs |
 |---------|------|------|
-| **monitor** | US OK | cross-venue alerts + **paper arb `--record`**, shadow plan (`--liquidity-gate`), scan, calendar, discover, daily PnL, conviction-staleness, fixture-check |
-| **trading** | Non-US only | preflight, watch, live plan (Phase 4 — manual enable) |
+| **monitor** | US OK | cross-venue scan + **paper `--record`**, shadow plan (`--liquidity-gate`), scan, calendar, discover, daily PnL, conviction-staleness, fixture-check |
+| **trading** | Non-US only | preflight, watch, live plan (Phase 4), **cross-venue exec loop** (Phase C — manual enable) |
 
 **PnL vs rewards:** `pnl-daily.timer` runs `pnl --scope current` on the shadow ledger (no L2). `rewards-sync.timer` is installed but **not** auto-enabled — enable after Phase 2 when L2 creds exist.
 

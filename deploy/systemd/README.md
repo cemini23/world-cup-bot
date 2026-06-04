@@ -26,7 +26,7 @@ Polymarket **order POST** is geo-blocked from the US. Split read vs write:
 
 | Profile | Host example | `--profile` | What runs |
 |---------|--------------|-------------|-----------|
-| **Monitor** | US or any region | `monitor` | Cross-venue alerts **+ paper arb `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check, **tournament-ops**, **match-shock discover/plan** (paper) |
+| **Monitor** | US or any region | `monitor` | Cross-venue scan + **paper `--record`**, weekly **cross-venue reconcile**, shadow plan, scan, calendar, discover, **pnl-daily** (shadow ledger), conviction-staleness, fixture-check, **tournament-ops**, **match-shock discover/plan** (paper) |
 | **Trading** | Non-US VPS (EU, etc.) | `trading` | Preflight, fill watch, live plan (Phase 4 — manual enable), **match-shock record** (manual), **match-shock live plan** (manual, gated), **cross-venue exec loop** (manual, gated) |
 
 Single VPS outside the US can run **both** profiles if `preflight` geoblock passes.
@@ -124,7 +124,7 @@ sudo systemctl disable --now world-cup-bot-live-plan.timer
 
 | Unit | Profile | Auto-enable | Purpose |
 |------|---------|-------------|---------|
-| `world-cup-bot-cross-venue.service` | monitor | yes | Alert + paper `--record` only (`WC_DRY_RUN=true`) |
+| `world-cup-bot-cross-venue.service` | monitor | yes | Scan + paper `--record` only (`WC_DRY_RUN=true`; no auto-exec) |
 | `world-cup-bot-cross-venue-exec.service` | trading | **manual** | Scan loop + dual-leg POST when gap alerts fire |
 
 Enable guard (same pattern as live plan / match-shock):

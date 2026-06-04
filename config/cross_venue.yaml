@@ -1,4 +1,4 @@
-# Module 6 — alert-only cross-venue scanner config (v1)
+# Module 6 — cross-venue PM↔Kalshi config (scan + paper + optional gated exec)
 # Source: Gemini DR + live discover cohort triage (2026-05-29)
 # Semantic note: ONLY group-winner pairs with rules_hash match. Advance-to-knockout
 # PM slugs TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
@@ -10,7 +10,7 @@ poll_interval_sec: 120
 fee_kalshi_profit_pct: 7.0
 verification_max_age_days: 14  # pairs with stale last_verified auto-block alerts
 
-# Phase A paper arb ledger — cross-venue-scan --record (no execution)
+# Phase A paper arb ledger — cross-venue-scan --record (no live POST unless Phase C env set)
 paper_arb:
   default_notional_usd: 500
   dedup_interval_sec: 3600

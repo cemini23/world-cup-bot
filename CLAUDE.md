@@ -6,7 +6,7 @@ Read this at session start. Human docs: [README.md](README.md), [SETUP.md](SETUP
 
 Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout** markets. Shadow-first (`DRY_RUN=true` default). Prices and spreads come from **Gamma + CLOB at runtime** — never hardcode mids or team prices in Python.
 
-**Not in scope for this repo:** hosted service, financial advice, Kalshi auto-trading (alert-only cross-venue).
+**Not in scope for this repo:** hosted service, financial advice, ungated Kalshi auto-trading (cross-venue exec is **Phase C gated**, off by default).
 
 ## Module map
 
@@ -18,7 +18,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 3 | Quoter | `quoter.py` | Dry-run default; live POST via `clob_live.py` |
 | 4 | Fill handler | `fill_handler.py`, `ws_user.py`, `reconcile.py` | WS + 30s REST reconcile; queue depletion + vol cooldown |
 | 5 | Calendar guard | `calendar_guard.py`, `data/worldcup2026-fixtures.json` | Live — CC0 fixtures, not Polymarket |
-| 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_fills.py`, `cross_venue_exec.py`, `kalshi_auth.py`, `kalshi_orders.py`, `kalshi_rest.py`, `config/cross_venue.yaml` | Alert-only scan; paper ledger; manual fills; **Phase C exec** (gated) |
+| 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_fills.py`, `cross_venue_exec.py`, `kalshi_auth.py`, `kalshi_orders.py`, `kalshi_rest.py`, `config/cross_venue.yaml` | Gap scan; paper ledger (A); manual fills (B); **gated auto-exec** (C) |
 | 7 | Ledger / PnL | `ledger.py`, `logic_version.py`, `venue_reconcile.py` | JSONL + `logic_version`; venue CSV diff |
 | — | Liquidity gate | `liquidity_scanner.py`, `clob_rest.py` | Live — public CLOB `/book`; bid/ask band floors in `operating.yaml` |
 | — | Conviction ops | `conviction_staleness.py`, `conviction_patch.py`, `fixture_watch.py` | Staleness alerts, DR patch staging, fixture upstream diff |

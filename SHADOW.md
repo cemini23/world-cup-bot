@@ -177,7 +177,7 @@ Set `WC_ALERT_WEBHOOK_URL` for Discord/Slack on kill-switch and cross-venue aler
 
 ## What shadow mode does *not* prove
 
-- Cross-venue Kalshi gaps: `world-cup-bot cross-venue-scan` (alert-only; optional `--loop`)
+- Cross-venue PM↔Kalshi: `cross-venue-scan` (paper by default; optional **Phase C auto-exec** on trading VPS — see [SETUP.md](SETUP.md))
 - Adverse selection under live match news flow
 - `$POLY` airdrop eligibility
 
