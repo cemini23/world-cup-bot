@@ -1,6 +1,6 @@
 # Keep README CI badge + text status in sync after every CI run.
-# GitHub's native badge.svg is cached by camo.githubusercontent.com and often
-# stays red after CI recovers; shields.io + this commit bust stale renders.
+# Static shields.io badge (not github/actions/workflow/status) — camo caches that
+# endpoint red for hours after CI recovers.
 
 name: Refresh README CI status
 
@@ -24,9 +24,6 @@ jobs:
       (github.event.workflow_run.conclusion != 'cancelled' &&
       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
-    env:
-      CONCLUSION: ${{ github.event_name == 'workflow_dispatch' && 'success' || github.event.workflow_run.conclusion }}
-      UPDATED_AT: ${{ github.event_name == 'workflow_dispatch' && github.run_started_at || github.event.workflow_run.updated_at }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,7 +31,19 @@ jobs:
           fetch-depth: 0
 
       - name: Update README CI badge and status line
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            read -r CONCLUSION UPDATED_AT < <(
+              gh run list --workflow=CI --branch=main --limit=1 \
+                --json conclusion,updatedAt \
+                -q '.[0] | "\(.conclusion) \(.updatedAt)"'
+            )
+          else
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+            UPDATED_AT="${{ github.event.workflow_run.updated_at }}"
+          fi
           case "$CONCLUSION" in
             success) LABEL=passing ;;
             *) LABEL=failing ;;
@@ -43,15 +52,16 @@ jobs:
           python3 <<'PY'
           import os
           import re
+          from datetime import UTC, datetime
           from pathlib import Path
 
           label = os.environ["LABEL"]
-          ts = os.environ["UPDATED_AT"]
+          ts = os.environ.get("UPDATED_AT", "").strip()
+          if not ts:
+              ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
           path = Path("README.md")
           text = path.read_text(encoding="utf-8")
 
-          # Static shields badge (not github/actions/workflow/status) — camo caches that
-          # endpoint red for hours after CI recovers; we set label/color from workflow_run.
           cache_bust = ts.replace(":", "").replace("-", "")
           color = "brightgreen" if label == "passing" else "red"
           badge = (
@@ -74,7 +84,7 @@ jobs:
 
           marker = f"<!-- ci-badge-updated:{ts} -->"
           if "<!-- ci-badge-updated:" in text:
-              text = re.sub(r"<!-- ci-badge-updated:[^>]+ -->", marker, text, count=1)
+              text = re.sub(r"<!-- ci-badge-updated:[^>]* -->", marker, text, count=1)
           else:
               text = text.replace(badge + "\n", badge + "\n" + marker + "\n", 1)
 
@@ -91,6 +101,6 @@ jobs:
             echo "README already up to date"
             exit 0
           fi
-          git commit -m "chore: sync README CI status (${CONCLUSION}) [skip ci]"
+          git commit -m "chore: sync README CI status [skip ci]"
           git pull --rebase origin main
           git push origin main
