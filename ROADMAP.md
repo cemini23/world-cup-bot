@@ -71,6 +71,12 @@ Current conservative posture: `Canada`, `Japan`, `Scotland`, and `Brazil` remain
 
 ---
 
+## OSINT K98 boundary (2026-06-04)
+
+K98 (`@osint-wiki` ingest) adds **BTC/ETH 15m up/down** telemetry on **cemini-prod** (`2026-06-04_k98-pm-latency-fusion-queue-telemetry-cemini-prod.md` — Binance CVD/OBI vs PM lag, pre-open queue rank). **No world-cup-bot code changes:** advance-LP `queue_depletion_usd` is post-fill depth ahead of you, not Polymarket timed-window queue sniping. @Nekt_0 Post 13 (profit concentration / latency in sports) is operator context only — corroborates fast-tape discipline, not a new module.
+
+---
+
 ## Out of scope (v1)
 
 - Hosted or managed service
@@ -92,6 +98,7 @@ Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, `WC_CROSS
 | 2026-06-01 | CLOB V2 migration; conviction YAML v5 hygiene; weekly research pipeline mode |
 | 2026-06-02 | Pre-drop security audit: notional env cap, URL allowlist, live-plan ack gate |
 | 2026-06-03 | **Public launch** (Outlier Weekly Issue 3); split-ledger SHADOW docs; `WC_LEDGER_PATH` fix |
+| 2026-06-04 | OSINT K98 scope note — prod PM latency brief does not change WC modules |
 
 ---
 
