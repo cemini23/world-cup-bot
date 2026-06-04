@@ -179,12 +179,13 @@ def test_human_review_cleared_when_liquidity_passes(monkeypatch):
         liquidity_gate=True,
     )
     assert result.quote
-    assert "cleared by CLOB depth" in result.reason
+    assert result.mode == conviction.TeamMode.YES_HEAVY
+    assert "yes_heavy mid-band match" in result.reason
 
 
 def test_human_review_liquidity_pass_but_mid_blocked():
     cfg_conv = conviction.load_conviction_config()
-    m = make_market("Morocco", mid=0.865)
+    m = make_market("Turkey", mid=0.865)
     liq_cfg = _liq_cfg(
         min_depth_within_reward_spread_usd=100,
         min_combined_book_depth_usd=100,
@@ -214,4 +215,4 @@ def test_human_review_liquidity_pass_but_mid_blocked():
         liquidity_gate=True,
     )
     assert not result.quote
-    assert "liquidity PASS but tier blocked" in result.reason
+    assert "outside [0.2, 0.8]" in result.reason

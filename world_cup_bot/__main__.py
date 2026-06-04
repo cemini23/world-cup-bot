@@ -1579,6 +1579,59 @@ def _cmd_venue_reconcile(args: argparse.Namespace) -> int:
             print(line)
         return 0
 
+    if args.venue_command == "autofill":
+        try:
+            report, trade_rows = venue_reconcile.compare_venue_clob(
+                ledger_path,
+                settings,
+                logic_version=args.logic_version,
+                after_days=args.after_days,
+                max_pages=args.max_pages,
+            )
+        except Exception as exc:
+            print(f"autofill failed: {exc}", file=sys.stderr)
+            return 1
+        if args.json:
+            payload = report.to_dict()
+            payload["clob_trade_rows"] = trade_rows
+            payload["source"] = "clob_rest"
+            print(json.dumps(payload, indent=2))
+            return 0
+        print(f"Source: CLOB /data/trades ({trade_rows} trade row(s), last {args.after_days}d)")
+        print(f"Ledger fills: {report.ledger_fill_count}")
+        print(f"Venue maker order ids: {report.venue_row_count}")
+        print(f"Matched order ids: {report.matched}")
+        if report.ledger_only:
+            print(f"\nLedger-only ({len(report.ledger_only)}):")
+            for oid in report.ledger_only[:20]:
+                print(f"  {oid}")
+        if report.venue_only:
+            print(f"\nVenue-only ({len(report.venue_only)}) — run venue-reconcile backfill:")
+            for oid in report.venue_only[:20]:
+                print(f"  {oid}")
+        if not report.ledger_only and not report.venue_only and report.matched:
+            print("\nOK — ledger and CLOB trades agree on order ids.")
+        return 0 if not report.venue_only else 1
+
+    if args.venue_command == "backfill":
+        try:
+            result = venue_reconcile.backfill_ledger_from_clob(
+                settings,
+                after_days=args.after_days,
+            )
+        except Exception as exc:
+            print(f"backfill failed: {exc}", file=sys.stderr)
+            return 1
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(
+                f"Backfill: {result['fills_processed']} fill(s) appended "
+                f"({result['trades_fetched']} trades fetched, "
+                f"{result['fills_skipped']} skipped) → {result['ledger_path']}"
+            )
+        return 0
+
     if args.venue_command == "compare":
         report = venue_reconcile.compare_venue_csv(
             Path(args.csv_path),
@@ -2630,6 +2683,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     vrcmp.add_argument("--json", action="store_true")
     vrcmp.set_defaults(func=_cmd_venue_reconcile)
+    vraut = vr_sub.add_parser(
+        "autofill",
+        help="Compare ledger fills to CLOB /data/trades (no CSV export)",
+    )
+    vraut.add_argument(
+        "--logic-version",
+        help="Filter ledger fills to one logic_version (default: all fills)",
+    )
+    vraut.add_argument(
+        "--after-days",
+        type=int,
+        default=30,
+        help="CLOB trades lookback (default 30)",
+    )
+    vraut.add_argument("--max-pages", type=int, default=20, help="CLOB pagination cap")
+    vraut.add_argument("--json", action="store_true")
+    vraut.set_defaults(func=_cmd_venue_reconcile)
+    vrbf = vr_sub.add_parser(
+        "backfill",
+        help="REST reconcile pass — append venue-confirmed fills missing from ledger",
+    )
+    vrbf.add_argument("--after-days", type=int, default=30, help="Trade lookback (default 30)")
+    vrbf.add_argument("--json", action="store_true")
+    vrbf.set_defaults(func=_cmd_venue_reconcile)
     vrtmpl = vr_sub.add_parser("csv-template", help="Example CSV header for exports")
     vrtmpl.set_defaults(func=_cmd_venue_reconcile)
 

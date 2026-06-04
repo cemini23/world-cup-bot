@@ -60,6 +60,9 @@ limits:
 per_team:
   Turkey:
     max_notional_usd: 2500
+  Morocco:
+    max_notional_usd: 2500
+    max_mid: 0.88
   Colombia:
     max_notional_usd: 2500
   Canada:
@@ -75,8 +78,6 @@ per_team:
   Brazil:
     max_notional_usd: 500
     mode: fade_watch
-  Morocco:
-    mode: human_review
   Japan:
     mode: fade_watch
   Scotland:
@@ -115,5 +116,8 @@ per_team:
 # K91 conviction audit (May 31): Canada/Japan/Scotland/Brazil → per_team fade_watch (alert-only).
 # K93 YAML hygiene: removed those teams from yes_conviction / bilateral_only to avoid stale list drift.
 # K93 research cadence: `world-cup-bot research run weekly-osint-pipeline` (Monokern/NotebookLM lane).
-#   [NEEDS RE-RUN 2026-06-06]
+# K96 safety review (2026-06-04): Canada/Japan/Scotland/Brazil stay fade_watch — mids 0.725–0.966;
+#   Spain skip (0.980). Next review: after first June 2026 international friendlies or 2026-06-13.
+# K97 operator conviction (2026-06-04): Morocco + Turkey underdog picks — Morocco human_review lifted,
+#   max_mid 0.88 at $2500 cap; Turkey stays yes_heavy $2500.
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)

@@ -140,3 +140,8 @@ def match_shock_live() -> bool:
 
 def match_shock_live_ack() -> bool:
     return _bool("WC_MATCH_SHOCK_LIVE_ACK", False)
+
+
+def wiki_enforcement_enabled() -> bool:
+    """When true, plan/live POST validates intents against operating.yaml wiki rules."""
+    return _bool("WC_WIKI_ENFORCEMENT", False)

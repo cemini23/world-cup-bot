@@ -25,6 +25,7 @@ def _operating(cap: float = 500) -> OperatingConfig:
         CalendarOps,
         FillHandlerOps,
         LiquidityOps,
+        PromotionOps,
     )
 
     return OperatingConfig(
@@ -46,6 +47,12 @@ def _operating(cap: float = 500) -> OperatingConfig:
             auto_clear_human_review=True,
         ),
         risk=RiskOps(max_daily_adverse_fill_usd=cap),
+        promotion=PromotionOps(
+            min_fills=5,
+            min_distinct_days=3,
+            min_dsr=0.0,
+            max_mcpt_p=0.10,
+        ),
     )
 
 

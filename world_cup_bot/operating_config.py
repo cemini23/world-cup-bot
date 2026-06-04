@@ -48,12 +48,23 @@ class RiskOps:
 
 
 @dataclass(frozen=True)
+class PromotionOps:
+    """Shadow → live LP promotion gates (DSR + MCPT heuristics)."""
+
+    min_fills: int
+    min_distinct_days: int
+    min_dsr: float
+    max_mcpt_p: float
+
+
+@dataclass(frozen=True)
 class OperatingConfig:
     calendar: CalendarOps
     bilateral: BilateralOps
     fill_handler: FillHandlerOps
     liquidity: LiquidityOps
     risk: RiskOps
+    promotion: PromotionOps
 
 
 def load_operating_config(path: Path | None = None) -> OperatingConfig:
@@ -66,6 +77,7 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
     fh = raw.get("fill_handler") or {}
     liq = raw.get("liquidity") or {}
     risk = raw.get("risk") or {}
+    promo = raw.get("promotion") or {}
 
     return OperatingConfig(
         calendar=CalendarOps(
@@ -101,6 +113,12 @@ def load_operating_config(path: Path | None = None) -> OperatingConfig:
         ),
         risk=RiskOps(
             max_daily_adverse_fill_usd=float(risk.get("max_daily_adverse_fill_usd", 500)),
+        ),
+        promotion=PromotionOps(
+            min_fills=int(promo.get("min_fills", 5)),
+            min_distinct_days=int(promo.get("min_distinct_days", 3)),
+            min_dsr=float(promo.get("min_dsr", 0.0)),
+            max_mcpt_p=float(promo.get("max_mcpt_p", 0.10)),
         ),
     )
 

@@ -2,7 +2,7 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 274 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v4` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 282 pytest (CI on push)
 
 ---
 
@@ -53,9 +53,9 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 
 | Item | Notes |
 |------|-------|
-| Dependency lockfile | Reproducible `[live]` installs — see `requirements-lock.txt` |
-| Formal LP promotion gates | DSR/MCPT-style metrics beyond shadow net-PnL heuristic |
-| Wiki enforcement hook | Optional `WC_WIKI_ENFORCEMENT=1` order-time policy (documented only in OSS) |
+| Dependency lockfile | Reproducible `[live]` installs — `requirements-lock.txt` + CI `check_requirements_lock.py` |
+| Formal LP promotion gates | DSR + MCPT heuristics in `lp_promotion.py`; shadow-status step `lp_promotion` |
+| Wiki enforcement hook | `WC_WIKI_ENFORCEMENT=1` → `wiki_enforcement.py` blocks live POST violations |
 
 ---
 
@@ -67,7 +67,7 @@ Complete [SHADOW.md](SHADOW.md) Phases 0–3 on your infrastructure:
 | Conviction refresh | After material news | `conviction-staleness --notify`, `fixture-check --notify` |
 | Cross-venue pair refresh | As slugs change | `cross-venue-scan --discover-only` → update `config/cross_venue.yaml` |
 
-Current conservative posture: `Canada`, `Japan`, `Scotland`, and `Brazil` remain **`fade_watch`** (alert-only) in `config/conviction.yaml` pending the next scheduled safety review (**2026-06-06**).
+Current conservative posture: `Canada`, `Japan`, `Scotland`, and `Brazil` remain **`fade_watch`** (alert-only) in `config/conviction.yaml` — K96 review **2026-06-04** confirmed; next review **2026-06-13** or after June friendlies.
 
 ---
 

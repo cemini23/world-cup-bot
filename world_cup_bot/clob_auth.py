@@ -24,6 +24,18 @@ class ClobAuth:
         }
 
 
+def clob_auth_configured() -> bool:
+    """True when all three L2 env vars are set."""
+    return all(
+        os.environ.get(name, "").strip()
+        for name in (
+            "POLYMARKET_API_KEY",
+            "POLYMARKET_API_SECRET",
+            "POLYMARKET_API_PASSPHRASE",
+        )
+    )
+
+
 def load_clob_auth() -> ClobAuth:
     """Load L2 creds from env — derive once via py-clob-client or Polymarket settings."""
     api_key = os.environ.get("POLYMARKET_API_KEY", "").strip()

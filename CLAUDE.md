@@ -82,6 +82,8 @@ world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot cancel --cancel-window | --team NAME | --all-wc
 world-cup-bot orders
 world-cup-bot pnl [--scope current|legacy|all] [--by-version]
+world-cup-bot venue-reconcile autofill [--logic-version wc_advance_lp_v4]
+world-cup-bot venue-reconcile backfill
 world-cup-bot venue-reconcile compare <polymarket-export.csv> [--logic-version wc_advance_lp_v4]
 world-cup-bot rewards sync [--record]
 world-cup-bot conviction-staleness [--notify]
@@ -141,7 +143,9 @@ reconcile loop (30s): GET /data/trades → same fill path (WS silent-fill blind 
 ## Open backlog (do not claim done)
 
 - ~~Formal shadow gate in GitHub Actions~~ — **Done:** `tests/test_shadow_fixture_gate.py` + TruffleHog/vet in CI
-- Dependency lockfile for reproducible `[live]` installs (post-launch)
+- ~~Dependency lockfile CI~~ — **Done:** `requirements-lock.txt` + `scripts/check_requirements_lock.py`
+- ~~LP promotion gates~~ — **Done:** `lp_promotion.py` + shadow-status step
+- ~~Wiki enforcement hook~~ — **Done:** `WC_WIKI_ENFORCEMENT=1` + `wiki_enforcement.py`
 
 ## Related
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from world_cup_bot.config import Settings
@@ -204,6 +205,13 @@ def submit_quotes(
             ledger_path=ledger_path,
             version_spec=version_spec,
         )
+
+    if markets is not None and not settings.dry_run:
+        from world_cup_bot.operating_config import load_operating_config
+        from world_cup_bot.wiki_enforcement import enforce_or_raise
+
+        operating = load_operating_config(Path(settings.operating_config))
+        enforce_or_raise(intents, settings, markets, operating)
 
     if settings.dry_run:
         for intent in intents:

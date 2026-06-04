@@ -39,6 +39,7 @@ class Limits:
 @dataclass(frozen=True)
 class TeamOverride:
     max_notional_usd: float | None = None
+    max_mid: float | None = None
     mode: TeamMode | None = None
 
 
@@ -76,6 +77,14 @@ class ConvictionConfig:
             return override.max_notional_usd
         return self.limits.default_max_notional_usd
 
+    def effective_max_mid(self, team: str) -> float:
+        """Per-team yes_heavy ceiling; defaults to limits.max_mid."""
+        canon = team_names.normalize_team(team)
+        override = self.per_team.get(canon)
+        if override and override.max_mid is not None:
+            return override.max_mid
+        return self.limits.max_mid
+
 
 def _in_set(team: str, names: frozenset[str]) -> bool:
     canon = team_names.normalize_team(team)
@@ -112,6 +121,7 @@ def load_conviction_config(path: Path | None = None) -> ConvictionConfig:
         mode = TeamMode(mode_str) if mode_str else None
         per_team[team_names.normalize_team(team)] = TeamOverride(
             max_notional_usd=spec.get("max_notional_usd"),
+            max_mid=spec.get("max_mid"),
             mode=mode,
         )
 
@@ -193,17 +203,18 @@ def evaluate_market(
         return ConvictionResult(market, mode, False, "no mid from Gamma")
 
     lim = config.limits
+    max_mid = config.effective_max_mid(market.team)
     if mode == TeamMode.YES_HEAVY:
         if market.bilateral_mode or mid >= lim.bilateral_mid:
             return ConvictionResult(
                 market, mode, True, "yes_heavy → bilateral (mid ≥ bilateral threshold)"
             )
-        if mid < lim.min_mid or mid > lim.max_mid:
+        if mid < lim.min_mid or mid > max_mid:
             return ConvictionResult(
                 market,
                 mode,
                 False,
-                f"mid {mid:.3f} outside [{lim.min_mid}, {lim.max_mid}]",
+                f"mid {mid:.3f} outside [{lim.min_mid}, {max_mid}]",
             )
         return ConvictionResult(market, mode, True, "yes_heavy mid-band match")
 
@@ -283,17 +294,18 @@ def _evaluate_tier(
         return ConvictionResult(market, mode, False, "no mid from Gamma")
 
     lim = config.limits
+    max_mid = config.effective_max_mid(market.team)
     if mode == TeamMode.YES_HEAVY:
         if market.bilateral_mode or mid >= lim.bilateral_mid:
             return ConvictionResult(
                 market, mode, True, "yes_heavy → bilateral (mid ≥ bilateral threshold)"
             )
-        if mid < lim.min_mid or mid > lim.max_mid:
+        if mid < lim.min_mid or mid > max_mid:
             return ConvictionResult(
                 market,
                 mode,
                 False,
-                f"mid {mid:.3f} outside [{lim.min_mid}, {lim.max_mid}]",
+                f"mid {mid:.3f} outside [{lim.min_mid}, {max_mid}]",
             )
         return ConvictionResult(market, mode, True, "yes_heavy mid-band match")
 

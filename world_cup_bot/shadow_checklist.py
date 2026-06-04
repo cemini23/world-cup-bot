@@ -10,6 +10,8 @@ from pathlib import Path
 from world_cup_bot.config import Settings
 from world_cup_bot.ledger import load_rows
 from world_cup_bot.logic_version import load_strategy_version
+from world_cup_bot.lp_promotion import evaluate_promotion_gates
+from world_cup_bot.operating_config import load_operating_config
 from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.preflight import CheckStatus, run_preflight
 from world_cup_bot.risk import shadow_net_pnl_ok
@@ -28,6 +30,28 @@ def _shadow_pnl_status(settings: Settings, stats: dict[str, int]) -> StepStatus:
         return StepStatus.DONE
     spec = load_strategy_version(Path(settings.logic_version_config))
     ok, _detail = shadow_net_pnl_ok(Path(settings.ledger_path), spec)
+    return StepStatus.DONE if ok else StepStatus.WARN
+
+
+def _promotion_detail(settings: Settings, stats: dict[str, int]) -> str:
+    if stats["fills"] == 0:
+        return "No fills yet — DSR/MCPT gates apply after watch --record"
+    spec = load_strategy_version(Path(settings.logic_version_config))
+    operating = load_operating_config(Path(settings.operating_config))
+    _ok, detail, _metrics = evaluate_promotion_gates(
+        Path(settings.ledger_path), spec, operating.promotion
+    )
+    return detail
+
+
+def _promotion_status(settings: Settings, stats: dict[str, int]) -> StepStatus:
+    if stats["fills"] == 0:
+        return StepStatus.DONE
+    spec = load_strategy_version(Path(settings.logic_version_config))
+    operating = load_operating_config(Path(settings.operating_config))
+    ok, _detail, _metrics = evaluate_promotion_gates(
+        Path(settings.ledger_path), spec, operating.promotion
+    )
     return StepStatus.DONE if ok else StepStatus.WARN
 
 
@@ -173,6 +197,14 @@ def build_shadow_steps(settings: Settings, *, test_auth: bool = False) -> list[S
             detail=_shadow_pnl_detail(settings, stats),
             status=_shadow_pnl_status(settings, stats),
             cli="world-cup-bot pnl --scope current",
+        ),
+        ShadowStep(
+            id="lp_promotion",
+            phase=1,
+            title="LP promotion gates (DSR/MCPT)",
+            detail=_promotion_detail(settings, stats),
+            status=_promotion_status(settings, stats),
+            cli="world-cup-bot shadow-status --min-phase 1",
         ),
         ShadowStep(
             id="watch",

@@ -1,0 +1,63 @@
+{
+  "review_id": "K96",
+  "date": "2026-06-04",
+  "trigger": "scheduled safety review (was 2026-06-06)",
+  "next_review": "2026-06-13",
+  "conviction_patches": [
+    {
+      "team": "Canada",
+      "recommended_mode": "fade_watch",
+      "live_mid": 0.845,
+      "evidence": "High mid outside yes_heavy band; pre-friendlies conservative posture",
+      "confidence": "high"
+    },
+    {
+      "team": "Japan",
+      "recommended_mode": "fade_watch",
+      "live_mid": 0.78,
+      "evidence": "K91 downgrade stands; no material news delta since May 31 audit",
+      "confidence": "high"
+    },
+    {
+      "team": "Scotland",
+      "recommended_mode": "fade_watch",
+      "live_mid": 0.725,
+      "evidence": "Mid-band but alert-only until friendlies confirm group path",
+      "confidence": "medium"
+    },
+    {
+      "team": "Brazil",
+      "recommended_mode": "fade_watch",
+      "live_mid": 0.966,
+      "evidence": "Whale-tier mid; cap $500; alert-only per K84/K91",
+      "confidence": "high"
+    },
+    {
+      "team": "Morocco",
+      "recommended_mode": "human_review",
+      "live_mid": 0.86,
+      "evidence": "K84 human_review gate; mid elevated; operator sign-off required",
+      "confidence": "high"
+    },
+    {
+      "team": "Spain",
+      "recommended_mode": "skip",
+      "live_mid": 0.98,
+      "evidence": "K84 skip unchanged",
+      "confidence": "high"
+    }
+  ],
+  "staleness_alerts": [],
+  "fixture_check": "hash drift only — 104 matches local vs upstream, no per-match diff",
+  "shadow_notes": [
+    "plan --record works without L2 creds in DRY_RUN (cancel-replace skip fix)",
+    "47 quote intents across 2 calendar days — need 1 more day for Phase 1 gate",
+    "L2 creds required for watch --record",
+    "Non-US egress required before live POST"
+  ],
+  "no_go": [
+    "DRY_RUN=false",
+    "WC_LIVE_PLAN_ACK=1",
+    "Morocco auto_clear without operator review"
+  ]
+}

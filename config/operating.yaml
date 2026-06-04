@@ -21,6 +21,13 @@ fill_handler:
 risk:
   max_daily_adverse_fill_usd: 500  # 0 = disable gate
 
+# Shadow → live LP promotion (DSR + MCPT heuristics on ledger PnL days)
+promotion:
+  min_fills: 5
+  min_distinct_days: 3
+  min_dsr: 0.0       # deflated Sharpe floor when fills exist
+  max_mcpt_p: 0.10   # permutation-test p-value ceiling
+
 # CLOB GET /book depth gates (public API — no auth). Gamma `liquidity` is aggregate only.
 # WC advance markets are thinner than politics — thresholds tuned below major-market defaults.
 liquidity:

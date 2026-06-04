@@ -40,7 +40,7 @@ Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixt
 
 Prices, spreads, and kickoff times come from **Gamma + CLOB at runtime** — nothing hardcoded.
 
-Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_watch`** (alert-only) in `config/conviction.yaml` pending the next scheduled safety review (**2026-06-06**). Run `world-cup-bot research run weekly-osint-pipeline` for weekly external research; apply YAML changes manually after review.
+Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_watch`** (alert-only) in `config/conviction.yaml` — K96 review **2026-06-04** confirmed; next review **2026-06-13** or after June friendlies.
 
 ### Go-live safety
 

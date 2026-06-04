@@ -46,13 +46,16 @@ def test_k84_lp_safety_gates():
     cfg = load_conviction_config()
     assert cfg.team_mode("Spain") == TeamMode.SKIP
     assert cfg.max_notional("Brazil") == 500
-    assert cfg.team_mode("Morocco") == TeamMode.HUMAN_REVIEW
+    assert cfg.team_mode("Morocco") == TeamMode.YES_HEAVY
+    assert cfg.effective_max_mid("Morocco") == 0.88
     sp = make_market("Spain", mid=0.93, bilateral=True)
     assert not conviction.evaluate_market(sp, cfg).quote
     br = make_market("Brazil", mid=0.95, bilateral=True)
     assert not conviction.evaluate_market(br, cfg).quote
     mo = make_market("Morocco", mid=0.55)
-    assert not conviction.evaluate_market(mo, cfg).quote
+    assert conviction.evaluate_market(mo, cfg).quote
+    mo_high = make_market("Morocco", mid=0.86)
+    assert conviction.evaluate_market(mo_high, cfg).quote
 
 
 def test_fade_watch_never_quotes():

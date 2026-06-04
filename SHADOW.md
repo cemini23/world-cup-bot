@@ -42,7 +42,21 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 
 `shadow-status` counts **calendar days in the ledger file it reads**. If manual CLI writes `data/local/ledger.jsonl` but systemd writes `/opt/cemini/logs/wc_ledger.jsonl`, Phase 1 can show **1 day** while you already have **3 days** across files.
 
-**Fix:** set the same path everywhere (`LEDGER_PATH` and `WC_LEDGER_PATH`), merge legacy rows into that file, then symlink repo `data/local/ledger.jsonl` → canonical path. On Cemini egress, always run gates via:
+**Fix:** set the same path everywhere (`LEDGER_PATH` and `WC_LEDGER_PATH`), merge legacy rows into that file, then symlink repo `data/local/ledger.jsonl` → canonical path.
+
+**Cemini egress (`cemini-egress-fi`):** `/opt/cemini/scripts/wc_run.sh` defaults `WC_LEDGER_PATH` to `wc_shadow_ledger.jsonl` when `WC_DRY_RUN=true`, but live services (`cemini-wc-watch`, `cemini-wc-live-plan`) write to `/opt/cemini/logs/wc_ledger.jsonl`. Set in `/opt/cemini/.env`:
+
+```bash
+WC_LEDGER_PATH=/opt/cemini/logs/wc_ledger.jsonl
+```
+
+Gate check (Phases 0–4 on egress — live services set `WC_DRY_RUN=false` via systemd drop-ins):
+
+```bash
+WC_LOAD_POLYMARKET_ENV=1 WC_DRY_RUN=false /opt/cemini/scripts/wc_run.sh shadow-status --min-phase 4
+```
+
+Local dev gate:
 
 ```bash
 WC_LOAD_POLYMARKET_ENV=1 /opt/cemini/scripts/wc_run.sh shadow-status --min-phase 1

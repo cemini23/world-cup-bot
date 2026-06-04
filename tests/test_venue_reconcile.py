@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from world_cup_bot.venue_reconcile import compare_venue_csv, load_venue_order_ids
+from world_cup_bot.venue_reconcile import (
+    _maker_order_ids_from_trades,
+    compare_venue_csv,
+    compare_venue_sets,
+    load_venue_order_ids,
+)
 
 
 def test_load_venue_order_ids(tmp_path: Path):
@@ -28,6 +33,29 @@ def test_compare_venue_csv_matched_and_gaps(tmp_path: Path):
         encoding="utf-8",
     )
     report = compare_venue_csv(csv_path, ledger_path)
+    assert report.matched == 1
+    assert report.ledger_only == ("0xbbb",)
+    assert report.venue_only == ("0xccc",)
+
+
+def test_maker_order_ids_from_trades():
+    trades = [
+        {
+            "status": "MATCHED",
+            "market": "0xcond",
+            "id": "t1",
+            "maker_orders": [
+                {"order_id": "0xaaa", "asset_id": "y", "price": "0.5", "matched_amount": "10"},
+            ],
+        },
+        {"status": "CANCELLED", "id": "t2"},
+    ]
+    ids = _maker_order_ids_from_trades(trades)
+    assert ids == {"0xaaa"}
+
+
+def test_compare_venue_sets():
+    report = compare_venue_sets({"0xaaa", "0xbbb"}, {"0xaaa", "0xccc"})
     assert report.matched == 1
     assert report.ledger_only == ("0xbbb",)
     assert report.venue_only == ("0xccc",)

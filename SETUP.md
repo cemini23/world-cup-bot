@@ -25,6 +25,7 @@ Copy `.env.example` → `.env` and fill values locally.
 | `MAX_NOTIONAL_PER_MARKET_USD` | no | Hard ceiling per market (minimum with `conviction.yaml` caps; default `2000`) |
 | `WC_LIVE_PLAN_ACK` | live timer | Set to `1` in `.env` before enabling `world-cup-bot-live-plan.timer` |
 | `WC_ALERT_WEBHOOK_URL` | no | Discord/Slack HTTPS webhook for operator alerts |
+| `WC_WIKI_ENFORCEMENT` | no | Set `1` to block live POST when intents violate `operating.yaml` wiki rules |
 | `MIN_HOURS_BEFORE_KICKOFF` | no | Calendar guard cancel threshold (default `10`) |
 
 Derive L2 creds once from your private key (`py-clob-client-v2` `create_or_derive_api_creds()`), then store the three values above in `.env`.
@@ -38,7 +39,9 @@ pip install -r requirements-lock.txt
 pip install -e ".[live]"   # or pip install -e ".[dev]" for pytest/ruff
 ```
 
-Regenerate after bumping `pyproject.toml` optional extras.
+Regenerate after bumping `pyproject.toml` optional extras. CI runs `python scripts/check_requirements_lock.py`.
+
+Shadow bootstrap: `bash scripts/shadow_setup.sh` (Phase 0 preflight + plan --record).
 
 ## Live fill watch (Module 4)
 
