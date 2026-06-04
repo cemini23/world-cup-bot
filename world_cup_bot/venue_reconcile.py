@@ -153,15 +153,28 @@ def compare_venue_clob(
     logic_version: str | None = None,
     after_days: int = 30,
     max_pages: int = 20,
+    wc_only: bool = True,
     condition_ids: set[str] | None = None,
 ) -> tuple[VenueReconcileReport, int]:
     """Compare ledger fills to CLOB /data/trades maker order_ids."""
+    from world_cup_bot.operating_config import load_operating_config
+    from world_cup_bot.scanner import discover_advance_markets
+
     ledger_ids = load_ledger_fill_order_ids(ledger_path, logic_version=logic_version)
+    filter_ids = condition_ids
+    if wc_only and filter_ids is None:
+        operating = load_operating_config(Path(settings.operating_config))
+        markets = discover_advance_markets(
+            settings.gamma_url,
+            min_hours_before_kickoff=settings.min_hours_before_kickoff,
+            operating=operating,
+        )
+        filter_ids = {m.condition_id for m in markets if m.condition_id}
     venue_ids, trade_rows = fetch_clob_maker_order_ids(
         settings,
         after_days=after_days,
         max_pages=max_pages,
-        condition_ids=condition_ids,
+        condition_ids=filter_ids,
     )
     return compare_venue_sets(ledger_ids, venue_ids), trade_rows
 

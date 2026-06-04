@@ -1587,6 +1587,7 @@ def _cmd_venue_reconcile(args: argparse.Namespace) -> int:
                 logic_version=args.logic_version,
                 after_days=args.after_days,
                 max_pages=args.max_pages,
+                wc_only=not args.all_markets,
             )
         except Exception as exc:
             print(f"autofill failed: {exc}", file=sys.stderr)
@@ -2692,10 +2693,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filter ledger fills to one logic_version (default: all fills)",
     )
     vraut.add_argument(
-        "--after-days",
-        type=int,
-        default=30,
-        help="CLOB trades lookback (default 30)",
+        "--all-markets",
+        action="store_true",
+        help="Include non-WC CLOB trades (default: WC advance condition ids only)",
     )
     vraut.add_argument("--max-pages", type=int, default=20, help="CLOB pagination cap")
     vraut.add_argument("--json", action="store_true")
