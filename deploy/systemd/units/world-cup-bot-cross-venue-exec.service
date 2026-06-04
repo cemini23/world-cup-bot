@@ -11,7 +11,7 @@ EnvironmentFile=-@INSTALL_ROOT@/.env.trading
 Environment=WC_DRY_RUN=false
 Environment=WC_CROSS_VENUE_AUTO_EXEC=1
 Environment=WC_CROSS_VENUE_LEDGER_PATH=@INSTALL_ROOT@/data/local/cross_venue_arb_ledger.jsonl
-ExecStart=/bin/bash -c 'test "${WC_CROSS_VENUE_EXEC_ACK:-}" = "1" || { echo "Refusing cross-venue auto exec: set WC_CROSS_VENUE_EXEC_ACK=1 after paper soak + Phase 4 GO" >&2; exit 1; }; @INSTALL_ROOT@/bin/wc_run.sh preflight && @INSTALL_ROOT@/bin/wc_run.sh cross-venue-scan --loop --alert-only --record 2>&1 | while IFS= read -r line; do echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $line"; echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $line" >> @INSTALL_ROOT@/logs/cross_venue_exec.log; [[ "$line" == ALERT* ]] && logger -t world-cup-bot "$line"; [[ "$line" == EXEC_AUTO* ]] && logger -t world-cup-bot "$line"; done'
+ExecStart=/bin/bash -c 'test "${WC_CROSS_VENUE_EXEC_ACK:-}" = "1" || { echo "Refusing cross-venue auto exec: set WC_CROSS_VENUE_EXEC_ACK=1 after paper soak + Phase 4 GO" >&2; exit 1; }; @INSTALL_ROOT@/bin/wc_run.sh preflight && @INSTALL_ROOT@/bin/wc_run.sh cross-venue-scan --loop --alert-only --record 2>&1 | while IFS= read -r line; do echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line"; echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line" >> @INSTALL_ROOT@/logs/cross_venue_exec.log; [[ "$line" == ALERT* ]] && logger -t world-cup-bot "$line"; [[ "$line" == EXEC_AUTO* ]] && logger -t world-cup-bot "$line"; done'
 Restart=always
 RestartSec=30
 User=root

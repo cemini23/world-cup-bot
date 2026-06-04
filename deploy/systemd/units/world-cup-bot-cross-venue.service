@@ -9,7 +9,7 @@ WorkingDirectory=@INSTALL_ROOT@
 EnvironmentFile=-@INSTALL_ROOT@/.env
 Environment=WC_DRY_RUN=true
 Environment=WC_CROSS_VENUE_LEDGER_PATH=@INSTALL_ROOT@/data/local/cross_venue_arb_ledger.jsonl
-ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh cross-venue-scan --loop --alert-only --record 2>&1 | while IFS= read -r line; do echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $line"; echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $line" >> @INSTALL_ROOT@/logs/cross_venue_alerts.jsonl; [[ "$line" == ALERT* ]] && logger -t world-cup-bot "$line"; done'
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh cross-venue-scan --loop --alert-only --record 2>&1 | while IFS= read -r line; do echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line"; echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line" >> @INSTALL_ROOT@/logs/cross_venue_alerts.jsonl; [[ "$line" == ALERT* ]] && logger -t world-cup-bot "$line"; done'
 Restart=always
 RestartSec=30
 User=root
