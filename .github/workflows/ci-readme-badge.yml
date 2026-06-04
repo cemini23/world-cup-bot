@@ -8,6 +8,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
+  workflow_dispatch:
 
 concurrency:
   group: readme-ci-badge
@@ -19,12 +20,13 @@ permissions:
 jobs:
   sync-readme:
     if: >-
-      github.event.workflow_run.conclusion != 'cancelled' &&
-      github.event.workflow_run.head_branch == 'main'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion != 'cancelled' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     env:
-      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-      UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
+      CONCLUSION: ${{ github.event_name == 'workflow_dispatch' && 'success' || github.event.workflow_run.conclusion }}
+      UPDATED_AT: ${{ github.event_name == 'workflow_dispatch' && github.run_started_at || github.event.workflow_run.updated_at }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,11 +50,13 @@ jobs:
           path = Path("README.md")
           text = path.read_text(encoding="utf-8")
 
-          # Append cache-bust param so GitHub camo proxy refetches after CI recovers.
+          # Static shields badge (not github/actions/workflow/status) — camo caches that
+          # endpoint red for hours after CI recovers; we set label/color from workflow_run.
           cache_bust = ts.replace(":", "").replace("-", "")
+          color = "brightgreen" if label == "passing" else "red"
           badge = (
-              "[![CI](https://img.shields.io/github/actions/workflow/status/"
-              f"cemini23/world-cup-bot/ci.yml?branch=main&label=CI&updated={cache_bust})]"
+              "[![CI](https://img.shields.io/badge/CI-"
+              f"{label}-{color}?logo=githubactions&logoColor=white&updated={cache_bust})]"
               "(https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)"
           )
           text, n = re.subn(r"\[!\[CI\]\([^\]]+\)\]\([^\)]+\)", badge, text, count=1)
