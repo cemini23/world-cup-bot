@@ -2148,7 +2148,7 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
                 if new:
                     print(f"DISCOVER {len(new)} new pair(s) — run --discover-only for YAML rows")
 
-        if args.once or not args.loop:
+        if not args.loop:
             exit_code = 2 if (result.alerts or result.slug_warnings) else 0
             return exit_code
 
