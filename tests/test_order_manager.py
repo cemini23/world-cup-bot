@@ -71,7 +71,8 @@ def test_fetch_wc_open_orders_requires_auth(monkeypatch):
     }
     market = market.__class__(**overrides)
     with pytest.raises(MissingClobAuthError):
-        order_manager.fetch_wc_open_orders(_settings(), [market])
+        order_manager.fetch_wc_open_orders(_settings(dry_run=False), [market])
+    assert order_manager.fetch_wc_open_orders(_settings(dry_run=True), [market]) == []
 
 
 def test_cancel_orders_dry_run(monkeypatch):

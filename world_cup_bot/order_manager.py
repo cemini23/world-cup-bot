@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 
 from world_cup_bot import calendar_guard
-from world_cup_bot.clob_auth import ClobAuth, load_clob_auth, load_poly_address
+from world_cup_bot.clob_auth import ClobAuth, MissingClobAuthError, load_clob_auth, load_poly_address
 from world_cup_bot.clob_rest import fetch_open_orders
 from world_cup_bot.config import Settings
 from world_cup_bot.logic_version import StrategyVersionSpec
@@ -118,6 +118,17 @@ def build_wc_index(
     return token_ids, condition_ids, team_by_asset, market_by_condition
 
 
+def _skip_open_orders_fetch_without_l2(settings: Settings, auth: ClobAuth | None) -> bool:
+    """DRY_RUN shadow plan on US monitor — no L2 creds; treat as zero open orders."""
+    if auth is not None or not settings.dry_run:
+        return False
+    try:
+        load_clob_auth()
+    except MissingClobAuthError:
+        return True
+    return False
+
+
 def fetch_wc_open_orders(
     settings: Settings,
     markets: list[AdvanceMarket],
@@ -128,6 +139,9 @@ def fetch_wc_open_orders(
     """Open CLOB orders limited to WC advance market token ids."""
     token_ids, _, team_by_asset, _ = build_wc_index(markets)
     if not token_ids:
+        return []
+    if _skip_open_orders_fetch_without_l2(settings, auth):
+        logger.info("SKIP fetch open orders (DRY_RUN, no L2 creds)")
         return []
     auth = auth or load_clob_auth()
     address = address or load_poly_address()
