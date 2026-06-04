@@ -1,0 +1,399 @@
+# Auto-staged discoveries — review rules_hash before enabling
+# generated 2026-06-04 count=36
+
+- team: Scotland
+  market_type: group_winner
+  polymarket_hint: "Will Scotland win Group A?"
+  polymarket_slug: will-scotland-win-group-a
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26C-SCO
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Austria
+  market_type: group_winner
+  polymarket_hint: "Will Austria win Group D?"
+  polymarket_slug: will-austria-win-group-d
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26J-AUT
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Czech Republic
+  market_type: group_winner
+  polymarket_hint: "Will Czechia win Group F?"
+  polymarket_slug: will-czechia-win-group-f
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26A-CZE
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Turkey
+  market_type: group_winner
+  polymarket_hint: "Will Turkiye win Group F?"
+  polymarket_slug: will-turkiye-win-group-f
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26D-TUR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Czech Republic
+  market_type: group_winner
+  polymarket_hint: "Will Czechia win Group A in the 2026 FIFA World Cup?"
+  polymarket_slug: will-czechia-win-group-a-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26A-CZE
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Paraguay
+  market_type: group_winner
+  polymarket_hint: "Will Paraguay win Group D in the 2026 FIFA World Cup?"
+  polymarket_slug: will-paraguay-win-group-d-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26D-PAR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Sweden
+  market_type: group_winner
+  polymarket_hint: "Will Sweden win Group F in the 2026 FIFA World Cup?"
+  polymarket_slug: will-sweden-win-group-f-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26F-SWE
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Ivory Coast
+  market_type: group_winner
+  polymarket_hint: "Will Ivory Coast win Group E in the 2026 FIFA World Cup?"
+  polymarket_slug: will-ivory-coast-win-group-e-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26E-CIV
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: South Korea
+  market_type: group_winner
+  polymarket_hint: "Will South Korea win Group A in the 2026 FIFA World Cup?"
+  polymarket_slug: will-south-korea-win-group-a-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26A-KOR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Algeria
+  market_type: group_winner
+  polymarket_hint: "Will Algeria win Group J in the 2026 FIFA World Cup?"
+  polymarket_slug: will-algeria-win-group-j-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26J-DZA
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Bosnia & Herzegovina
+  market_type: group_winner
+  polymarket_hint: "Will Bosnia and Herzegovina win Group B in the 2026 FIFA World Cup?"
+  polymarket_slug: will-the-winner-of-bosnia-and-herzegovinaitalynorthern-irelandwales-win-group-a-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26B-BIH
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Norway
+  market_type: group_winner
+  polymarket_hint: "Will Norway win Group I in the 2026 FIFA World Cup?"
+  polymarket_slug: will-norway-win-group-i-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26I-NOR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Iran
+  market_type: group_winner
+  polymarket_hint: "Will Iran win Group G in the 2026 FIFA World Cup?"
+  polymarket_slug: will-iran-win-group-g-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26G-IRI
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Saudi Arabia
+  market_type: group_winner
+  polymarket_hint: "Will Saudi Arabia win Group H in the 2026 FIFA World Cup?"
+  polymarket_slug: will-saudi-arabia-win-group-h-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26H-KSA
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: New Zealand
+  market_type: group_winner
+  polymarket_hint: "Will New Zealand win Group G in the 2026 FIFA World Cup?"
+  polymarket_slug: will-new-zealand-win-group-g-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26G-NZL
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Uzbekistan
+  market_type: group_winner
+  polymarket_hint: "Will Uzbekistan win Group K in the 2026 FIFA World Cup?"
+  polymarket_slug: will-uzbekistan-win-group-k-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26K-UZB
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Panama
+  market_type: group_winner
+  polymarket_hint: "Will Panama win Group L in the 2026 FIFA World Cup?"
+  polymarket_slug: will-panama-win-group-l-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26L-PAN
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: South Africa
+  market_type: group_winner
+  polymarket_hint: "Will South Africa win Group A in the 2026 FIFA World Cup?"
+  polymarket_slug: will-south-africa-win-group-a-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26A-RSA
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Tunisia
+  market_type: group_winner
+  polymarket_hint: "Will Tunisia win Group F in the 2026 FIFA World Cup?"
+  polymarket_slug: will-tunisia-win-group-f-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26F-TUN
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Egypt
+  market_type: group_winner
+  polymarket_hint: "Will Egypt win Group G in the 2026 FIFA World Cup?"
+  polymarket_slug: will-egypt-win-group-g-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26G-EGY
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Japan
+  market_type: group_winner
+  polymarket_hint: "Will Japan win Group F in the 2026 FIFA World Cup?"
+  polymarket_slug: will-japan-win-group-f-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26F-JPN
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Turkey
+  market_type: group_winner
+  polymarket_hint: "Will Türkiye win Group D in the 2026 FIFA World Cup?"
+  polymarket_slug: will-the-winner-of-kosovoromaniaslovakiatrkiye-playoff-win-group-d-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26D-TUR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Ecuador
+  market_type: group_winner
+  polymarket_hint: "Will Ecuador win Group E in the 2026 FIFA World Cup?"
+  polymarket_slug: will-ecuador-win-group-e-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26E-ECU
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Scotland
+  market_type: group_winner
+  polymarket_hint: "Will Scotland win Group C in the 2026 FIFA World Cup?"
+  polymarket_slug: will-scotland-win-group-c-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26C-SCO
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Jordan
+  market_type: group_winner
+  polymarket_hint: "Will Jordan win Group J in the 2026 FIFA World Cup?"
+  polymarket_slug: will-jordan-win-group-j-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26J-JOR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Cape Verde
+  market_type: group_winner
+  polymarket_hint: "Will Cape Verde win Group H in the 2026 FIFA World Cup?"
+  polymarket_slug: will-cape-verde-win-group-h-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26H-CPV
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Australia
+  market_type: group_winner
+  polymarket_hint: "Will Australia win Group D in the 2026 FIFA World Cup?"
+  polymarket_slug: will-australia-win-group-d-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26D-AUS
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Ghana
+  market_type: group_winner
+  polymarket_hint: "Will Ghana win Group L in the 2026 FIFA World Cup?"
+  polymarket_slug: will-ghana-win-group-l-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26L-GHA
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Haiti
+  market_type: group_winner
+  polymarket_hint: "Will Haiti win Group C in the 2026 FIFA World Cup?"
+  polymarket_slug: will-haiti-win-group-c-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26C-HTI
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Iraq
+  market_type: group_winner
+  polymarket_hint: "Will Iraq win Group I in the 2026 FIFA World Cup?"
+  polymarket_slug: will-the-winner-of-boliviairaqsuriname-playoff-win-group-i-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26I-IRQ
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Austria
+  market_type: group_winner
+  polymarket_hint: "Will Austria win Group J in the 2026 FIFA World Cup?"
+  polymarket_slug: will-austria-win-group-j-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26J-AUT
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Canada
+  market_type: group_winner
+  polymarket_hint: "Will Canada win Group B in the 2026 FIFA World Cup?"
+  polymarket_slug: will-canada-win-group-a-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26B-CAN
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Colombia
+  market_type: group_winner
+  polymarket_hint: "Will Colombia win Group K in the 2026 FIFA World Cup?"
+  polymarket_slug: will-colombia-win-group-k-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26K-COL
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Curaçao
+  market_type: group_winner
+  polymarket_hint: "Will Curaçao win Group E in the 2026 FIFA World Cup?"
+  polymarket_slug: will-curaao-win-group-e-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26E-CUW
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Morocco
+  market_type: group_winner
+  polymarket_hint: "Will Morocco win Group C in the 2026 FIFA World Cup?"
+  polymarket_slug: will-morocco-win-group-c-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26C-MAR
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+
+- team: Senegal
+  market_type: group_winner
+  polymarket_hint: "Will Senegal win Group I in the 2026 FIFA World Cup?"
+  polymarket_slug: will-senegal-win-group-i-in-the-2026-fifa-world-cup
+  kalshi_event_ticker: KXWCGROUPWIN
+  kalshi_market_ticker: KXWCGROUPWIN-26I-SEN
+  rules_hash: group_winner_fifa_tiebreak_v1
+  enabled: false
+  last_verified: "2026-06-04"
+  notes: "staged from discover-only — enable after operator review"
+

@@ -52,7 +52,9 @@ class FixtureCheckResult:
 
     @property
     def has_changes(self) -> bool:
-        return bool(self.changes) or self.local_sha256 != self.upstream_sha256
+        if self.changes:
+            return True
+        return self.local_match_count != self.upstream_match_count
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -171,18 +173,19 @@ def diff_fixtures(local: dict[str, Any], upstream: dict[str, Any]) -> list[Fixtu
 def check_fixtures(
     *,
     local_path: Path | None = None,
-    upstream_url: str = DEFAULT_UPSTREAM_URL,
+    upstream_url: str | None = None,
 ) -> FixtureCheckResult:
     path = local_path or DEFAULT_FIXTURES
+    resolved_upstream = upstream_url or DEFAULT_UPSTREAM_URL
     local_bytes = path.read_bytes()
     local_data = json.loads(local_bytes.decode())
-    upstream_data = fetch_upstream_fixtures(upstream_url)
+    upstream_data = fetch_upstream_fixtures(resolved_upstream)
     upstream_bytes = json.dumps(upstream_data, sort_keys=True).encode()
 
     changes = diff_fixtures(local_data, upstream_data)
     return FixtureCheckResult(
         local_path=path,
-        upstream_url=upstream_url,
+        upstream_url=resolved_upstream,
         local_sha256=_sha256_bytes(local_bytes),
         upstream_sha256=_sha256_bytes(upstream_bytes),
         local_match_count=len(local_data.get("matches") or []),

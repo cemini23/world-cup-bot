@@ -159,6 +159,21 @@ def process_tape_once(
     return stats
 
 
+
+
+def is_benign_plan_error(message: str) -> bool:
+    """Paper-mode gaps that should not fail systemd when Module 8 data plane is idle."""
+    return any(marker in message for marker in ("no tape file", "shock disabled"))
+
+
+def plan_session_exit_code(stats: PlanSessionStats) -> int:
+    if stats.errors and stats.shocks == 0:
+        if all(is_benign_plan_error(err) for err in stats.errors):
+            return 0
+        return 1
+    return 0
+
+
 def run_plan_once(
     settings: Settings,
     *,

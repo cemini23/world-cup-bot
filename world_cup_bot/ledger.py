@@ -311,6 +311,39 @@ class PnlSummary:
     legacy_excluded: int
 
 
+
+
+def _fill_pnl_usd(row: dict[str, Any]) -> float:
+    """PnL on order_fill rows: pnl_usd, else realized_pnl_usd alias."""
+    if row.get("event") != "order_fill":
+        return 0.0
+    for key in ("pnl_usd", "realized_pnl_usd"):
+        val = row.get(key)
+        if val is not None:
+            return float(val)
+    return 0.0
+
+
+def record_diagnostic(
+    spec: StrategyVersionSpec,
+    *,
+    path: Path,
+    event: str,
+    fields: dict[str, Any],
+) -> None:
+    """Append plan diagnostics (negative_filter_summary, plan_abort, …)."""
+    append_row(
+        path,
+        LedgerRow(
+            event=event,
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            extra={k: v for k, v in fields.items() if v is not None},
+        ),
+    )
+
+
 def summarize_pnl(
     rows: list[dict[str, Any]],
     spec: StrategyVersionSpec,
@@ -325,7 +358,7 @@ def summarize_pnl(
     )
     fills = sum(1 for r in scoped if r.get("event") == "order_fill")
 
-    realized = sum(float(r.get("pnl_usd") or 0) for r in scoped if r.get("event") == "order_fill")
+    realized = sum(_fill_pnl_usd(r) for r in scoped)
     rewards = sum(float(r.get("rewards_usd") or 0) for r in scoped)
     fees = sum(float(r.get("fees_usd") or 0) for r in scoped)
     net = realized + rewards - fees

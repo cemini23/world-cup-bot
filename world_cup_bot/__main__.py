@@ -57,7 +57,7 @@ from world_cup_bot.config import (
     phase_settlement_gate_enabled,
 )
 from world_cup_bot.cross_venue_config import CrossVenueConfig, load_cross_venue_config
-from world_cup_bot.logic_version import PnlScope, load_strategy_version
+from world_cup_bot.logic_version import PnlScope, StrategyVersionSpec, load_strategy_version
 from world_cup_bot.market_phases import get_market_phases_config, install_sigusr1_reload
 from world_cup_bot.operating_config import apply_bilateral_threshold_override, load_operating_config
 from world_cup_bot.ui_server import DEFAULT_HOST, DEFAULT_PORT, run_ui_server
@@ -444,13 +444,28 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _plan_abort(settings: Settings, reason: str, detail: str, *, exit_code: int = 1) -> int:
+def _plan_abort(
+    settings: Settings,
+    reason: str,
+    detail: str,
+    *,
+    exit_code: int = 1,
+    version_spec: StrategyVersionSpec | None = None,
+    record: bool = False,
+) -> int:
     event_log.log_event(
         "plan_abort",
         abort_reason=reason,
         detail=detail,
         dry_run=settings.dry_run,
     )
+    if record and version_spec is not None:
+        ledger.record_diagnostic(
+            version_spec,
+            path=Path(settings.ledger_path),
+            event="plan_abort",
+            fields={"abort_reason": reason, "detail": detail, "dry_run": settings.dry_run},
+        )
     print(detail)
     return exit_code
 
@@ -512,7 +527,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         version_spec,
     )
     if not risk_ok:
-        return _plan_abort(settings, "daily_adverse_cap", risk_detail)
+        return _plan_abort(settings, "daily_adverse_cap", risk_detail, version_spec=version_spec, record=args.record)
 
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     if phase_router_enabled():
@@ -541,6 +556,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         market_count=len(markets),
         **skip_summary,
     )
+    if args.record:
+        ledger.record_diagnostic(
+            version_spec,
+            path=Path(settings.ledger_path),
+            event="negative_filter_summary",
+            fields={"market_count": len(markets), **skip_summary},
+        )
     results = [r for r in all_results if r.quote]
 
     if not results:
@@ -549,6 +571,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             settings,
             "no_conviction_targets",
             f"No conviction targets (try --all). Skips: {detail or 'none'}",
+            version_spec=version_spec,
+            record=args.record,
         )
 
     if phase_router_enabled() and phase_router_lp_gate() and not markets:
@@ -557,6 +581,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             "phase_router_lp_gate",
             f"No LP-eligible markets for tournament_phase={phase_ctx.tournament_phase} "
             f"phases={list(phase_ctx.lp_active_phases)}",
+            version_spec=version_spec,
+            record=args.record,
         )
 
     if phase_router_enabled() and phase_router_lp_gate():
@@ -565,6 +591,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                 settings,
                 "phase_router_lp_gate",
                 f"LP not active for tournament_phase={phase_ctx.tournament_phase}",
+                version_spec=version_spec,
+                record=args.record,
             )
 
     gate = advisor.AdvisorGate.OFF
@@ -605,7 +633,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                     return 1
 
     if not results:
-        return _plan_abort(settings, "advisor_gate_empty", "No targets after advisor gate.")
+        return _plan_abort(settings, "advisor_gate_empty", "No targets after advisor gate.", version_spec=version_spec, record=args.record)
 
     # Calendar guard: cancel resting quotes for teams entering kickoff window
     cancel_result = order_manager.cancel_for_cancel_window(
@@ -629,6 +657,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             settings,
             "cancel_window",
             "No targets outside cancel window.",
+            version_spec=version_spec,
+            record=args.record,
         )
 
     intents: list[quoter.QuoteIntent] = []
@@ -642,6 +672,8 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             settings,
             "zero_quote_intents",
             "Conviction rows matched but 0 quote intents built.",
+            version_spec=version_spec,
+            record=args.record,
         )
 
     from world_cup_bot import balance_cap
@@ -652,12 +684,20 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                 intents, settings, markets=markets
             )
         except RuntimeError as exc:
-            return _plan_abort(settings, "balance_cap", str(exc))
+            return _plan_abort(
+                settings,
+                "balance_cap",
+                str(exc),
+                version_spec=version_spec,
+                record=args.record,
+            )
         if not capped:
             return _plan_abort(
                 settings,
                 "balance_cap_empty",
                 "No quote intents fit within available USDC collateral.",
+                version_spec=version_spec,
+                record=args.record,
             )
         if len(capped) < len(intents):
             print(
@@ -1882,7 +1922,9 @@ def _cmd_match_shock_plan(args: argparse.Namespace) -> int:
         )
         for err in stats.errors:
             print(f"  WARN: {err}")
-    return 1 if stats.errors and stats.shocks == 0 else 0
+    from world_cup_bot.match_shock_plan import plan_session_exit_code
+
+    return plan_session_exit_code(stats)
 
 
 def _cmd_match_shock_post(args: argparse.Namespace) -> int:

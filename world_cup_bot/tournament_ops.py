@@ -11,7 +11,11 @@ from world_cup_bot import cross_venue_scanner
 from world_cup_bot.config import Settings, match_shock_enabled, match_shock_live
 from world_cup_bot.conviction_staleness import scan_mid_staleness
 from world_cup_bot.cross_venue_config import load_cross_venue_config
-from world_cup_bot.fixture_watch import FixtureCheckResult, check_fixtures
+from world_cup_bot.fixture_watch import (
+    DEFAULT_UPSTREAM_URL,
+    FixtureCheckResult,
+    check_fixtures,
+)
 from world_cup_bot.match_shock_config import load_match_shock_config
 from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.scanner import discover_markets
@@ -69,7 +73,7 @@ def _check_fixtures(
     try:
         result: FixtureCheckResult = check_fixtures(
             local_path=local_path,
-            upstream_url=upstream_url,
+            upstream_url=upstream_url or DEFAULT_UPSTREAM_URL,
         )
     except Exception as exc:  # noqa: BLE001
         return TournamentCheck(
