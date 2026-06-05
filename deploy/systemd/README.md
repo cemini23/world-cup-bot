@@ -63,6 +63,8 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | 3 | — | preflight must PASS |
 | 4 | — | `world-cup-bot-live-plan.timer` (manual); optional `world-cup-bot-cross-venue-exec.service` after paper soak |
 
+**DRY_RUN / halt:** `world-cup-bot-live-plan.service` sets `WC_DRY_RUN=false` when the timer runs — removing `DRY_RUN=false` from `.env` alone does **not** stop live plan. Halt with `systemctl stop world-cup-bot-live-plan.timer` (see [SHADOW.md](../../SHADOW.md)). For Phase 2+ live fills, set `WC_DRY_RUN=false` in `.env.trading` for `world-cup-bot-watch.service` (unit no longer forces shadow mode).
+
 ## PnL vs rewards (split units)
 
 | Unit | Command | When to enable |

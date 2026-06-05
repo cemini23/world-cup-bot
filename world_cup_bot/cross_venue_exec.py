@@ -306,10 +306,13 @@ def build_dual_leg_plan(
         notional_usd if notional_usd is not None else auto.max_notional_usd,
         auto.max_notional_usd,
     )
-    if proposal.fee_adjusted_gap_pp < auto.min_fee_adjusted_gap_pp:
+    slippage_headroom_pp = 2 * auto.slippage_buffer_pp
+    min_effective_gap_pp = auto.min_fee_adjusted_gap_pp + slippage_headroom_pp
+    if proposal.fee_adjusted_gap_pp < min_effective_gap_pp:
         raise ValueError(
             f"fee-adjusted gap {proposal.fee_adjusted_gap_pp:.2f}pp below "
-            f"min {auto.min_fee_adjusted_gap_pp:.2f}pp"
+            f"min {min_effective_gap_pp:.2f}pp after slippage headroom "
+            f"({auto.min_fee_adjusted_gap_pp:.2f}pp + 2×{auto.slippage_buffer_pp:.2f}pp)"
         )
     if not row.pm_slug and not row.kalshi_ticker:
         raise ValueError("missing pm_slug and kalshi_ticker")

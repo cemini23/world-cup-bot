@@ -7,7 +7,7 @@ Type=simple
 WorkingDirectory=@INSTALL_ROOT@
 EnvironmentFile=-@INSTALL_ROOT@/.env
 EnvironmentFile=-@INSTALL_ROOT@/.env.trading
-Environment=WC_DRY_RUN=true
+# DRY_RUN from .env / wc_run.sh default (true). Live watch: set WC_DRY_RUN=false in .env.trading.
 Environment=WC_LEDGER_PATH=@INSTALL_ROOT@/data/local/ledger.jsonl
 ExecStart=@INSTALL_ROOT@/bin/wc_run.sh watch --verbose --record
 Restart=always

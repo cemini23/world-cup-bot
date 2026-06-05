@@ -64,6 +64,14 @@ def test_cap_to_collateral_enabled_defaults_on_for_live() -> None:
     assert cap_to_collateral_enabled(dry_run=True) is False
 
 
+def test_cap_extra_spread_respects_original_notional() -> None:
+    cheap = _intent("Cheap", 5.0)
+    cheap = replace(cheap, price=0.1, size_shares=50.0, notional_usd=5.0)
+    capped = cap_intents_to_collateral([cheap], 50.0)
+    assert len(capped) == 1
+    assert capped[0].notional_usd <= 5.0 + 0.01
+
+
 def test_cap_to_collateral_explicit_opt_out(monkeypatch) -> None:
     from world_cup_bot.balance_cap import cap_to_collateral_enabled
 

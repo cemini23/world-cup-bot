@@ -58,6 +58,7 @@ def cap_intents_to_collateral(
     if not intents or budget_usd <= 0:
         return []
 
+    original_notional = {i.order_id: i.notional_usd for i in intents}
     total = sum(i.notional_usd for i in intents)
     if total <= budget_usd:
         return intents
@@ -84,7 +85,16 @@ def cap_intents_to_collateral(
     # Spread leftover budget evenly across selected legs (still honoring min_shares).
     if remaining > 0.05:
         extra_each = remaining / len(selected)
-        selected = [_intent_at_notional(i, i.notional_usd + extra_each) for i in selected]
+        selected = [
+            _intent_at_notional(
+                i,
+                min(
+                    i.notional_usd + extra_each,
+                    original_notional.get(i.order_id, i.notional_usd),
+                ),
+            )
+            for i in selected
+        ]
 
     used = sum(i.notional_usd for i in selected)
     logger.info(
@@ -146,7 +156,12 @@ def cap_intents_to_available_collateral(
                 locked,
             )
         except Exception as exc:
-            logger.warning("open-order collateral subtract skipped: %s", exc)
+            if settings.dry_run:
+                logger.warning("open-order collateral subtract skipped: %s", exc)
+            else:
+                raise RuntimeError(
+                    f"open-order collateral subtract failed (refusing live cap): {exc}"
+                ) from exc
     logger.info(
         "collateral balance $%.2f reserve $%.2f locked $%.2f budget $%.2f",
         balance,

@@ -4,11 +4,12 @@
 strategy_key: pm_wc_advance_lp
 
 current:
-  version_id: wc_advance_lp_v4
-  deployed_at: "2026-05-30T00:00:00Z"
-  note: "Auto-cancel calendar window, cancel-replace, kill-switch halt + pull quotes"
+  version_id: wc_advance_lp_v5
+  deployed_at: "2026-06-05T20:30:00Z"
+  note: "Fill ledger dedup skips exit; balance cap respects per-leg notional; enforce before cancel-replace"
 
 legacy_version_ids:
+  - wc_advance_lp_v4
   - wc_advance_lp_v3
   - wc_advance_lp_v2
   - wc_advance_lp_v1

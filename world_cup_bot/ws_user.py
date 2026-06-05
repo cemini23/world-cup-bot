@@ -19,7 +19,7 @@ from world_cup_bot.fill_handler import (
     submit_exit,
     volatility_pull_triggered,
 )
-from world_cup_bot.ledger import DuplicateFillError, record_exit_intent, record_fill
+from world_cup_bot.ledger import record_exit_intent, record_fill
 from world_cup_bot.liquidity_scanner import fetch_ahead_bid_notional_usd
 from world_cup_bot.logic_version import StrategyVersionSpec
 from world_cup_bot.operating_config import OperatingConfig
@@ -228,17 +228,15 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
         ctx.stats.fills_processed += 1
 
         if ctx.record:
-            try:
-                record_fill(
-                    path=ctx.ledger_path,
-                    spec=ctx.version_spec,
-                    team=fill.team,
-                    side=fill.side,
-                    order_id=fill.order_id,
-                    price=fill.fill_price,
-                    size_shares=fill.fill_shares,
-                )
-            except DuplicateFillError:
+            if not record_fill(
+                path=ctx.ledger_path,
+                spec=ctx.version_spec,
+                team=fill.team,
+                side=fill.side,
+                order_id=fill.order_id,
+                price=fill.fill_price,
+                size_shares=fill.fill_shares,
+            ):
                 ctx.stats.fills_skipped_dedup += 1
                 logger.info("ledger dedup skip order_id=%s", fill.order_id)
                 continue

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from market_helpers import make_market
-from world_cup_bot import fill_handler, ws_user
+from world_cup_bot import fill_handler, ledger, ws_user
 from world_cup_bot.clob_auth import ClobAuth
 from world_cup_bot.logic_version import load_strategy_version
 from world_cup_bot.operating_config import load_operating_config
@@ -76,6 +77,42 @@ def test_process_trade_message_dedup():
     assert ctx.stats.fills_processed == 1
     assert ctx.stats.fills_skipped_dedup == 1
     assert isinstance(first[0], fill_handler.FillHandlerResult)
+
+
+def test_process_trade_skips_exit_when_ledger_dedups_order_id(tmp_path: Path):
+    market = make_market("Turkey", mid=0.45)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    ledger_path = tmp_path / "ledger.jsonl"
+    version_spec = load_strategy_version()
+    msg = _load_trade_fixture()
+    fill = ws_user.extract_maker_fills(msg, {"0x1": market})[0]
+    ledger.record_fill(
+        path=ledger_path,
+        spec=version_spec,
+        team=fill.team,
+        side=fill.side,
+        order_id=fill.order_id,
+        price=fill.fill_price,
+        size_shares=fill.fill_shares,
+    )
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={"0x1": market},
+        markets=[market],
+        operating=load_operating_config(),
+        version_spec=version_spec,
+        ledger_path=str(ledger_path),
+        dry_run=False,
+        record=True,
+    )
+    msg2 = dict(msg)
+    msg2["id"] = "different-trade-id"
+    with patch("world_cup_bot.ws_user.submit_exit") as submit_exit:
+        results = ws_user.process_trade_message(msg2, ctx)
+    assert results == []
+    assert ctx.stats.fills_skipped_dedup == 1
+    submit_exit.assert_not_called()
 
 
 def test_process_trade_unknown_market_increments_skip():

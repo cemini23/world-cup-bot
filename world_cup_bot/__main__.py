@@ -1074,7 +1074,7 @@ def _cmd_fill(args: argparse.Namespace) -> int:
     )
 
     if args.record:
-        ledger.record_fill(
+        if not ledger.record_fill(
             path=Path(settings.ledger_path),
             spec=version_spec,
             team=fill.team,
@@ -1082,7 +1082,9 @@ def _cmd_fill(args: argparse.Namespace) -> int:
             order_id=fill.order_id,
             price=fill.fill_price,
             size_shares=fill.fill_shares,
-        )
+        ):
+            print(f"ledger dedup skip order_id={fill.order_id}")
+            return 0
         if result.exit_intent:
             ledger.record_exit_intent(
                 result.exit_intent,
@@ -1728,7 +1730,7 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
     gate = cross_venue_exec.check_exec_gates(
         dry_run=settings.dry_run or args.dry_run,
         force=args.force,
-        test_auth=args.skip_auth if hasattr(args, "skip_auth") else False,
+        test_auth=not args.skip_auth if hasattr(args, "skip_auth") else True,
         settings=settings,
     )
     if not gate.allowed:
@@ -1763,7 +1765,7 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
         force=args.force,
         dry_run=gate.dry_run or args.dry_run,
         notional=notional,
-        test_auth=getattr(args, "skip_auth", False),
+        test_auth=not getattr(args, "skip_auth", False),
     )
     if args.json:
         print(json.dumps(attempt.to_dict(), indent=2))
@@ -2023,13 +2025,13 @@ def _cmd_match_shock_post(args: argparse.Namespace) -> int:
         return 1
 
     if args.check_gates:
-        gate = check_live_post_gates(settings, shock_cfg, test_auth=args.skip_auth)
+        gate = check_live_post_gates(settings, shock_cfg, test_auth=not args.skip_auth)
         print(json.dumps({"allowed": gate.allowed, "reason": gate.reason}, indent=2))
         return 0 if gate.allowed else 1
 
     dry_run = not args.submit
     if args.submit:
-        gate = check_live_post_gates(settings, shock_cfg, test_auth=args.skip_auth)
+        gate = check_live_post_gates(settings, shock_cfg, test_auth=not args.skip_auth)
         if not gate.allowed:
             print(f"Refusing submit: {gate.reason}", file=sys.stderr)
             return 1
@@ -2042,7 +2044,7 @@ def _cmd_match_shock_post(args: argparse.Namespace) -> int:
         cfg=shock_cfg,
         ledger_path=Path(settings.match_shock_ledger_path),
         dry_run=dry_run,
-        test_auth=args.skip_auth,
+        test_auth=not args.skip_auth,
     )
     if args.json:
         print(json.dumps(results, indent=2))

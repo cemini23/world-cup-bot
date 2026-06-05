@@ -46,7 +46,7 @@ def test_index_html_exists():
 def test_meta_payload():
     payload = meta_payload(_settings())
     assert payload["dry_run"] is True
-    assert payload["logic_version"] == "wc_advance_lp_v4"
+    assert payload["logic_version"] == "wc_advance_lp_v5"
     assert payload["match_shock_version"] == "wc_match_shock_v1"
     assert payload["match_shock_enabled"] is False
 

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+
+import pytest
 
 from world_cup_bot.cross_venue_config import CrossVenueConfig, DiscoveryConfig
 from world_cup_bot.cross_venue_exec import (
@@ -16,6 +19,7 @@ from world_cup_bot.cross_venue_exec import (
     ExecAttemptResult,
     _recent_exec_intent_keys,
     auto_exec_on_alerts,
+    build_dual_leg_plan,
     check_exec_caps,
     check_exec_gates,
     cross_venue_exec_ack,
@@ -268,6 +272,36 @@ def test_check_exec_gates_live_requires_ack(monkeypatch):
     gate = check_exec_gates(dry_run=False, force=False)
     assert not gate.allowed
     assert "EXEC_ACK" in gate.reason
+
+
+def test_check_exec_gates_skip_auth_disables_preflight(monkeypatch):
+    monkeypatch.setenv("WC_CROSS_VENUE_AUTO_EXEC", "1")
+    monkeypatch.setenv("WC_CROSS_VENUE_EXEC_ACK", "1")
+    calls: list[bool] = []
+
+    def _fake_preflight(_settings, *, test_auth: bool = True):
+        calls.append(test_auth)
+        from world_cup_bot.preflight import PreflightReport
+
+        return PreflightReport(ok=True, checks=[])
+
+    monkeypatch.setattr("world_cup_bot.preflight.run_preflight", _fake_preflight)
+    settings = SimpleNamespace(dry_run=False)
+    gate = check_exec_gates(dry_run=False, force=False, test_auth=False, settings=settings)
+    assert gate.allowed
+    assert calls == [False]
+
+
+def test_build_dual_leg_plan_requires_slippage_headroom(monkeypatch):
+    # gap_pp ~5.31 → fee_adj ~0.55 after Kalshi fee drag; passes paper min 0.5 but not exec 1.0
+    row = replace(_alert_row(gap=5.31), alert=True)
+    auto = AutoArbConfig(min_fee_adjusted_gap_pp=0.5, slippage_buffer_pp=0.25)
+    monkeypatch.setattr(
+        "world_cup_bot.cross_venue_exec.fetch_pm_token_ids",
+        lambda *a, **k: ("yes-tok", "no-tok", "0xabc"),
+    )
+    with pytest.raises(ValueError, match="slippage headroom"):
+        build_dual_leg_plan(row, _cfg(), auto, gamma_url="https://gamma.example")
 
 
 def test_recent_exec_intent_keys_dedup_window(tmp_path: Path):

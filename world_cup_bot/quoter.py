@@ -195,6 +195,13 @@ def submit_quotes(
         if not intents:
             return []
 
+    if markets is not None and not settings.dry_run:
+        from world_cup_bot.operating_config import load_operating_config
+        from world_cup_bot.wiki_enforcement import enforce_or_raise
+
+        operating = load_operating_config(Path(settings.operating_config))
+        enforce_or_raise(intents, settings, markets, operating)
+
     if markets is not None:
         from world_cup_bot.order_manager import cancel_replace_before_submit
 
@@ -205,13 +212,6 @@ def submit_quotes(
             ledger_path=ledger_path,
             version_spec=version_spec,
         )
-
-    if markets is not None and not settings.dry_run:
-        from world_cup_bot.operating_config import load_operating_config
-        from world_cup_bot.wiki_enforcement import enforce_or_raise
-
-        operating = load_operating_config(Path(settings.operating_config))
-        enforce_or_raise(intents, settings, markets, operating)
 
     if settings.dry_run:
         for intent in intents:
