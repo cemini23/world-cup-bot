@@ -1,0 +1,24 @@
+{
+  "review_id": "K98",
+  "date": "2026-06-05",
+  "iran_advance_lp": {
+    "prior_mid": 0.384,
+    "live_mid": 0.637,
+    "delta_pp": 25.4,
+    "action": "per_team cap $1500 max_mid 0.75; stay yes_conviction until friendly review"
+  },
+  "cross_venue_discover": {
+    "rejected_stub_slugs": [
+      "will-scotland-win-group-a (42.5pp vs KXWCGROUPWIN-26C-SCO)",
+      "will-austria-win-group-d (31.5pp vs KXWCGROUPWIN-26J-AUT)",
+      "will-czechia-win-group-f (29.5pp vs KXWCGROUPWIN-26A-CZE)",
+      "will-turkiye-win-group-f (15.5pp vs KXWCGROUPWIN-26D-TUR)"
+    ],
+    "pairs_added": 17,
+    "teams": [
+      "Morocco", "Turkey", "Paraguay", "Australia", "Ivory Coast", "Ecuador",
+      "Senegal", "Norway", "Algeria", "Austria", "Colombia", "Iran", "Panama",
+      "Cape Verde", "Canada", "Japan", "Scotland"
+    ]
+  }
+}

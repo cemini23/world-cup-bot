@@ -193,11 +193,200 @@ pairs:
     last_verified: "2026-05-29"
     notes: "Cohort triage add"
 
+  # --- K98 discover cohort (2026-06-05) — FIFA slugs only; stub 50¢ slugs rejected ---
+  - team: Morocco
+    market_type: group_winner
+    polymarket_hint: "Will Morocco win Group C in the 2026 FIFA World Cup?"
+    polymarket_slug: will-morocco-win-group-c-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26C
+    kalshi_market_ticker: KXWCGROUPWIN-26C-MAR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K97 yes_conviction — ~1pp gap"
+
+  - team: Turkey
+    market_type: group_winner
+    polymarket_hint: "Will Türkiye win Group D in the 2026 FIFA World Cup?"
+    polymarket_slug: will-the-winner-of-kosovoromaniaslovakiatrkiye-playoff-win-group-d-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26D
+    kalshi_market_ticker: KXWCGROUPWIN-26D-TUR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K97 yes_heavy — playoff FIFA slug (~1pp); reject group-f stub"
+
+  - team: Paraguay
+    market_type: group_winner
+    polymarket_hint: "Will Paraguay win Group D in the 2026 FIFA World Cup?"
+    polymarket_slug: will-paraguay-win-group-d-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26D
+    kalshi_market_ticker: KXWCGROUPWIN-26D-PAR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — ~1.5pp"
+
+  - team: Australia
+    market_type: group_winner
+    polymarket_hint: "Will Australia win Group D in the 2026 FIFA World Cup?"
+    polymarket_slug: will-australia-win-group-d-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26D
+    kalshi_market_ticker: KXWCGROUPWIN-26D-AUS
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — tight"
+
+  - team: Ivory Coast
+    market_type: group_winner
+    polymarket_hint: "Will Ivory Coast win Group E in the 2026 FIFA World Cup?"
+    polymarket_slug: will-ivory-coast-win-group-e-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26E
+    kalshi_market_ticker: KXWCGROUPWIN-26E-CIV
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction K83 — ~0.8pp"
+
+  - team: Ecuador
+    market_type: group_winner
+    polymarket_hint: "Will Ecuador win Group E in the 2026 FIFA World Cup?"
+    polymarket_slug: will-ecuador-win-group-e-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26E
+    kalshi_market_ticker: KXWCGROUPWIN-26E-ECU
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — 0pp"
+
+  - team: Senegal
+    market_type: group_winner
+    polymarket_hint: "Will Senegal win Group I in the 2026 FIFA World Cup?"
+    polymarket_slug: will-senegal-win-group-i-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26I
+    kalshi_market_ticker: KXWCGROUPWIN-26I-SEN
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — 0pp"
+
+  - team: Norway
+    market_type: group_winner
+    polymarket_hint: "Will Norway win Group I in the 2026 FIFA World Cup?"
+    polymarket_slug: will-norway-win-group-i-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26I
+    kalshi_market_ticker: KXWCGROUPWIN-26I-NOR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — 0pp"
+
+  - team: Algeria
+    market_type: group_winner
+    polymarket_hint: "Will Algeria win Group J in the 2026 FIFA World Cup?"
+    polymarket_slug: will-algeria-win-group-j-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26J
+    kalshi_market_ticker: KXWCGROUPWIN-26J-DZA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — ~1.2pp"
+
+  - team: Austria
+    market_type: group_winner
+    polymarket_hint: "Will Austria win Group J in the 2026 FIFA World Cup?"
+    polymarket_slug: will-austria-win-group-j-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26J
+    kalshi_market_ticker: KXWCGROUPWIN-26J-AUT
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — 0pp; reject group-d stub"
+
+  - team: Colombia
+    market_type: group_winner
+    polymarket_hint: "Will Colombia win Group K in the 2026 FIFA World Cup?"
+    polymarket_slug: will-colombia-win-group-k-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26K
+    kalshi_market_ticker: KXWCGROUPWIN-26K-COL
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — 0pp"
+
+  - team: Iran
+    market_type: group_winner
+    polymarket_hint: "Will Iran win Group G in the 2026 FIFA World Cup?"
+    polymarket_slug: will-iran-win-group-g-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26G
+    kalshi_market_ticker: KXWCGROUPWIN-26G-IRI
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — ~1pp group winner; advance LP capped K98"
+
+  - team: Panama
+    market_type: group_winner
+    polymarket_hint: "Will Panama win Group L in the 2026 FIFA World Cup?"
+    polymarket_slug: will-panama-win-group-l-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26L
+    kalshi_market_ticker: KXWCGROUPWIN-26L-PAN
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — tight"
+
+  - team: Cape Verde
+    market_type: group_winner
+    polymarket_hint: "Will Cape Verde win Group H in the 2026 FIFA World Cup?"
+    polymarket_slug: will-cape-verde-win-group-h-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26H
+    kalshi_market_ticker: KXWCGROUPWIN-26H-CPV
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "yes_conviction — ~0.75pp"
+
+  - team: Canada
+    market_type: group_winner
+    polymarket_hint: "Will Canada win Group B in the 2026 FIFA World Cup?"
+    polymarket_slug: will-canada-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26B
+    kalshi_market_ticker: KXWCGROUPWIN-26B-CAN
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "fade_watch K96 — ~1pp"
+
+  - team: Japan
+    market_type: group_winner
+    polymarket_hint: "Will Japan win Group F in the 2026 FIFA World Cup?"
+    polymarket_slug: will-japan-win-group-f-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26F
+    kalshi_market_ticker: KXWCGROUPWIN-26F-JPN
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "fade_watch K96 — ~1pp"
+
+  - team: Scotland
+    market_type: group_winner
+    polymarket_hint: "Will Scotland win Group C in the 2026 FIFA World Cup?"
+    polymarket_slug: will-scotland-win-group-c-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26C
+    kalshi_market_ticker: KXWCGROUPWIN-26C-SCO
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "fade_watch K96 — ~0.5pp; reject group-a stub"
+
 blockers:
   - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
   - "Bosnia & Herzegovina fade_watch — PM slug is UEFA playoff conditional; skip until direct market"
+  - "Reject PM stub slugs (50¢ placeholders): group-a/group-d/group-f without 2026-fifa-world-cup suffix"
 
 discovery:
   kalshi_ticker_prefixes:

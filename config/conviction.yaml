@@ -65,6 +65,9 @@ per_team:
     max_mid: 0.88
   Colombia:
     max_notional_usd: 2500
+  Iran:
+    max_notional_usd: 1500
+    max_mid: 0.75
   Canada:
     max_notional_usd: 2500
     mode: fade_watch
@@ -120,4 +123,5 @@ per_team:
 #   Spain skip (0.980). Next review: after first June 2026 international friendlies or 2026-06-13.
 # K97 operator conviction (2026-06-04): Morocco + Turkey underdog picks — Morocco human_review lifted,
 #   max_mid 0.88 at $2500 cap; Turkey stays yes_heavy $2500.
+# K98 Iran staleness (2026-06-05): advance mid 0.384→0.637 (+25pp); cap $1500 max_mid 0.75 until friendly review.
 # Cross-venue: config/cross_venue.yaml (group-winner alert map only until PM advance slugs live)
