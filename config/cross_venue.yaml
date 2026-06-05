@@ -384,6 +384,150 @@ pairs:
     last_verified: "2026-06-05"
     notes: "fade_watch K96 — ~0.5pp; reject group-a stub"
 
+  # --- K100 discover cohort (2026-06-05) — FIFA slugs; stub/playoff slugs rejected ---
+  - team: Czech Republic
+    market_type: group_winner
+    polymarket_hint: "Will Czechia win Group A in the 2026 FIFA World Cup?"
+    polymarket_slug: will-czechia-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26A
+    kalshi_market_ticker: KXWCGROUPWIN-26A-CZE
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~2pp; reject will-czechia-win-group-f stub (29pp)"
+
+  - team: Sweden
+    market_type: group_winner
+    polymarket_hint: "Will Sweden win Group F in the 2026 FIFA World Cup?"
+    polymarket_slug: will-sweden-win-group-f-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26F
+    kalshi_market_ticker: KXWCGROUPWIN-26F-SWE
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~2pp"
+
+  - team: Egypt
+    market_type: group_winner
+    polymarket_hint: "Will Egypt win Group G in the 2026 FIFA World Cup?"
+    polymarket_slug: will-egypt-win-group-g-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26G
+    kalshi_market_ticker: KXWCGROUPWIN-26G-EGY
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~1pp"
+
+  - team: South Korea
+    market_type: group_winner
+    polymarket_hint: "Will South Korea win Group A in the 2026 FIFA World Cup?"
+    polymarket_slug: will-south-korea-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26A
+    kalshi_market_ticker: KXWCGROUPWIN-26A-KOR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~1pp"
+
+  - team: Saudi Arabia
+    market_type: group_winner
+    polymarket_hint: "Will Saudi Arabia win Group H in the 2026 FIFA World Cup?"
+    polymarket_slug: will-saudi-arabia-win-group-h-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26H
+    kalshi_market_ticker: KXWCGROUPWIN-26H-KSA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~1pp; conviction skip — alert-only"
+
+  - team: Uzbekistan
+    market_type: group_winner
+    polymarket_hint: "Will Uzbekistan win Group K in the 2026 FIFA World Cup?"
+    polymarket_slug: will-uzbekistan-win-group-k-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26K
+    kalshi_market_ticker: KXWCGROUPWIN-26K-UZB
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~1pp; conviction skip — alert-only"
+
+  - team: Haiti
+    market_type: group_winner
+    polymarket_hint: "Will Haiti win Group C in the 2026 FIFA World Cup?"
+    polymarket_slug: will-haiti-win-group-c-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26C
+    kalshi_market_ticker: KXWCGROUPWIN-26C-HTI
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.9pp; conviction skip — alert-only"
+
+  - team: Tunisia
+    market_type: group_winner
+    polymarket_hint: "Will Tunisia win Group F in the 2026 FIFA World Cup?"
+    polymarket_slug: will-tunisia-win-group-f-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26F
+    kalshi_market_ticker: KXWCGROUPWIN-26F-TUN
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.8pp; conviction skip — alert-only"
+
+  - team: South Africa
+    market_type: group_winner
+    polymarket_hint: "Will South Africa win Group A in the 2026 FIFA World Cup?"
+    polymarket_slug: will-south-africa-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26A
+    kalshi_market_ticker: KXWCGROUPWIN-26A-RSA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.6pp"
+
+  - team: Ghana
+    market_type: group_winner
+    polymarket_hint: "Will Ghana win Group L in the 2026 FIFA World Cup?"
+    polymarket_slug: will-ghana-win-group-l-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26L
+    kalshi_market_ticker: KXWCGROUPWIN-26L-GHA
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.6pp; conviction skip — alert-only"
+
+  - team: New Zealand
+    market_type: group_winner
+    polymarket_hint: "Will New Zealand win Group G in the 2026 FIFA World Cup?"
+    polymarket_slug: will-new-zealand-win-group-g-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26G
+    kalshi_market_ticker: KXWCGROUPWIN-26G-NZL
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.5pp; conviction skip — alert-only"
+
+  - team: Jordan
+    market_type: group_winner
+    polymarket_hint: "Will Jordan win Group J in the 2026 FIFA World Cup?"
+    polymarket_slug: will-jordan-win-group-j-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26J
+    kalshi_market_ticker: KXWCGROUPWIN-26J-JOR
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.2pp; conviction skip — alert-only"
+
+  - team: Curaçao
+    market_type: group_winner
+    polymarket_hint: "Will Curaçao win Group E in the 2026 FIFA World Cup?"
+    polymarket_slug: will-curaao-win-group-e-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26E
+    kalshi_market_ticker: KXWCGROUPWIN-26E-CUW
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K100 — ~0.1pp; conviction skip — alert-only"
+
   # --- K99 fade_watch group qualify (R32 escape) — verified 2026-06-05 Gemini DR ---
   - team: USA
     market_type: group_qualify
@@ -440,6 +584,7 @@ blockers:
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
   - "Bosnia & Herzegovina fade_watch — PM slug is UEFA playoff conditional; skip until direct market"
+  - "Iraq fade_watch — PM slug is Bolivia/Iraq/Suriname playoff conditional; skip until direct market"
   - "Reject PM stub slugs (50¢ placeholders): group-a/group-d/group-f without 2026-fifa-world-cup suffix"
   - "K99: PM Reach Round of 16 ≠ KXWCGROUPQUAL — use round_of_16_qualify block + rules_hash"
 

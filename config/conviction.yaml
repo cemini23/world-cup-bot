@@ -121,6 +121,8 @@ per_team:
 # K93 research cadence: `world-cup-bot research run weekly-osint-pipeline` (Monokern/NotebookLM lane).
 # K96 safety review (2026-06-04): Canada/Japan/Scotland/Brazil stay fade_watch — mids 0.725–0.966;
 #   Spain skip (0.980). Next review: after first June 2026 international friendlies or 2026-06-13.
+# K100 early refresh (2026-06-05): Canada 0.830, Japan 0.785, Scotland 0.715, Brazil 0.966 — unchanged
+#   fade_watch; no ≥15pp staleness; formal K96 review still due 2026-06-13 or post-friendlies.
 # K97 operator conviction (2026-06-04): Morocco + Turkey underdog picks — Morocco human_review lifted,
 #   max_mid 0.88 at $2500 cap; Turkey stays yes_heavy $2500.
 # K98 Iran staleness (2026-06-05): advance mid 0.384→0.637 (+25pp); cap $1500 max_mid 0.75 until friendly review.

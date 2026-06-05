@@ -1,0 +1,82 @@
+{
+  "review_id": "K100",
+  "date": "2026-06-05",
+  "trigger": "ops follow-up — USDC, rewards, discover, conviction, match-shock",
+  "usdc_balance_cap": {
+    "estimated_collateral_usd": 73,
+    "open_orders": 8,
+    "locked_collateral_usd_approx": 68.5,
+    "dry_run_default": true,
+    "full_plan_intents": 22,
+    "live_plan_last_run": "2026-06-05T19:44:46Z — 8 balance-capped micro legs",
+    "recommendation": "Deposit $500–1000 USDC.e to funder for ~12–16 min-reward legs; $2000+ for full 22-intent plan. Then set DRY_RUN=false in .env-polymarket (WC_LIVE_PLAN_ACK=1 already set)."
+  },
+  "rewards_sync": {
+    "manual_run": "2026-06-05",
+    "date_queried": "2026-06-04",
+    "rows_recorded": 0,
+    "timer": "cemini-wc-rewards-sync.timer active — next 07:10 UTC",
+    "status": "OK — L2 path works; zero rewards expected pre-kickoff"
+  },
+  "cross_venue_discover": {
+    "pairs_added": 13,
+    "teams_added": [
+      "Czech Republic", "Sweden", "Egypt", "South Korea", "Saudi Arabia",
+      "Uzbekistan", "Haiti", "Tunisia", "South Africa", "Ghana",
+      "New Zealand", "Jordan", "Curaçao"
+    ],
+    "rejected": [
+      "Czech Republic will-czechia-win-group-f stub (29.5pp)",
+      "Iraq playoff conditional slug",
+      "Bosnia & Herzegovina playoff conditional slug"
+    ],
+    "total_config_pairs": 50
+  },
+  "conviction_early_refresh": {
+    "prior_review": "K96",
+    "next_formal_review": "2026-06-13",
+    "patches": [
+      {
+        "team": "Canada",
+        "recommended_mode": "fade_watch",
+        "prior_mid": 0.845,
+        "live_mid": 0.83,
+        "delta_pp": -1.5,
+        "action": "unchanged"
+      },
+      {
+        "team": "Japan",
+        "recommended_mode": "fade_watch",
+        "prior_mid": 0.78,
+        "live_mid": 0.785,
+        "delta_pp": 0.5,
+        "action": "unchanged"
+      },
+      {
+        "team": "Scotland",
+        "recommended_mode": "fade_watch",
+        "prior_mid": 0.725,
+        "live_mid": 0.715,
+        "delta_pp": -1.0,
+        "action": "unchanged"
+      },
+      {
+        "team": "Brazil",
+        "recommended_mode": "fade_watch",
+        "prior_mid": 0.966,
+        "live_mid": 0.966,
+        "delta_pp": 0.0,
+        "action": "unchanged"
+      }
+    ],
+    "staleness_alerts": []
+  },
+  "match_shock": {
+    "wc_shock_enabled": true,
+    "yaml_enabled": false,
+    "record_service": "active — WS connected 206 asset ids",
+    "plan_timer": "cemini-wc-match-shock-plan.timer active (15m paper)",
+    "discover_timer": "2026-06-10 09:00 UTC",
+    "posture": "paper-first — do not flip shock_match.yaml enabled or WC_MATCH_SHOCK_LIVE until after Jun 11 soak"
+  }
+}
