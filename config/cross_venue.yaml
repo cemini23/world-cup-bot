@@ -387,7 +387,7 @@ pairs:
   # --- K99 fade_watch group qualify (R32 escape) — verified 2026-06-05 Gemini DR ---
   - team: USA
     market_type: group_qualify
-    polymarket_hint: "Will the United States reach the Round of 32 in the 2026 FIFA World Cup?"
+    polymarket_hint: "Will USA advance to the knockout stages at the 2026 FIFA World Cup"
     kalshi_event_ticker: KXWCGROUPQUAL-26D
     kalshi_market_ticker: KXWCGROUPQUAL-26D-USA
     rules_hash: group_qualify_v1
@@ -397,7 +397,7 @@ pairs:
 
   - team: Mexico
     market_type: group_qualify
-    polymarket_hint: "Will Mexico reach the Round of 32 in the 2026 FIFA World Cup?"
+    polymarket_hint: "Will Mexico advance to the knockout stages at the 2026 FIFA World Cup"
     kalshi_event_ticker: KXWCGROUPQUAL-26A
     kalshi_market_ticker: KXWCGROUPQUAL-26A-MEX
     rules_hash: group_qualify_v1
@@ -407,7 +407,7 @@ pairs:
 
   - team: England
     market_type: group_qualify
-    polymarket_hint: "Will England reach the Round of 32 in the 2026 FIFA World Cup?"
+    polymarket_hint: "Will England advance to the knockout stages at the 2026 FIFA World Cup"
     kalshi_event_ticker: KXWCGROUPQUAL-26L
     kalshi_market_ticker: KXWCGROUPQUAL-26L-ENG
     rules_hash: group_qualify_v1
@@ -417,7 +417,7 @@ pairs:
 
   - team: Croatia
     market_type: group_qualify
-    polymarket_hint: "Will Croatia reach the Round of 32 in the 2026 FIFA World Cup?"
+    polymarket_hint: "Will Croatia advance to the knockout stages at the 2026 FIFA World Cup"
     kalshi_event_ticker: KXWCGROUPQUAL-26L
     kalshi_market_ticker: KXWCGROUPQUAL-26L-CRO
     rules_hash: group_qualify_v1
@@ -427,7 +427,7 @@ pairs:
 
   - team: Switzerland
     market_type: group_qualify
-    polymarket_hint: "Will Switzerland reach the Round of 32 in the 2026 FIFA World Cup?"
+    polymarket_hint: "Will Switzerland advance to the knockout stages at the 2026 FIFA World Cup"
     kalshi_event_ticker: KXWCGROUPQUAL-26B
     kalshi_market_ticker: KXWCGROUPQUAL-26B-SUI
     rules_hash: group_qualify_v1

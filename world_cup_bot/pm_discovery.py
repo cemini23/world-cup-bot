@@ -142,7 +142,10 @@ def parse_group_qualify_market(
     m = _GROUP_QUALIFY.match(question)
     if not m:
         return None
-    team = team_names.normalize_team(m.group(1))
+    team_raw = m.group(1).strip()
+    if team_raw.lower().startswith("the "):
+        team_raw = team_raw[4:]
+    team = team_names.normalize_team(team_raw)
     mid, bid, ask = _mid_from_market(market)
     return PolymarketSnapshot(
         team=team,
@@ -254,6 +257,12 @@ def match_polymarket_for_pair(
     key = f"{market_type}:{team_names.normalize_team(team)}"
     if key in catalog:
         return catalog[key]
+
+    # K99: live PM lists "advance to knockout stages" (= R32 escape) not "Round of 32"
+    if market_type == "group_qualify":
+        alt = f"advance_to_knockout:{team_names.normalize_team(team)}"
+        if alt in catalog:
+            return catalog[alt]
 
     norm = team_names.normalize_team(team)
     for m in markets:

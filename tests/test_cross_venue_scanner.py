@@ -410,6 +410,35 @@ def test_match_polymarket_prefers_config_slug():
     assert matched.mid == pytest.approx(0.705)
 
 
+def test_group_qualify_matches_pm_advance_to_knockout():
+    from world_cup_bot.pm_discovery import index_polymarket_markets, match_polymarket_for_pair
+
+    pm = PolymarketSnapshot(
+        team="USA",
+        market_type="advance_to_knockout",
+        group=None,
+        question="Will USA advance to the knockout stages at the 2026 FIFA World Cup",
+        slug="usa-advance",
+        condition_id="0xusa-adv",
+        mid=0.82,
+        best_bid=0.81,
+        best_ask=0.83,
+        volume=1000,
+        liquidity=5000,
+        accepting_orders=True,
+    )
+    catalog = index_polymarket_markets([pm])
+    matched = match_polymarket_for_pair(
+        team="USA",
+        market_type="group_qualify",
+        hint="Will USA advance to the knockout stages at the 2026 FIFA World Cup",
+        catalog=catalog,
+        markets=[pm],
+    )
+    assert matched is not None
+    assert matched.mid == pytest.approx(0.82)
+
+
 def test_load_cross_venue_config_from_disk():
     cfg = load_cross_venue_config()
     assert cfg.alert_threshold_pp == 5.0
