@@ -14,9 +14,13 @@ from world_cup_bot.scanner import AdvanceMarket
 logger = logging.getLogger(__name__)
 
 
-def cap_to_collateral_enabled() -> bool:
+def cap_to_collateral_enabled(*, dry_run: bool = True) -> bool:
     raw = os.environ.get("WC_CAP_TO_COLLATERAL", "").strip().lower()
-    return raw in ("1", "true", "yes", "on")
+    if raw in ("0", "false", "no", "off"):
+        return False
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    return not dry_run
 
 
 def fetch_collateral_balance_usd(settings: Settings) -> float:

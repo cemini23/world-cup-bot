@@ -690,7 +690,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     from world_cup_bot import balance_cap
 
-    if balance_cap.cap_to_collateral_enabled() and not settings.dry_run:
+    if not settings.dry_run and balance_cap.cap_to_collateral_enabled(dry_run=settings.dry_run):
         try:
             capped = balance_cap.cap_intents_to_available_collateral(
                 intents, settings, markets=markets
@@ -718,13 +718,22 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             )
         intents = capped
 
-    quoter.submit_quotes(
+    intents = quoter.submit_quotes(
         intents,
         settings,
         markets=markets,
         ledger_path=settings.ledger_path if args.record else None,
         version_spec=version_spec if args.record else None,
     )
+
+    if not intents and not settings.dry_run:
+        return _plan_abort(
+            settings,
+            "quote_post_empty",
+            "All live quote POSTs failed or were skipped (book/balance).",
+            version_spec=version_spec,
+            record=args.record,
+        )
 
     if args.record:
         n = ledger.record_quote_intents(

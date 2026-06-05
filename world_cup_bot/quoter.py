@@ -227,9 +227,20 @@ def submit_quotes(
     from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_quote_intent
 
     client = build_clob_client(settings)
+    posted: list[QuoteIntent] = []
     for intent in intents:
         try:
             post_quote_intent(client, intent)
+            posted.append(intent)
         except LiveClobPostError as exc:
+            msg = str(exc).lower()
+            if "crosses book" in msg or "not enough balance / allowance" in msg:
+                logger.warning(
+                    "quote POST skipped %s %s: %s",
+                    intent.team,
+                    intent.side,
+                    exc,
+                )
+                continue
             raise RuntimeError(f"quote POST failed for {intent.team} {intent.side}: {exc}") from exc
-    return intents
+    return posted

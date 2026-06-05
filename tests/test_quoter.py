@@ -142,3 +142,51 @@ def test_submit_live_requires_clob_client(monkeypatch):
     monkeypatch.setattr("world_cup_bot.clob_live.build_clob_client", fake_build)
     with pytest.raises(LiveClobNotConfiguredError):
         quoter.submit_quotes([intent], settings)
+
+
+def test_submit_live_skips_crosses_book(monkeypatch):
+    settings = _settings(dry_run=False)
+    snap = MarketSnapshot(
+        mid=0.45,
+        best_bid=0.43,
+        best_ask=0.47,
+        spread=0.04,
+        rewards_min_shares=500,
+        rewards_max_spread=4.5,
+        hours_to_kickoff=48.0,
+    )
+    ok = quoter.QuoteIntent(
+        team="Turkey",
+        side="YES",
+        token_id="111",
+        order_id="live-turkey-yes-abcd1234",
+        price=0.44,
+        size_shares=100.0,
+        notional_usd=44.0,
+        dry_run=False,
+        reason="test",
+        snapshot=snap,
+    )
+    bad = quoter.QuoteIntent(
+        team="Portugal",
+        side="NO",
+        token_id="222",
+        order_id="live-portugal-no-abcd1234",
+        price=0.36,
+        size_shares=100.0,
+        notional_usd=36.0,
+        dry_run=False,
+        reason="test",
+        snapshot=snap,
+    )
+
+    from world_cup_bot.clob_live import LiveClobPostError
+
+    def fake_post(_client, intent):
+        if intent.team == "Portugal":
+            raise LiveClobPostError("invalid post-only order: order crosses book")
+
+    monkeypatch.setattr("world_cup_bot.clob_live.build_clob_client", lambda _s: object())
+    monkeypatch.setattr("world_cup_bot.clob_live.post_quote_intent", fake_post)
+    out = quoter.submit_quotes([ok, bad], settings)
+    assert out == [ok]

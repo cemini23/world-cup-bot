@@ -57,6 +57,20 @@ def test_cap_noop_when_under_budget() -> None:
     assert capped == intents
 
 
+def test_cap_to_collateral_enabled_defaults_on_for_live() -> None:
+    from world_cup_bot.balance_cap import cap_to_collateral_enabled
+
+    assert cap_to_collateral_enabled(dry_run=False) is True
+    assert cap_to_collateral_enabled(dry_run=True) is False
+
+
+def test_cap_to_collateral_explicit_opt_out(monkeypatch) -> None:
+    from world_cup_bot.balance_cap import cap_to_collateral_enabled
+
+    monkeypatch.setenv("WC_CAP_TO_COLLATERAL", "0")
+    assert cap_to_collateral_enabled(dry_run=False) is False
+
+
 def test_locked_outside_intents_only_counts_other_tokens() -> None:
     from world_cup_bot.balance_cap import _collateral_locked_outside_intents
     from world_cup_bot.order_manager import OpenOrder

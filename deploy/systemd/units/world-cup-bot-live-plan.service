@@ -8,6 +8,9 @@ WorkingDirectory=@INSTALL_ROOT@
 EnvironmentFile=-@INSTALL_ROOT@/.env
 EnvironmentFile=-@INSTALL_ROOT@/.env.trading
 Environment=WC_DRY_RUN=false
+Environment=WC_CAP_TO_COLLATERAL=1
+Environment=WC_COLLATERAL_RESERVE_USD=2
+Environment=WC_CAP_SUBTRACT_OPEN_ORDERS=1
 Environment=WC_LEDGER_PATH=@INSTALL_ROOT@/data/local/ledger.jsonl
 ExecStart=/bin/bash -c 'test "${WC_LIVE_PLAN_ACK:-}" = "1" || { echo "Refusing live plan: set WC_LIVE_PLAN_ACK=1 in .env after SHADOW Phase 4 GO" >&2; exit 1; }; @INSTALL_ROOT@/bin/wc_run.sh preflight && @INSTALL_ROOT@/bin/wc_run.sh plan --record --liquidity-gate >> @INSTALL_ROOT@/logs/cron_live_plan.log 2>&1'
 User=root
