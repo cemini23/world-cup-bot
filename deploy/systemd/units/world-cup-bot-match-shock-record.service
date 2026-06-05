@@ -11,7 +11,7 @@ EnvironmentFile=-@INSTALL_ROOT@/.env.trading
 Environment=WC_DRY_RUN=true
 Environment=WC_SHOCK_ENABLED=1
 Environment=WC_MATCH_SHOCK_TAPE_DIR=@INSTALL_ROOT@/data/local/shock_tapes
-ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh match-shock-record --discover-json @INSTALL_ROOT@/data/local/match_markets.json --record 2>&1 | while IFS= read -r line; do echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line"; echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line" >> @INSTALL_ROOT@/logs/match_shock_record.jsonl; done'
+ExecStart=/bin/bash -c '@INSTALL_ROOT@/bin/wc_run.sh match-shock-record --discovery @INSTALL_ROOT@/data/local/match_markets.json 2>&1 | while IFS= read -r line; do echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line"; echo "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) $line" >> @INSTALL_ROOT@/logs/match_shock_record.jsonl; done'
 Restart=always
 RestartSec=30
 User=root
