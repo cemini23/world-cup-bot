@@ -129,11 +129,45 @@ def parse_advance_market(
     )
 
 
+_GROUP_QUALIFY = re.compile(
+    r"^Will (.+?) (?:reach|qualify for) (?:the )?Round of 32",
+    re.IGNORECASE,
+)
+
+
+def parse_group_qualify_market(
+    market: dict[str, Any], *, search_query: str | None = None
+) -> PolymarketSnapshot | None:
+    question = (market.get("question") or "").strip()
+    m = _GROUP_QUALIFY.match(question)
+    if not m:
+        return None
+    team = team_names.normalize_team(m.group(1))
+    mid, bid, ask = _mid_from_market(market)
+    return PolymarketSnapshot(
+        team=team,
+        market_type="group_qualify",
+        group=None,
+        question=question,
+        slug=str(market.get("slug") or ""),
+        condition_id=str(market.get("conditionId") or ""),
+        mid=mid,
+        best_bid=bid,
+        best_ask=ask,
+        volume=_optional_float(market.get("volume")),
+        liquidity=_optional_float(market.get("liquidity")),
+        accepting_orders=bool(market.get("acceptingOrders")),
+        search_query=search_query,
+    )
+
+
 def parse_any_wc_market(
     market: dict[str, Any], *, search_query: str | None = None
 ) -> PolymarketSnapshot | None:
-    return parse_group_winner_market(market, search_query=search_query) or parse_advance_market(
-        market, search_query=search_query
+    return (
+        parse_group_winner_market(market, search_query=search_query)
+        or parse_group_qualify_market(market, search_query=search_query)
+        or parse_advance_market(market, search_query=search_query)
     )
 
 

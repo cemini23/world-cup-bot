@@ -24,6 +24,7 @@ def _cfg() -> CrossVenueConfig:
     return CrossVenueConfig(
         version=1,
         alert_threshold_pp=5.0,
+        alert_min_fee_adjusted_gap_pp=None,
         poll_interval_sec=120,
         fee_kalshi_profit_pct=7.0,
         verification_max_age_days=14,
@@ -44,6 +45,7 @@ def _alert_row() -> CrossVenueScanRow:
         market_type="group_winner",
         rules_hash="hash_v1",
         gap_pp=6.0,
+        fee_adjusted_gap_pp=1.1,
         pm_mid=0.70,
         kalshi_mid=0.64,
         alert=True,
@@ -63,6 +65,8 @@ def _alert_row() -> CrossVenueScanRow:
 
 def test_fee_adjusted_gap_pp():
     assert fee_adjusted_gap_pp(6.0, 7.0) == pytest.approx(5.58)
+    # K99 USA qualify snapshot: 4pp raw, -2.02pp after Kalshi fee on favorite leg
+    assert fee_adjusted_gap_pp(4.0, 7.0, pm_mid=0.82, kalshi_mid=0.86) == pytest.approx(-2.02)
 
 
 def test_proposal_from_alert_row():
@@ -71,7 +75,7 @@ def test_proposal_from_alert_row():
     assert p is not None
     assert p.pm_leg == "SELL"
     assert p.kalshi_leg == "BUY"
-    assert p.theoretical_profit_usd == pytest.approx(27.90, rel=0.01)
+    assert p.theoretical_profit_usd == pytest.approx(5.50, rel=0.05)
 
 
 def test_record_and_dedup(tmp_path: Path):
@@ -132,6 +136,7 @@ def test_summarize_paper_arb_pnl_with_refresh(tmp_path: Path):
         market_type="group_winner",
         rules_hash="hash_v1",
         gap_pp=2.0,
+        fee_adjusted_gap_pp=-2.9,
         pm_mid=0.66,
         kalshi_mid=0.64,
         alert=False,

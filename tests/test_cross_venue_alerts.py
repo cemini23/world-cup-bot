@@ -10,6 +10,7 @@ def _row(**kwargs) -> CrossVenueScanRow:
         "market_type": "group_winner",
         "rules_hash": "h1",
         "gap_pp": 6.0,
+        "fee_adjusted_gap_pp": 1.1,
         "pm_mid": 0.7,
         "kalshi_mid": 0.64,
         "alert": True,

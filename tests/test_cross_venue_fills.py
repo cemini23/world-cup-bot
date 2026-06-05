@@ -24,6 +24,7 @@ def _cfg() -> CrossVenueConfig:
     return CrossVenueConfig(
         version=1,
         alert_threshold_pp=5.0,
+        alert_min_fee_adjusted_gap_pp=None,
         poll_interval_sec=120,
         fee_kalshi_profit_pct=7.0,
         verification_max_age_days=14,
@@ -44,6 +45,7 @@ def _alert_row() -> CrossVenueScanRow:
         market_type="group_winner",
         rules_hash="hash_v1",
         gap_pp=6.0,
+        fee_adjusted_gap_pp=1.1,
         pm_mid=0.70,
         kalshi_mid=0.64,
         alert=True,

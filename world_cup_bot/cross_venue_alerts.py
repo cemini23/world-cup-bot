@@ -12,6 +12,7 @@ def notify_scan_results(result: CrossVenueScanResult) -> int:
     for row in result.alerts:
         line = (
             f"ALERT {row.team} {row.market_type} gap={row.gap_pp:.1f}pp "
+            f"fee_adj={row.fee_adjusted_gap_pp:.1f}pp "
             f"PM={row.pm_mid:.3f} KAL={row.kalshi_mid:.3f}"
         )
         if alerts.notify("cross_venue_alert", line, extra=row.to_dict()):

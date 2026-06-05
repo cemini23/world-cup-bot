@@ -27,6 +27,7 @@ def _sample_config() -> CrossVenueConfig:
     return CrossVenueConfig(
         version=1,
         alert_threshold_pp=5.0,
+        alert_min_fee_adjusted_gap_pp=0.5,
         poll_interval_sec=120,
         fee_kalshi_profit_pct=7.0,
         verification_max_age_days=14,
@@ -93,6 +94,70 @@ def test_alert_fires_at_six_pp():
     row = scan_config_pair(pair, _sample_config(), pm=pm, kalshi=kalshi)
     assert row.alert is True
     assert row.gap_pp == pytest.approx(6.0)
+    assert row.fee_adjusted_gap_pp == pytest.approx(1.1)
+
+
+def test_alert_suppressed_when_fee_adjusted_below_min():
+    pair = CrossVenuePair(
+        team="USA",
+        market_type="group_qualify",
+        polymarket_hint="USA R32",
+        kalshi_event_ticker="KXWCGROUPQUAL-26D",
+        kalshi_market_ticker="KXWCGROUPQUAL-26D-USA",
+        rules_hash="group_qualify_v1",
+        enabled=True,
+        last_verified="2026-06-05",
+        notes=None,
+    )
+    pm = PolymarketSnapshot(
+        team="USA",
+        market_type="group_qualify",
+        group="D",
+        question="Will the United States reach the Round of 32?",
+        slug="usa-r32",
+        condition_id="0xusa",
+        mid=0.82,
+        best_bid=0.81,
+        best_ask=0.83,
+        volume=1000,
+        liquidity=5000,
+        accepting_orders=True,
+    )
+    kalshi = KalshiMarketSnapshot(
+        ticker="KXWCGROUPQUAL-26D-USA",
+        event_ticker="KXWCGROUPQUAL-26D",
+        title="USA qualifies",
+        team="USA",
+        market_type="group_qualify",
+        mid=0.86,
+        yes_bid=0.85,
+        yes_ask=0.87,
+        volume=500,
+        volume_24h=100,
+        open_interest=50,
+        status="open",
+    )
+    row = scan_config_pair(pair, _sample_config(), pm=pm, kalshi=kalshi)
+    assert row.gap_pp == pytest.approx(4.0)
+    assert row.fee_adjusted_gap_pp == pytest.approx(-2.02)
+    assert row.alert is False
+    assert row.blocked is False
+
+
+def test_group_qualify_config_pair_not_blocked_by_discovery_blocklist():
+    pair = CrossVenuePair(
+        team="England",
+        market_type="group_qualify",
+        polymarket_hint="England R32",
+        kalshi_event_ticker="KXWCGROUPQUAL-26L",
+        kalshi_market_ticker="KXWCGROUPQUAL-26L-ENG",
+        rules_hash="group_qualify_v1",
+        enabled=True,
+        last_verified="2026-06-05",
+        notes=None,
+    )
+    row = scan_config_pair(pair, _sample_config(), pm=None, kalshi=None)
+    assert row.blocked is False
 
 
 def test_slug_change_detected():

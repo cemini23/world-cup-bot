@@ -1,0 +1,83 @@
+{
+  "review_id": "K99",
+  "date": "2026-06-05",
+  "sources": [
+    "Cross-Venue Market Scanner Research.docx",
+    "World Cup 2026 Market Probability Gaps.docx",
+    "World Cup 2026 Knockout Market Map.docx"
+  ],
+  "wiki_sources": [
+    "gemini-wc2026-cross-venue-scanner-research-2026-06-05",
+    "gemini-wc2026-market-probability-gaps-2026-06-05",
+    "gemini-wc2026-knockout-market-map-2026-06-05"
+  ],
+  "bot_changes": {
+    "alert_min_fee_adjusted_gap_pp": 0.5,
+    "fee_model": "fee_adj_pp = raw_gap_pp - (fee_pct/100 * max(pm_mid, kal_mid) * 100)",
+    "group_qualify_pairs_added": 5,
+    "pm_discovery": "parse_group_qualify_market (Round of 32 regex)"
+  },
+  "semantic_rules": {
+    "pairable": [
+      "PM R32 / group advance ↔ KXWCGROUPQUAL",
+      "group_winner ↔ KXWCGROUPWIN"
+    ],
+    "blocked": [
+      "PM advance ↔ KXWCROUND-26RO16",
+      "PM Reach R16 ↔ KXWCGROUPQUAL",
+      "PM stub 50¢ slugs without 2026-fifa-world-cup suffix"
+    ]
+  },
+  "fade_watch_group_qualify": [
+    {
+      "team": "USA",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26D-USA",
+      "pm_mid_pct": 82.0,
+      "kal_mid_pct": 86.0,
+      "raw_gap_pp": 4.0,
+      "fee_adjusted_gap_pp": -2.02,
+      "alert": false
+    },
+    {
+      "team": "Mexico",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26A-MEX",
+      "pm_mid_pct": 93.0,
+      "kal_mid_pct": 92.0,
+      "raw_gap_pp": 1.0,
+      "fee_adjusted_gap_pp": -0.64,
+      "alert": false
+    },
+    {
+      "team": "England",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26L-ENG",
+      "pm_mid_pct": 97.4,
+      "kal_mid_pct": 97.0,
+      "raw_gap_pp": 0.4,
+      "alert": false
+    },
+    {
+      "team": "Croatia",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26L-CRO",
+      "raw_gap_pp": 1.0,
+      "notes": "Kalshi book can be thin"
+    },
+    {
+      "team": "Switzerland",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26B-SUI",
+      "pm_mid_pct": 93.3,
+      "kal_mid_pct": null,
+      "blocked": "Kalshi mid unavailable in snapshot — force per-ticker fetch"
+    }
+  ],
+  "knockout_v2_backlog": {
+    "priority_stack": [
+      "match_winner_90min",
+      "group_qualify_r32",
+      "round_of_16_reach",
+      "quarterfinal_semifinal_reach",
+      "final_winner"
+    ],
+    "phase_transition": "2026-06-28 stop advance regex; pivot KXWCGAME match ML",
+    "scope": "phase_router backlog — not Module 6 v1"
+  }
+}

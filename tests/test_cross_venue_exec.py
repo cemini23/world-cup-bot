@@ -43,6 +43,7 @@ def _cfg() -> CrossVenueConfig:
     return CrossVenueConfig(
         version=1,
         alert_threshold_pp=5.0,
+        alert_min_fee_adjusted_gap_pp=None,
         poll_interval_sec=120,
         fee_kalshi_profit_pct=7.0,
         verification_max_age_days=14,
@@ -222,6 +223,7 @@ def _alert_row(*, team: str = "USA", gap: float = 6.0) -> CrossVenueScanRow:
         market_type="group_winner",
         rules_hash="hash_v1",
         gap_pp=gap,
+        fee_adjusted_gap_pp=1.24,
         pm_mid=0.68,
         kalshi_mid=0.62,
         alert=True,

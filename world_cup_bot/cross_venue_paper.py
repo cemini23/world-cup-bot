@@ -164,8 +164,23 @@ def default_cross_venue_ledger_path() -> Path:
     return resolve_project_path(rel)
 
 
-def fee_adjusted_gap_pp(gap_pp: float, fee_kalshi_profit_pct: float) -> float:
-    """Rough net edge: Kalshi fee as fraction of gross spread capture."""
+def fee_adjusted_gap_pp(
+    gap_pp: float,
+    fee_kalshi_profit_pct: float,
+    *,
+    pm_mid: float | None = None,
+    kalshi_mid: float | None = None,
+) -> float:
+    """Net edge in pp after Kalshi profit fee (K99 hedge model when mids present)."""
+    if (
+        pm_mid is not None
+        and kalshi_mid is not None
+        and 0.0 < pm_mid < 1.0
+        and 0.0 < kalshi_mid < 1.0
+    ):
+        hi = max(pm_mid, kalshi_mid)
+        fee_drag_pp = (fee_kalshi_profit_pct / 100.0) * hi * 100.0
+        return gap_pp - fee_drag_pp
     fee_pp = (fee_kalshi_profit_pct / 100.0) * gap_pp
     return max(0.0, gap_pp - fee_pp)
 
@@ -192,7 +207,12 @@ def proposal_from_alert_row(
     if row.pm_mid is None or row.kalshi_mid is None:
         return None
 
-    fee_adj = fee_adjusted_gap_pp(row.gap_pp, config.fee_kalshi_profit_pct)
+    fee_adj = fee_adjusted_gap_pp(
+        row.gap_pp,
+        config.fee_kalshi_profit_pct,
+        pm_mid=row.pm_mid,
+        kalshi_mid=row.kalshi_mid,
+    )
     if fee_adj < paper.min_fee_adjusted_gap_pp:
         return None
 

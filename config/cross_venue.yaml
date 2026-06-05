@@ -4,6 +4,9 @@
 # PM slugs TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
 # Bosnia fade_watch: SKIP until PM posts non-playoff group-winner slug.
 
+# K99 (2026-06-05): Gemini DR cross-venue research — fee-adjusted alert gate + GROUPQUAL fade-watch
+alert_min_fee_adjusted_gap_pp: 0.5  # suppress raw-only gaps (e.g. USA 4pp → -2pp after Kalshi fee)
+
 version: 1
 alert_threshold_pp: 5.0
 poll_interval_sec: 120
@@ -381,12 +384,64 @@ pairs:
     last_verified: "2026-06-05"
     notes: "fade_watch K96 — ~0.5pp; reject group-a stub"
 
+  # --- K99 fade_watch group qualify (R32 escape) — verified 2026-06-05 Gemini DR ---
+  - team: USA
+    market_type: group_qualify
+    polymarket_hint: "Will the United States reach the Round of 32 in the 2026 FIFA World Cup?"
+    kalshi_event_ticker: KXWCGROUPQUAL-26D
+    kalshi_market_ticker: KXWCGROUPQUAL-26D-USA
+    rules_hash: group_qualify_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K99 — 4pp raw / -2pp fee-adj (Kalshi home bias); alert suppressed"
+
+  - team: Mexico
+    market_type: group_qualify
+    polymarket_hint: "Will Mexico reach the Round of 32 in the 2026 FIFA World Cup?"
+    kalshi_event_ticker: KXWCGROUPQUAL-26A
+    kalshi_market_ticker: KXWCGROUPQUAL-26A-MEX
+    rules_hash: group_qualify_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K99 — 1pp raw; fee-adj negative"
+
+  - team: England
+    market_type: group_qualify
+    polymarket_hint: "Will England reach the Round of 32 in the 2026 FIFA World Cup?"
+    kalshi_event_ticker: KXWCGROUPQUAL-26L
+    kalshi_market_ticker: KXWCGROUPQUAL-26L-ENG
+    rules_hash: group_qualify_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K99 — 0.4pp raw"
+
+  - team: Croatia
+    market_type: group_qualify
+    polymarket_hint: "Will Croatia reach the Round of 32 in the 2026 FIFA World Cup?"
+    kalshi_event_ticker: KXWCGROUPQUAL-26L
+    kalshi_market_ticker: KXWCGROUPQUAL-26L-CRO
+    rules_hash: group_qualify_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K99 — ~1pp raw; Kalshi book can be thin"
+
+  - team: Switzerland
+    market_type: group_qualify
+    polymarket_hint: "Will Switzerland reach the Round of 32 in the 2026 FIFA World Cup?"
+    kalshi_event_ticker: KXWCGROUPQUAL-26B
+    kalshi_market_ticker: KXWCGROUPQUAL-26B-SUI
+    rules_hash: group_qualify_v1
+    enabled: true
+    last_verified: "2026-06-05"
+    notes: "K99 — Kalshi mid sometimes missing; force per-ticker fetch"
+
 blockers:
   - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
   - "Bosnia & Herzegovina fade_watch — PM slug is UEFA playoff conditional; skip until direct market"
   - "Reject PM stub slugs (50¢ placeholders): group-a/group-d/group-f without 2026-fifa-world-cup suffix"
+  - "K99: PM Reach Round of 16 ≠ KXWCGROUPQUAL — use round_of_16_qualify block + rules_hash"
 
 discovery:
   kalshi_ticker_prefixes:
@@ -398,6 +453,7 @@ discovery:
     - "win Group"
     - "world cup group winner"
     - "world cup advance knockout"
+    - "Round of 32"
     - "2026 FIFA World Cup"
   rules_hash_by_market_type:
     group_winner: group_winner_fifa_tiebreak_v1

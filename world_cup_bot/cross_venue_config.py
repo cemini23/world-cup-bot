@@ -51,6 +51,7 @@ class AutoArbConfigSlice:
 class CrossVenueConfig:
     version: int
     alert_threshold_pp: float
+    alert_min_fee_adjusted_gap_pp: float | None
     poll_interval_sec: float
     fee_kalshi_profit_pct: float
     verification_max_age_days: int
@@ -141,6 +142,11 @@ def load_cross_venue_config(path: Path | None = None) -> CrossVenueConfig:
     return CrossVenueConfig(
         version=int(raw.get("version", 1)),
         alert_threshold_pp=float(raw.get("alert_threshold_pp", 5.0)),
+        alert_min_fee_adjusted_gap_pp=(
+            float(raw["alert_min_fee_adjusted_gap_pp"])
+            if raw.get("alert_min_fee_adjusted_gap_pp") is not None
+            else None
+        ),
         poll_interval_sec=float(raw.get("poll_interval_sec", 120)),
         fee_kalshi_profit_pct=float(raw.get("fee_kalshi_profit_pct", 7.0)),
         verification_max_age_days=int(raw.get("verification_max_age_days", 14)),

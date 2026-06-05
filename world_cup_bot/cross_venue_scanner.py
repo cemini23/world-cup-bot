@@ -28,6 +28,7 @@ class CrossVenueScanRow:
     market_type: str
     rules_hash: str
     gap_pp: float | None
+    fee_adjusted_gap_pp: float | None
     pm_mid: float | None
     kalshi_mid: float | None
     alert: bool
@@ -80,6 +81,14 @@ def fee_adjusted_gap_note(gap: float | None, fee_pct: float) -> str | None:
     return f"raw {gap:.1f}pp; Kalshi ~{fee_pct:.0f}% on profit may erase sub-{fee_pct:.0f}pp gross"
 
 
+def _alert_min_fee_adjusted_pp(config: CrossVenueConfig) -> float:
+    if config.alert_min_fee_adjusted_gap_pp is not None:
+        return config.alert_min_fee_adjusted_gap_pp
+    if config.paper_arb is not None:
+        return config.paper_arb.min_fee_adjusted_gap_pp
+    return 0.5
+
+
 def _slug_change(pair: CrossVenuePair, pm: PolymarketSnapshot | None) -> tuple[bool, str | None]:
     if pm is None or not pair.polymarket_slug:
         return False, None
@@ -127,6 +136,9 @@ def scan_config_pair(
     kalshi: KalshiMarketSnapshot | None,
 ) -> CrossVenueScanRow:
     blocked, block_reason = _is_blocked_market_type(config, pair.market_type)
+    if pair.rules_hash:
+        blocked = False
+        block_reason = None
     if not pair.enabled:
         blocked = True
         block_reason = "pair disabled in config"
@@ -137,8 +149,24 @@ def scan_config_pair(
 
     slug_changed, slug_detail = _slug_change(pair, pm)
     g = gap_pp(pm.mid if pm else None, kalshi.mid if kalshi else None)
+    fee_adj: float | None = None
+    if g is not None:
+        from world_cup_bot.cross_venue_paper import fee_adjusted_gap_pp
+
+        fee_adj = fee_adjusted_gap_pp(
+            g,
+            config.fee_kalshi_profit_pct,
+            pm_mid=pm.mid if pm else None,
+            kalshi_mid=kalshi.mid if kalshi else None,
+        )
+    min_fee_adj = _alert_min_fee_adjusted_pp(config)
     alert = (
-        not blocked and g is not None and g >= config.alert_threshold_pp and pair.rules_hash != ""
+        not blocked
+        and g is not None
+        and fee_adj is not None
+        and g >= config.alert_threshold_pp
+        and fee_adj >= min_fee_adj
+        and pair.rules_hash != ""
     )
 
     return CrossVenueScanRow(
@@ -146,6 +174,7 @@ def scan_config_pair(
         market_type=pair.market_type,
         rules_hash=pair.rules_hash,
         gap_pp=g,
+        fee_adjusted_gap_pp=round(fee_adj, 2) if fee_adj is not None else None,
         pm_mid=pm.mid if pm else None,
         kalshi_mid=kalshi.mid if kalshi else None,
         alert=alert,
