@@ -2604,7 +2604,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     rs = sub.add_parser(
         "risk-status",
-        help="Streak sizing + portfolio gate state (K102; default OFF)",
+        help="Streak sizing + portfolio gate state (K102; on by default)",
     )
     rs.add_argument("--json", action="store_true", help="JSON output")
     rs.set_defaults(func=_cmd_risk_status)

@@ -20,6 +20,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 5 | Calendar guard | `calendar_guard.py`, `data/worldcup2026-fixtures.json` | Live — CC0 fixtures, not Polymarket |
 | 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_fills.py`, `cross_venue_exec.py`, `kalshi_auth.py`, `kalshi_orders.py`, `kalshi_rest.py`, `config/cross_venue.yaml` | Gap scan; paper ledger (A); manual fills (B); **gated auto-exec** (C) |
 | 7 | Ledger / PnL | `ledger.py`, `logic_version.py`, `venue_reconcile.py` | JSONL + `logic_version`; venue CSV diff |
+| 7b | Risk gates | `streak_sizing.py`, `portfolio_gates.py`, `config/risk_gates.yaml` | **ON by default** — streak mult + % PnL gates; live bankroll from PM wallet |
 | — | Liquidity gate | `liquidity_scanner.py`, `clob_rest.py` | Live — public CLOB `/book`; bid/ask band floors in `operating.yaml` |
 | — | Conviction ops | `conviction_staleness.py`, `conviction_patch.py`, `fixture_watch.py` | Staleness alerts, DR patch staging, fixture upstream diff |
 | — | Preflight | `preflight.py`, `clob_rest.py`, `clob_signing.py` | Geoblock + auth checks |
@@ -58,6 +59,7 @@ Copy `.env.example` → `.env` (never commit). See SETUP.md for full table.
 | Optional alerts | `WC_ALERT_WEBHOOK_URL` |
 | Live plan ack | `WC_LIVE_PLAN_ACK=1` before enabling `live-plan.timer` |
 | Notional ceiling | `MAX_NOTIONAL_PER_MARKET_USD` (min with YAML caps) |
+| Live bankroll (K102) | `WC_BANKROLL_FROM_WALLET=1` (default) — PM USDC + open BUY lock; optional `WC_BANKROLL_USD` override |
 
 Derive L2 creds once: py-clob-client-v2 `create_or_derive_api_creds()` from private key (or Polymarket settings UI).
 
@@ -72,6 +74,7 @@ world-cup-bot liquidity-scan [--team TEAM]
 world-cup-bot plan [--record] [--advisor] [--liquidity-gate]
 world-cup-bot preflight [--skip-auth]
 world-cup-bot shadow-status [--min-phase N] [--json]
+world-cup-bot risk-status [--json]
 world-cup-bot phase status [--json]
 world-cup-bot phase set <state_id|auto>
 world-cup-bot phase purge --team NAME

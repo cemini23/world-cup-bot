@@ -1,7 +1,7 @@
 # Module 7 — streak sizing + portfolio PnL gates (K102)
-# logic_version wc_risk_gates_v1 on breach rows.
+# ON by default. Live bankroll = PM wallet (free USDC + open BUY lock) unless WC_BANKROLL_USD set.
+# Shadow/DRY_RUN: streak sizing active; portfolio % gates defer until live (see portfolio_gates.py).
 # Complements operating.yaml risk.max_daily_adverse_fill_usd (absolute USD cap).
-# Requires WC_BANKROLL_USD when portfolio_gates.enabled (reference bankroll for % math).
 
 version: 1
 logic_version: wc_risk_gates_v1

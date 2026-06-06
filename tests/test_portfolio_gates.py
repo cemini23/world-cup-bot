@@ -56,11 +56,27 @@ def test_portfolio_gates_disabled():
     assert result.allowed
 
 
+def test_portfolio_gates_deferred_in_dry_run(tmp_path, monkeypatch):
+    from world_cup_bot.config import Settings
+
+    monkeypatch.setenv("DRY_RUN", "true")
+    monkeypatch.delenv("WC_BANKROLL_USD", raising=False)
+    monkeypatch.setenv("WC_BANKROLL_FROM_WALLET", "0")
+    settings = Settings.from_env()
+    result = check_portfolio_gates(tmp_path / "l.jsonl", _spec(), _rg_cfg(), settings=settings)
+    assert result.allowed
+    assert "DRY_RUN" in result.reason
+
+
 def test_portfolio_gates_requires_bankroll(tmp_path, monkeypatch):
+    from world_cup_bot.config import Settings
+
+    monkeypatch.setenv("DRY_RUN", "false")
     monkeypatch.delenv("WC_BANKROLL_USD", raising=False)
     monkeypatch.setenv("WC_BANKROLL_FROM_WALLET", "0")
     path = tmp_path / "l.jsonl"
-    result = check_portfolio_gates(path, _spec(), _rg_cfg())
+    settings = Settings.from_env()
+    result = check_portfolio_gates(path, _spec(), _rg_cfg(), settings=settings)
     assert not result.allowed
     assert "bankroll unavailable" in result.reason
 

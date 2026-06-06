@@ -269,10 +269,15 @@ def check_portfolio_gates(
 
     resolved = resolve_bankroll_usd(settings)
     if resolved is None:
+        if settings and settings.dry_run:
+            return GateCheckResult(
+                True,
+                "portfolio gates deferred in DRY_RUN (live PM wallet bankroll on go-live)",
+            )
         return GateCheckResult(
             False,
             "portfolio gates enabled but bankroll unavailable "
-            "(set WC_BANKROLL_USD or live WC_BANKROLL_FROM_WALLET)",
+            "(set WC_BANKROLL_USD or live WC_BANKROLL_FROM_WALLET with L2 creds)",
             gate="config",
         )
     bankroll = resolved.total_usd

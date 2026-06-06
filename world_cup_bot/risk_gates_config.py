@@ -53,7 +53,7 @@ def load_risk_gates_config(path: Path | str | None = None) -> RiskGatesConfig:
         version=int(raw.get("version", 1)),
         logic_version=str(raw.get("logic_version", "wc_risk_gates_v1")),
         dynamic_sizing=DynamicSizingConfig(
-            enabled=bool(ds.get("enabled", False)),
+            enabled=bool(ds.get("enabled", True)),
             loss_reduction_pct=float(ds.get("loss_reduction_pct", 0.20)),
             loss_streak_threshold=int(ds.get("loss_streak_threshold", 2)),
             win_increase_pct=float(ds.get("win_increase_pct", 0.10)),
@@ -63,7 +63,7 @@ def load_risk_gates_config(path: Path | str | None = None) -> RiskGatesConfig:
             max_size_multiplier=float(ds.get("max_size_multiplier", 1.25)),
         ),
         portfolio_gates=PortfolioGatesConfig(
-            enabled=bool(pg.get("enabled", False)),
+            enabled=bool(pg.get("enabled", True)),
             daily_loss_pct=float(pg.get("daily_loss_pct", 0.05)),
             daily_pause_minutes=int(pg.get("daily_pause_minutes", 60)),
             monthly_loss_pct=float(pg.get("monthly_loss_pct", 0.15)),

@@ -23,6 +23,8 @@ Copy `.env.example` → `.env` and fill values locally.
 | `LEDGER_PATH` / `WC_LEDGER_PATH` | recommended | **Same path** for manual CLI and systemd — see [SHADOW.md](SHADOW.md) split-ledger section |
 | `WC_LOAD_POLYMARKET_ENV` | optional | Set `1` if L2 keys live in `.env-polymarket` (Cemini layout) |
 | `MAX_NOTIONAL_PER_MARKET_USD` | no | Hard ceiling per market (minimum with `conviction.yaml` caps; default `2000`) |
+| `WC_BANKROLL_FROM_WALLET` | no | Default `1` — portfolio gate % limits use live PM USDC + open BUY lock (see `config/risk_gates.yaml`) |
+| `WC_BANKROLL_USD` | no | Optional static bankroll override; unset = wallet sync when live |
 | `WC_LIVE_PLAN_ACK` | live timer | Set to `1` in `.env` before enabling `world-cup-bot-live-plan.timer` |
 | `WC_ALERT_WEBHOOK_URL` | no | Discord/Slack HTTPS webhook for operator alerts |
 | `WC_WIKI_ENFORCEMENT` | no | Set `1` to block live POST when intents violate `operating.yaml` wiki rules |
@@ -42,6 +44,22 @@ pip install -e ".[live]"   # or pip install -e ".[dev]" for pytest/ruff
 Regenerate after bumping `pyproject.toml` optional extras. CI runs `python scripts/check_requirements_lock.py`.
 
 Shadow bootstrap: `bash scripts/shadow_setup.sh` (Phase 0 preflight + plan --record).
+
+## Risk gates (K102 — on by default)
+
+Streak sizing and portfolio PnL gates live in **`config/risk_gates.yaml`** (both **enabled** out of the box).
+
+| Layer | Shadow (`DRY_RUN=true`) | Live |
+|-------|-------------------------|------|
+| Streak sizing | Scales quote size from ledger fill streaks | Same |
+| Portfolio gates | **Deferred** until go-live (no wallet needed) | **PM wallet bankroll** each `plan` |
+
+```bash
+world-cup-bot risk-status          # streak mult + gate state
+world-cup-bot risk-status --json
+```
+
+Live bankroll = free USDC + resting BUY collateral (`WC_BANKROLL_FROM_WALLET=1`, default in `.env.example`). Set `WC_BANKROLL_USD` only if you want a fixed reference instead of wallet sync. Disable layers in `config/risk_gates.yaml` if you prefer bare conviction caps only.
 
 ## Live fill watch (Module 4)
 
