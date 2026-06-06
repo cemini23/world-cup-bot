@@ -258,6 +258,9 @@ def ready_payload(settings: Settings, *, test_auth: bool = False) -> dict:
     preflight = run_preflight(settings, test_auth=test_auth)
     steps = build_shadow_steps(settings, test_auth=test_auth)
     done = sum(1 for s in steps if s.status == StepStatus.DONE)
+    from world_cup_bot.risk_status import build_risk_status_payload
+
+    risk_payload = build_risk_status_payload(settings)
     return {
         "dry_run": settings.dry_run,
         "ledger_path": str(settings.ledger_path),
@@ -278,5 +281,6 @@ def ready_payload(settings: Settings, *, test_auth: bool = False) -> dict:
         ],
         "shadow_progress": f"{done}/{len(steps)} steps",
         "ledger": _ledger_stats(settings),
+        "risk_gates": risk_payload,
         "docs": {"shadow": "SHADOW.md", "setup": "SETUP.md"},
     }

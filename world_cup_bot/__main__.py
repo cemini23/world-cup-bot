@@ -535,6 +535,43 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             record=args.record,
         )
 
+    from world_cup_bot.portfolio_gates import check_portfolio_gates
+    from world_cup_bot.risk_gates_config import load_risk_gates_config
+
+    rg_cfg = load_risk_gates_config()
+    pg_result = check_portfolio_gates(
+        Path(settings.ledger_path),
+        version_spec,
+        rg_cfg,
+        record_breach=bool(args.record and not settings.dry_run),
+    )
+    if not pg_result.allowed:
+        return _plan_abort(
+            settings,
+            "portfolio_gate",
+            pg_result.reason,
+            version_spec=version_spec,
+            record=args.record,
+        )
+
+    streak_mult = 1.0
+    max_streak_mult = 1.0
+    if rg_cfg.dynamic_sizing.enabled:
+        from world_cup_bot.streak_sizing import streak_state_from_ledger
+
+        streak_rows = (
+            ledger.load_rows(Path(settings.ledger_path))
+            if Path(settings.ledger_path).is_file()
+            else []
+        )
+        streak = streak_state_from_ledger(streak_rows, version_spec, rg_cfg.dynamic_sizing)
+        streak_mult = streak.size_multiplier
+        max_streak_mult = rg_cfg.dynamic_sizing.max_size_multiplier
+        print(
+            f"event=streak_sizing wins={streak.consecutive_wins} "
+            f"losses={streak.consecutive_losses} mult={streak_mult:.3f}"
+        )
+
     cfg = conviction.load_conviction_config(Path(settings.conviction_config))
     if phase_router_enabled():
         min_mid = phase_ctx.operating_overrides.get("min_mid")
@@ -676,8 +713,16 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     intents: list[quoter.QuoteIntent] = []
     for result in results:
         if result.quote:
-            mult = multipliers.get(result.market.team, 1.0)
-            intents.extend(quoter.build_quotes(result, cfg, settings, notional_multiplier=mult))
+            mult = multipliers.get(result.market.team, 1.0) * streak_mult
+            intents.extend(
+                quoter.build_quotes(
+                    result,
+                    cfg,
+                    settings,
+                    notional_multiplier=mult,
+                    max_notional_multiplier=max_streak_mult,
+                )
+            )
 
     if not intents:
         return _plan_abort(
@@ -1220,6 +1265,38 @@ def _cmd_orders(args: argparse.Namespace) -> int:
 
     print(order_manager.format_orders_table(open_orders))
     print(f"\n{len(open_orders)} open WC advance order(s)")
+    return 0
+
+
+def _cmd_risk_status(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    from world_cup_bot.risk_status import build_risk_status_payload
+
+    payload = build_risk_status_payload(settings)
+    operating = load_operating_config(Path(settings.operating_config))
+    payload["operating_daily_adverse_cap_usd"] = operating.risk.max_daily_adverse_fill_usd
+
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        ds = payload["dynamic_sizing"]
+        pg = payload["portfolio_gates"]
+        print(f"risk_gates logic_version={payload['logic_version']}")
+        print(
+            f"  streak sizing: enabled={ds['enabled']} "
+            f"wins={ds['consecutive_wins']} losses={ds['consecutive_losses']} "
+            f"mult={ds['size_multiplier']}"
+        )
+        print(
+            f"  portfolio gates: enabled={pg['enabled']} allowed={pg['plan_allowed']} "
+            f"detail={pg['plan_detail']}"
+        )
+        if pg.get("bankroll_usd"):
+            print(
+                f"  bankroll=${pg['bankroll_usd']:.0f} "
+                f"net_pnl=${pg['cumulative_net_pnl_usd']:+.2f} "
+                f"drawdown={pg['drawdown_pct']:.1%}"
+            )
     return 0
 
 
@@ -2517,6 +2594,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip L2 auth probe when evaluating checklist",
     )
     ss.set_defaults(func=_cmd_shadow_status)
+
+    rs = sub.add_parser(
+        "risk-status",
+        help="Streak sizing + portfolio gate state (K102; default OFF)",
+    )
+    rs.add_argument("--json", action="store_true", help="JSON output")
+    rs.set_defaults(func=_cmd_risk_status)
 
     ph = sub.add_parser("phase", help="Module 1b - tournament phase router (DR 10)")
     ph_sub = ph.add_subparsers(dest="phase_cmd", required=True)

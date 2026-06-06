@@ -104,6 +104,7 @@ def build_quotes(
     settings: Settings,
     *,
     notional_multiplier: float = 1.0,
+    max_notional_multiplier: float = 1.0,
 ) -> list[QuoteIntent]:
     """Resting limit bids from live Gamma book — no hardcoded mids."""
     market = result.market
@@ -114,7 +115,8 @@ def build_quotes(
     if snapshot is None:
         return []
 
-    scale = max(0.0, min(1.0, notional_multiplier))
+    cap_mult = max(1.0, max_notional_multiplier)
+    scale = max(0.0, min(cap_mult, notional_multiplier))
     yaml_cap = config.max_notional(market.team) * scale
     env_cap = settings.max_notional_per_market_usd
     max_notional = min(yaml_cap, env_cap) if env_cap > 0 else yaml_cap
