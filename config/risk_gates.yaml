@@ -1,12 +1,13 @@
 # Module 7 — streak sizing + portfolio PnL gates (K102)
-# logic_version wc_risk_gates_v1 on breach rows; default OFF until shadow soak.
+# logic_version wc_risk_gates_v1 on breach rows.
 # Complements operating.yaml risk.max_daily_adverse_fill_usd (absolute USD cap).
+# Requires WC_BANKROLL_USD when portfolio_gates.enabled (reference bankroll for % math).
 
 version: 1
 logic_version: wc_risk_gates_v1
 
 dynamic_sizing:
-  enabled: false
+  enabled: true
   loss_reduction_pct: 0.20
   loss_streak_threshold: 2
   win_increase_pct: 0.10
@@ -16,7 +17,7 @@ dynamic_sizing:
   max_size_multiplier: 1.25
 
 portfolio_gates:
-  enabled: false
+  enabled: true
   # Requires WC_BANKROLL_USD in env when enabled (reference bankroll for % gates).
   daily_loss_pct: 0.05
   daily_pause_minutes: 60
