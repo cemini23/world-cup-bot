@@ -2,7 +2,7 @@
 
 **Status:** Module 8 **shipped** — **paper-first**, disabled by default (`config/shock_match.yaml` → `enabled: false`). Live limit POST requires `WC_MATCH_SHOCK_LIVE=1`, `WC_MATCH_SHOCK_LIVE_ACK=1`, non-US egress, and a separate operator sign-off from advance LP (SHADOW Phase 4).
 
-In-play match-market shock recovery (RoH-style), orthogonal to advance-to-knockout LP (`wc_advance_lp_v4`). Do **not** wire into `quoter.py` or share cancel-window state with Module 3.
+In-play match-market shock recovery (RoH-style), orthogonal to advance-to-knockout LP (`wc_advance_lp_v5`). Do **not** wire into `quoter.py` or share cancel-window state with Module 3.
 
 ## Unified bot — LP then shock (same process)
 

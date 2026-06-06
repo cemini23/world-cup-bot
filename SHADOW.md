@@ -9,7 +9,8 @@ git clone https://github.com/cemini23/world-cup-bot.git && cd world-cup-bot
 cp .env.example .env          # fill keys locally — never commit
 pip install -e ".[dev]"
 pip install -e ".[live]"        # websockets + py-clob-client-v2 (watch / live POST)
-world-cup-bot preflight         # geoblock WARN ok in shadow from US
+bash scripts/shadow_setup.sh    # or: world-cup-bot preflight
+world-cup-bot risk-status       # K102 gates — on by default; portfolio % deferred in DRY_RUN
 world-cup-bot scan --conviction --liquidity
 world-cup-bot tournament-ops check   # optional — fixtures, staleness, cross-venue, match-shock readiness
 world-cup-bot ui                # optional dashboard → http://localhost:8765
@@ -36,6 +37,7 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] `cancel --cancel-window` runs on timer / before each `plan` (auto-pull resting quotes)
 - [ ] Review `config/conviction.yaml` caps vs bankroll
 - [ ] Daily adverse-fill budget understood (`config/operating.yaml` → `risk.max_daily_adverse_fill_usd`; default $500)
+- [ ] Risk gates understood (`config/risk_gates.yaml` — streak sizing active in shadow; portfolio % gates defer until live; `world-cup-bot risk-status`)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
 ### One canonical ledger (split-ledger trap)
@@ -117,12 +119,14 @@ world-cup-bot preflight         # L2 GET /data/orders auth probe passes
 
 ## Phase 4 — Live pilot (optional, small size)
 
-Only after Phases 0–3. Start with **$500–1K** single-market pilot per bot spec.
+Only after Phases 0–3. Start with a **small pilot** scaled to your wallet (see `risk-status` for wallet-synced bankroll when live).
 
 ```bash
 export DRY_RUN=false            # only on non-US egress host
 export WC_LIVE_PLAN_ACK=1       # required before live-plan.timer (see deploy/systemd/README.md)
+export WC_BANKROLL_FROM_WALLET=1   # default — portfolio % gates use PM USDC + open BUY lock
 world-cup-bot preflight         # all PASS
+world-cup-bot risk-status       # confirm bankroll + gate state before first live plan
 world-cup-bot plan --record --liquidity-gate   # posts post-only GTC limits
 world-cup-bot watch --record    # fills + REST reconcile + exit POST
 ```
@@ -169,7 +173,9 @@ Set `WC_ALERT_WEBHOOK_URL` for Discord/Slack on kill-switch and cross-venue aler
 | Shadow ledger | `world-cup-bot pnl --scope current` |
 | Rewards sync | `world-cup-bot rewards sync --record` (Phase 2+; separate systemd timer) |
 | Shadow gate (CI + local) | `world-cup-bot shadow-status --min-phase 1` (exit 1 if pending/blocked; prints ledger path) |
+| Risk gates (K102) | `world-cup-bot risk-status` — streak mult + portfolio gate state |
 | Daily risk cap | `config/operating.yaml` → `risk.max_daily_adverse_fill_usd` |
+| Portfolio risk gates | `config/risk_gates.yaml` + live PM wallet (`WC_BANKROLL_FROM_WALLET=1`) |
 | Rate-limit preflight | `world-cup-bot preflight` → `clob_rate_limit` |
 | Conviction drift | `world-cup-bot conviction-staleness --notify` |
 | Fixture drift | `world-cup-bot fixture-check --notify` |

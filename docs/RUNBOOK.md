@@ -10,17 +10,19 @@ Not financial advice. Default is shadow mode (`DRY_RUN=true`). Live order POST r
 
 ```
 WORLD CUP BOT — RUNBOOK SNAPSHOT
-Effective: 2026-06-04
-Repo: github.com/cemini23/world-cup-bot @ main (≥ 86bc57a)
+Effective: 2026-06-06
+Repo: github.com/cemini23/world-cup-bot @ main (≥ 344ec78)
 Public launch: 2026-06-03 — Outlier Weekly Issue 3
 
 Package: world-cup-bot 0.1.0
 Conviction config: config/conviction.yaml version 5
-LP logic: wc_advance_lp_v4 (deployed 2026-05-30)
+LP logic: wc_advance_lp_v5 (deployed 2026-06-05)
+Risk gates: wc_risk_gates_v1 (streak + portfolio; on by default)
 Cross-venue paper: wc_cross_venue_paper_v1
 Cross-venue auto-exec: wc_cross_venue_exec_v1 (off by default)
 Match-shock: wc_match_shock_v1 (off by default; see Module 8 section)
 Cross-venue config: config/cross_venue.yaml version 1
+Risk gates config: config/risk_gates.yaml version 1
 ```
 
 If ledger rows show a different `logic_version`, `pnl --scope current` is scoped wrong. Bump [config/strategy_logic_versions.yaml](../config/strategy_logic_versions.yaml) when quoter, fill handler, or calendar logic changes.
@@ -38,6 +40,7 @@ pip install -e ".[dev]"
 pip install -e ".[live]"
 world-cup-bot preflight
 world-cup-bot shadow-status --min-phase 0
+world-cup-bot risk-status
 world-cup-bot scan --conviction --liquidity
 world-cup-bot liquidity-scan
 world-cup-bot calendar --cancel-window
@@ -48,6 +51,7 @@ world-cup-bot ui    # optional → http://localhost:8765
 |---------|----------------|
 | `preflight` | Geoblock probe, Gamma reachability, CLOB auth, rate-limit burst check |
 | `shadow-status --min-phase N` | Exit 0 only if SHADOW.md steps for phase N complete; prints ledger path |
+| `risk-status [--json]` | Streak sizing mult + portfolio gate state (K102; on by default) |
 | `scan --conviction --liquidity` | Gamma advance markets + YAML tiers + CLOB depth column |
 | `liquidity-scan` | Depth-only vs `config/operating.yaml` bands |
 | `calendar --cancel-window` | Teams inside pre-kickoff cancel window (quoter should stay quiet) |
@@ -69,7 +73,7 @@ world-cup-bot shadow-status --min-phase 1
 | Command | What it does |
 |---------|----------------|
 | `plan --liquidity-gate` | Build quote intents from live Gamma mids; no POST when `DRY_RUN=true` |
-| `plan --record --liquidity-gate` | Append quote intents to JSONL; tags `logic_version: wc_advance_lp_v4` |
+| `plan --record --liquidity-gate` | Append quote intents to JSONL; tags `logic_version: wc_advance_lp_v5` |
 | `pnl --scope current` | PnL for current logic version only |
 | `shadow-status --min-phase 1` | Gate before Phase 2; exit 1 if fewer than 3 dry-run days or ledger mismatch |
 
@@ -116,7 +120,9 @@ Only after Phases 0–3. Non-US host only.
 ```bash
 export DRY_RUN=false
 export WC_LIVE_PLAN_ACK=1    # required for systemd live-plan profile
+export WC_BANKROLL_FROM_WALLET=1   # default — portfolio % gates use PM wallet bankroll
 world-cup-bot preflight
+world-cup-bot risk-status
 world-cup-bot cancel --cancel-window
 world-cup-bot plan --record --liquidity-gate
 world-cup-bot watch --record
@@ -129,6 +135,26 @@ world-cup-bot orders
 | `orders` | Open orders snapshot |
 
 Do not enable `plan --advisor` on timers for initial pilot.
+
+---
+
+## Module 7b — risk gates (K102, on by default)
+
+Streak sizing and portfolio PnL gates in `config/risk_gates.yaml`. Complements the absolute daily cap in `operating.yaml` → `risk.max_daily_adverse_fill_usd`.
+
+```bash
+world-cup-bot risk-status
+world-cup-bot risk-status --json
+```
+
+| Layer | Shadow (`DRY_RUN=true`) | Live |
+|-------|-------------------------|------|
+| Streak sizing | Scales quote size from ledger fill streaks | Same |
+| Portfolio gates | Deferred (no wallet required) | PM wallet bankroll each `plan` |
+
+Live bankroll = free USDC + resting BUY collateral (`WC_BANKROLL_FROM_WALLET=1`, default in `.env.example`). Optional static override: `WC_BANKROLL_USD`. Disable in YAML if you want conviction caps only.
+
+Breach rows use `logic_version: wc_risk_gates_v1` (`risk_gate_breach`, `risk_permanent_halt`).
 
 ---
 

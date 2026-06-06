@@ -2,7 +2,7 @@
 
 **Supersedes:** `/opt/cemini/briefs/2026-06-06_k102-wc-bot-streak-sizing-protection-cemini-prod.md` (implementation corrections)
 
-**Status:** Implemented in world-cup-bot (default OFF). Shadow soak before enabling on egress.
+**Status:** Shipped — **on by default** (2026-06-06). Portfolio gates defer in `DRY_RUN`; live bankroll syncs from PM wallet.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## Config (`config/risk_gates.yaml`)
 
-Both layers default **`enabled: false`**.
+Both layers default **`enabled: true`**. Portfolio gates defer in shadow until live wallet is available.
 
 ### Dynamic sizing (streak multiplier)
 
@@ -31,7 +31,7 @@ Both layers default **`enabled: false`**.
 
 ### Portfolio gates (% of bankroll)
 
-Requires **`WC_BANKROLL_USD`** when enabled.
+Live bankroll syncs from **PM wallet** (free USDC + open BUY lock) when `WC_BANKROLL_FROM_WALLET=1` (default). Optional static override: `WC_BANKROLL_USD`.
 
 | Gate | Default threshold | Pause |
 |------|-------------------|-------|
@@ -56,13 +56,12 @@ Plan aborts when portfolio gates block (after existing daily adverse-fill cap).
 
 ---
 
-## Rollout (egress)
+## Rollout
 
-1. Shadow with gates OFF — confirm `risk-status` and shadow UI show expected state.
-2. Set `WC_BANKROLL_USD` to operator reference bankroll (not wallet balance; used for % math only).
-3. Enable `dynamic_sizing.enabled: true` first; soak 3–5 plan cycles; compare intent notionals vs baseline.
-4. Enable `portfolio_gates.enabled: true` only after bankroll env verified.
-5. Permanent halt requires manual ledger review + operator ack before clearing (no auto-resume).
+1. Clone + `bash scripts/shadow_setup.sh` — gates on by default; portfolio % deferred in DRY_RUN.
+2. Go live with L2 creds + `WC_BANKROLL_FROM_WALLET=1` (default in `.env.example`).
+3. Monitor `world-cup-bot risk-status` each session.
+4. Permanent halt requires manual ledger review + operator ack before clearing (no auto-resume).
 
 ---
 
@@ -79,7 +78,7 @@ Run: `pytest tests/test_streak_sizing.py tests/test_portfolio_gates.py`
 
 | File | Role |
 |------|------|
-| `config/risk_gates.yaml` | Thresholds, default OFF |
+| `config/risk_gates.yaml` | Thresholds, **on by default** |
 | `world_cup_bot/streak_sizing.py` | Streak math |
 | `world_cup_bot/portfolio_gates.py` | % gates + ledger breaches |
 | `world_cup_bot/risk_gates_config.py` | YAML loader |

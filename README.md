@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap scan, paper ledger, and **optional gated dual-leg auto-exec** (Phase C, off by default). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v4` (advance LP) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
+**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 
@@ -14,7 +14,7 @@ World Cup Bot is **open source** for operators who run their own infrastructure.
 
 | Step | Action |
 |------|--------|
-| 1 | `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `world-cup-bot preflight` |
+| 1 | `git clone` → `cp .env.example .env` → `pip install -e ".[dev]"` → `bash scripts/shadow_setup.sh` (or `world-cup-bot preflight`) |
 | 2 | Complete [SHADOW.md](SHADOW.md) Phases 0–3 with `DRY_RUN=true` (`plan --record --liquidity-gate`) |
 | 3 | Keep **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for every recorded session ([SHADOW.md](SHADOW.md) § split-ledger trap) |
 | 4 | Read [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) for architecture; use [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) for retail WC / PM context |
@@ -32,6 +32,7 @@ Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixt
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
 | **Cross-venue (6)** | PM vs Kalshi gap scan (15 cohort pairs); **Phase A** paper ledger (`--record`); **Phase B** manual fills; **Phase C** gated auto-exec; optional webhook |
 | **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
+| **Risk gates (7b)** | Streak sizing + portfolio PnL gates — **on by default**; live bankroll from PM wallet (`risk-status`) |
 | **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; optional auto-clear `human_review` (default off) |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
 | **Optional UI** | `ui` — read-only localhost dashboard (port 8765) |
@@ -50,6 +51,8 @@ Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_wa
 - Queue depletion + volatility pull in fill watch (configurable in `operating.yaml`)
 - Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack HTTPS only)
 - **`MAX_NOTIONAL_PER_MARKET_USD`** — env hard ceiling on per-market quote size (min with YAML caps)
+- **Risk gates (K102)** — streak-based quote scaling + portfolio % loss pauses (`config/risk_gates.yaml`; portfolio gates defer in `DRY_RUN`)
+- **`WC_BANKROLL_FROM_WALLET=1`** — live % gates use PM USDC + open BUY collateral (default in `.env.example`)
 - Live plan timer requires **`WC_LIVE_PLAN_ACK=1`** in `.env` after SHADOW Phase 4 (see `deploy/systemd/README.md`)
 
 ## What it is not
@@ -71,6 +74,7 @@ pip install -e ".[live]" # watch + live POST (websockets, py-clob-client-v2)
 # Phase 0 — connectivity
 world-cup-bot preflight
 world-cup-bot shadow-status --min-phase 0   # prints ledger path + step progress
+world-cup-bot risk-status                    # streak mult + portfolio gate state
 
 # Discover + plan (shadow)
 world-cup-bot scan --conviction --liquidity  # conviction + CLOB depth column
