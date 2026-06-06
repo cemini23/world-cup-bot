@@ -6,20 +6,22 @@ import os
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from world_cup_bot.ledger import LedgerRow, append_row, load_rows
 from world_cup_bot.logic_version import PnlScope, StrategyVersionSpec, filter_rows_by_scope
 from world_cup_bot.risk_gates_config import RiskGatesConfig
 
+if TYPE_CHECKING:
+    from world_cup_bot.config import Settings
+
 
 @dataclass(frozen=True)
-class GateCheckResult:
-    allowed: bool
-    reason: str
-    gate: str | None = None
-    permanent_halt: bool = False
-    paused_until: datetime | None = None
+class BankrollResolution:
+    total_usd: float
+    source: str
+    free_usdc: float | None = None
+    open_orders_usdc: float | None = None
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,9 @@ class PortfolioGateStatus:
     monthly_loss_usd: float
     permanent_halt: bool
     active_pause: GateCheckResult | None
+    bankroll_source: str | None = None
+    bankroll_free_usdc: float | None = None
+    bankroll_open_orders_usdc: float | None = None
 
 
 def bankroll_usd_from_env() -> float | None:
@@ -43,6 +48,51 @@ def bankroll_usd_from_env() -> float | None:
     except ValueError:
         return None
     return val if val > 0 else None
+
+
+def _bankroll_from_wallet_enabled() -> bool:
+    raw = os.environ.get("WC_BANKROLL_FROM_WALLET", "").strip().lower()
+    if raw in ("0", "false", "no", "off"):
+        return False
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    return bankroll_usd_from_env() is None
+
+
+def resolve_bankroll_usd(settings: Settings | None = None) -> BankrollResolution | None:
+    """Bankroll for % gates: WC_BANKROLL_USD override, else live PM wallet when enabled."""
+    static = bankroll_usd_from_env()
+    if static is not None:
+        return BankrollResolution(total_usd=static, source="env")
+
+    if not _bankroll_from_wallet_enabled() or settings is None or settings.dry_run:
+        return None
+
+    from world_cup_bot.balance_cap import fetch_account_bankroll_usd, fetch_collateral_balance_usd
+
+    try:
+        total = fetch_account_bankroll_usd(settings)
+        free = fetch_collateral_balance_usd(settings)
+    except Exception:
+        return None
+    if total <= 0:
+        return None
+    locked = max(0.0, round(total - free, 2))
+    return BankrollResolution(
+        total_usd=total,
+        source="wallet",
+        free_usdc=round(free, 2),
+        open_orders_usdc=locked,
+    )
+
+
+@dataclass(frozen=True)
+class GateCheckResult:
+    allowed: bool
+    reason: str
+    gate: str | None = None
+    permanent_halt: bool = False
+    paused_until: datetime | None = None
 
 
 def _row_day(row: dict[str, Any]) -> str | None:
@@ -96,9 +146,13 @@ def peak_cumulative_pnl(rows: list[dict[str, Any]], spec: StrategyVersionSpec) -
     return round(peak, 2)
 
 
-def peak_equity_usd(rows: list[dict[str, Any]], spec: StrategyVersionSpec) -> float:
-    bankroll = bankroll_usd_from_env() or 0.0
-    return bankroll + peak_cumulative_pnl(rows, spec)
+def peak_equity_usd(
+    rows: list[dict[str, Any]],
+    spec: StrategyVersionSpec,
+    *,
+    bankroll_usd: float,
+) -> float:
+    return bankroll_usd + peak_cumulative_pnl(rows, spec)
 
 
 def period_realized_loss_usd(
@@ -206,22 +260,32 @@ def check_portfolio_gates(
     spec: StrategyVersionSpec,
     rg_cfg: RiskGatesConfig,
     *,
+    settings: Settings | None = None,
     record_breach: bool = False,
 ) -> GateCheckResult:
     pg = rg_cfg.portfolio_gates
     if not pg.enabled:
         return GateCheckResult(True, "portfolio gates disabled")
 
-    bankroll = bankroll_usd_from_env()
-    if bankroll is None:
+    resolved = resolve_bankroll_usd(settings)
+    if resolved is None:
         return GateCheckResult(
             False,
-            "portfolio gates enabled but WC_BANKROLL_USD unset",
+            "portfolio gates enabled but bankroll unavailable "
+            "(set WC_BANKROLL_USD or live WC_BANKROLL_FROM_WALLET)",
             gate="config",
         )
+    bankroll = resolved.total_usd
+    bankroll_note = (
+        f"wallet ${resolved.free_usdc:.2f} free + ${resolved.open_orders_usdc:.2f} orders"
+        if resolved.source == "wallet"
+        and resolved.free_usdc is not None
+        and resolved.open_orders_usdc is not None
+        else f"bankroll ${bankroll:.2f}"
+    )
 
     if not ledger_path.is_file():
-        return GateCheckResult(True, f"portfolio gates OK (no ledger; bankroll ${bankroll:.0f})")
+        return GateCheckResult(True, f"portfolio gates OK (no ledger; {bankroll_note})")
 
     rows = load_rows(ledger_path)
     pause = active_gate_pause(rows, rg_cfg)
@@ -300,8 +364,11 @@ def portfolio_status(
     ledger_path: Path,
     spec: StrategyVersionSpec,
     rg_cfg: RiskGatesConfig,
+    *,
+    settings: Settings | None = None,
 ) -> PortfolioGateStatus:
-    bankroll = bankroll_usd_from_env()
+    resolved = resolve_bankroll_usd(settings)
+    bankroll = resolved.total_usd if resolved else None
     rows = load_rows(ledger_path) if ledger_path.is_file() else []
     now = datetime.now(UTC)
     cum = cumulative_net_pnl(rows, spec) if rows else 0.0
@@ -323,4 +390,7 @@ def portfolio_status(
         else 0.0,
         permanent_halt=permanent,
         active_pause=pause,
+        bankroll_source=resolved.source if resolved else None,
+        bankroll_free_usdc=resolved.free_usdc if resolved else None,
+        bankroll_open_orders_usdc=resolved.open_orders_usdc if resolved else None,
     )

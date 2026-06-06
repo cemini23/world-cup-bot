@@ -112,6 +112,28 @@ def _open_buy_collateral_usd(orders: list[OpenOrder]) -> float:
     return sum(o.price * o.size for o in orders if o.side == "BUY")
 
 
+def fetch_account_bankroll_usd(settings: Settings) -> float:
+    """PM account bankroll: free USDC collateral + resting BUY order lock."""
+    from world_cup_bot.clob_auth import load_clob_auth, load_poly_address
+    from world_cup_bot.clob_rest import fetch_open_orders
+
+    balance = fetch_collateral_balance_usd(settings)
+    auth = load_clob_auth()
+    address = load_poly_address()
+    raw_orders = fetch_open_orders(settings.clob_url, auth, address, max_pages=5)
+    locked = 0.0
+    for row in raw_orders:
+        if str(row.get("side", "")).upper() != "BUY":
+            continue
+        try:
+            price = float(row.get("price") or 0)
+            size = float(row.get("size") or row.get("original_size") or 0)
+        except (TypeError, ValueError):
+            continue
+        locked += price * size
+    return round(balance + locked, 2)
+
+
 def _collateral_locked_outside_intents(
     open_orders: list[OpenOrder],
     intents: list[QuoteIntent],

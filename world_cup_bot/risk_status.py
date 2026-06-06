@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -24,8 +25,8 @@ def build_risk_status_payload(settings: Settings) -> dict[str, Any]:
     rows = load_rows(ledger_path) if ledger_path.is_file() else []
 
     streak = streak_state_from_ledger(rows, spec, rg_cfg.dynamic_sizing)
-    pg = portfolio_status(ledger_path, spec, rg_cfg)
-    gate = check_portfolio_gates(ledger_path, spec, rg_cfg, record_breach=False)
+    pg = portfolio_status(ledger_path, spec, rg_cfg, settings=settings)
+    gate = check_portfolio_gates(ledger_path, spec, rg_cfg, settings=settings, record_breach=False)
 
     return {
         "logic_version": rg_cfg.logic_version,
@@ -48,7 +49,11 @@ def build_risk_status_payload(settings: Settings) -> dict[str, Any]:
         "portfolio_gates": {
             "enabled": rg_cfg.portfolio_gates.enabled,
             "bankroll_usd": pg.bankroll_usd,
+            "bankroll_source": pg.bankroll_source,
+            "bankroll_free_usdc": pg.bankroll_free_usdc,
+            "bankroll_open_orders_usdc": pg.bankroll_open_orders_usdc,
             "wc_bankroll_env_set": bankroll_usd_from_env() is not None,
+            "wc_bankroll_from_wallet": os.environ.get("WC_BANKROLL_FROM_WALLET", ""),
             "cumulative_net_pnl_usd": pg.cumulative_net_pnl_usd,
             "peak_equity_usd": pg.peak_equity_usd,
             "drawdown_pct": pg.drawdown_pct,

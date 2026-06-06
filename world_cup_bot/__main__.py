@@ -543,6 +543,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         Path(settings.ledger_path),
         version_spec,
         rg_cfg,
+        settings=settings,
         record_breach=bool(args.record and not settings.dry_run),
     )
     if not pg_result.allowed:
@@ -1292,11 +1293,17 @@ def _cmd_risk_status(args: argparse.Namespace) -> int:
             f"detail={pg['plan_detail']}"
         )
         if pg.get("bankroll_usd"):
+            src = pg.get("bankroll_source") or "?"
             print(
-                f"  bankroll=${pg['bankroll_usd']:.0f} "
+                f"  bankroll=${pg['bankroll_usd']:.2f} ({src}) "
                 f"net_pnl=${pg['cumulative_net_pnl_usd']:+.2f} "
                 f"drawdown={pg['drawdown_pct']:.1%}"
             )
+            if pg.get("bankroll_source") == "wallet":
+                print(
+                    f"    free=${pg.get('bankroll_free_usdc', 0):.2f} "
+                    f"open_orders=${pg.get('bankroll_open_orders_usdc', 0):.2f}"
+                )
     return 0
 
 

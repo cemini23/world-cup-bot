@@ -58,10 +58,11 @@ def test_portfolio_gates_disabled():
 
 def test_portfolio_gates_requires_bankroll(tmp_path, monkeypatch):
     monkeypatch.delenv("WC_BANKROLL_USD", raising=False)
+    monkeypatch.setenv("WC_BANKROLL_FROM_WALLET", "0")
     path = tmp_path / "l.jsonl"
     result = check_portfolio_gates(path, _spec(), _rg_cfg())
     assert not result.allowed
-    assert "WC_BANKROLL_USD" in result.reason
+    assert "bankroll unavailable" in result.reason
 
 
 def test_daily_loss_triggers_pause(tmp_path, monkeypatch):

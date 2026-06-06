@@ -18,7 +18,7 @@ dynamic_sizing:
 
 portfolio_gates:
   enabled: true
-  # Requires WC_BANKROLL_USD in env when enabled (reference bankroll for % gates).
+  # Bankroll: live PM USDC + open BUY collateral (WC_BANKROLL_FROM_WALLET, default on) or WC_BANKROLL_USD override.
   daily_loss_pct: 0.05
   daily_pause_minutes: 60
   monthly_loss_pct: 0.15
