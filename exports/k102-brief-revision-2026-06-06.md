@@ -1,6 +1,6 @@
 # K102 brief revision — WC streak sizing & portfolio gates
 
-**Supersedes:** `/opt/cemini/briefs/2026-06-06_k102-wc-bot-streak-sizing-protection-cemini-prod.md` (implementation corrections)
+**Supersedes:** internal K102 brief `2026-06-06_k102-wc-bot-streak-sizing-protection-cemini-prod.md` (implementation corrections)
 
 **Status:** Shipped — **on by default** (2026-06-06). Portfolio gates defer in `DRY_RUN`; live bankroll syncs from PM wallet.
 

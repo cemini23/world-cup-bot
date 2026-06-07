@@ -262,20 +262,20 @@ Advance LP and cross-venue exec can run before the opening match. **Module 8 mat
 
 | When | Action | Verify |
 |------|--------|--------|
-| **Now (live trading)** | Cross-venue Phase C on egress: `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `cemini-wc-cross-venue-exec.service` enabled | `systemctl is-active cemini-wc-cross-venue-exec` |
-| **Before 2026-06-11** | Set `WC_SHOCK_ENABLED=1` in `.env-polymarket` (or trading env) | `tournament-ops check` — no “WC_SHOCK_ENABLED unset” warn |
-| **Before 2026-06-11** | `systemctl enable --now cemini-wc-match-shock-record.service` (or `world-cup-bot-match-shock-record.service`) | `logs/match_shock_record.jsonl` growing during live matches |
+| **Now (live trading)** | Cross-venue Phase C on egress: `WC_CROSS_VENUE_AUTO_EXEC=1` + `WC_CROSS_VENUE_EXEC_ACK=1` + `world-cup-bot-cross-venue-exec.service` enabled | `systemctl is-active world-cup-bot-cross-venue-exec` |
+| **Before 2026-06-11** | Set `WC_SHOCK_ENABLED=1` in trading `.env` | `tournament-ops check` — no “WC_SHOCK_ENABLED unset” warn |
+| **Before 2026-06-11** | `systemctl enable --now world-cup-bot-match-shock-record.service` | `logs/match_shock_record.jsonl` growing during live matches |
 | **Optional (Jun–Jul)** | `match-shock-plan.timer` — paper plan every 15m in WC window | `logs/cron_match_shock_plan.log` |
 | **After paper soak only** | Live ladder POST: `WC_MATCH_SHOCK_LIVE=1` + `WC_MATCH_SHOCK_LIVE_ACK=1` | `match-shock-post --check-gates` |
 
 ```bash
 # Egress — cross-venue exec (should already be on)
-grep WC_CROSS_VENUE /opt/cemini/.env-polymarket
-systemctl status cemini-wc-cross-venue-exec.service
+grep WC_CROSS_VENUE "$INSTALL_ROOT/.env"
+systemctl status world-cup-bot-cross-venue-exec.service
 
 # Before opening match — shock tape
-echo 'WC_SHOCK_ENABLED=1' >> /opt/cemini/.env-polymarket   # if not set
-systemctl enable --now cemini-wc-match-shock-record.service
+grep -q WC_SHOCK_ENABLED=1 "$INSTALL_ROOT/.env" || echo 'WC_SHOCK_ENABLED=1' >> "$INSTALL_ROOT/.env"
+systemctl enable --now world-cup-bot-match-shock-record.service
 world-cup-bot tournament-ops check
 ```
 

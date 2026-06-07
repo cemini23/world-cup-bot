@@ -42,26 +42,26 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 
 ### One canonical ledger (split-ledger trap)
 
-`shadow-status` counts **calendar days in the ledger file it reads**. If manual CLI writes `data/local/ledger.jsonl` but systemd writes `/opt/cemini/logs/wc_ledger.jsonl`, Phase 1 can show **1 day** while you already have **3 days** across files.
+`shadow-status` counts **calendar days in the ledger file it reads**. If manual CLI writes `data/local/ledger.jsonl` but systemd writes `$INSTALL_ROOT/logs/ledger.jsonl`, Phase 1 can show **1 day** while you already have **3 days** across files.
 
 **Fix:** set the same path everywhere (`LEDGER_PATH` and `WC_LEDGER_PATH`), merge legacy rows into that file, then symlink repo `data/local/ledger.jsonl` → canonical path.
 
-**Cemini egress (`cemini-egress-fi`):** `/opt/cemini/scripts/wc_run.sh` defaults `WC_LEDGER_PATH` to `wc_shadow_ledger.jsonl` when `WC_DRY_RUN=true`, but live services (`cemini-wc-watch`, `cemini-wc-live-plan`) write to `/opt/cemini/logs/wc_ledger.jsonl`. Set in `/opt/cemini/.env`:
+**Wrapper / multi-host installs:** when a host wrapper sets a shadow ledger path under `DRY_RUN=true` but live systemd units write elsewhere, point both at one file:
 
 ```bash
-WC_LEDGER_PATH=/opt/cemini/logs/wc_ledger.jsonl
+export WC_LEDGER_PATH="$INSTALL_ROOT/logs/ledger.jsonl"
 ```
 
-Gate check (Phases 0–4 on egress — live services set `WC_DRY_RUN=false` via systemd drop-ins):
+Gate check (Phases 0–4 on a non-US trading host — live services should set `WC_DRY_RUN=false` via systemd drop-ins):
 
 ```bash
-WC_LOAD_POLYMARKET_ENV=1 WC_DRY_RUN=false /opt/cemini/scripts/wc_run.sh shadow-status --min-phase 4
+WC_LOAD_POLYMARKET_ENV=1 WC_DRY_RUN=false wc_run.sh shadow-status --min-phase 4
 ```
 
 Local dev gate:
 
 ```bash
-WC_LOAD_POLYMARKET_ENV=1 /opt/cemini/scripts/wc_run.sh shadow-status --min-phase 1
+WC_LOAD_POLYMARKET_ENV=1 wc_run.sh shadow-status --min-phase 1
 ```
 
 ## Production blind spots — audit before live

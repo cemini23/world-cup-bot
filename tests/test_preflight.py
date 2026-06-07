@@ -63,7 +63,7 @@ def test_preflight_geoblock_pass_when_blocked_but_clob_auth_ok_in_shadow(monkeyp
 
     monkeypatch.setattr(
         "world_cup_bot.preflight.fetch_geoblock",
-        lambda: GeoblockStatus(blocked=True, ip="204.168.139.190", country="DE", region=""),
+        lambda: GeoblockStatus(blocked=True, ip="203.0.113.50", country="DE", region=""),
     )
     monkeypatch.setattr(
         "world_cup_bot.preflight.fetch_search_payload",
@@ -97,7 +97,7 @@ def test_preflight_geoblock_warn_when_blocked_but_clob_auth_ok(monkeypatch):
 
     monkeypatch.setattr(
         "world_cup_bot.preflight.fetch_geoblock",
-        lambda: GeoblockStatus(blocked=True, ip="204.168.139.190", country="DE", region=""),
+        lambda: GeoblockStatus(blocked=True, ip="203.0.113.50", country="DE", region=""),
     )
     monkeypatch.setattr(
         "world_cup_bot.preflight.fetch_search_payload",
