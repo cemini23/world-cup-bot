@@ -712,9 +712,28 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         )
 
     intents: list[quoter.QuoteIntent] = []
+    from world_cup_bot.travel_burden import load_travel_burden_config, travel_burden_state
+
+    tb_cfg = load_travel_burden_config()
+    travel_logged: set[str] = set()
     for result in results:
         if result.quote:
-            mult = multipliers.get(result.market.team, 1.0) * streak_mult
+            travel_mult = 1.0
+            if tb_cfg.enabled:
+                tb = travel_burden_state(result.market.team, tb_cfg)
+                travel_mult = tb.notional_multiplier
+                if (
+                    travel_mult < 1.0
+                    and tb.max_one_way_miles is not None
+                    and result.market.team not in travel_logged
+                ):
+                    print(
+                        f"event=travel_burden team={tb.team} "
+                        f"miles={tb.max_one_way_miles:.0f} hub={tb.base_hub} "
+                        f"farthest={tb.farthest_ground} mult={travel_mult:.3f}"
+                    )
+                    travel_logged.add(result.market.team)
+            mult = multipliers.get(result.market.team, 1.0) * streak_mult * travel_mult
             intents.extend(
                 quoter.build_quotes(
                     result,

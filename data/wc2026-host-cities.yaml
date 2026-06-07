@@ -1,0 +1,18 @@
+# WC 2026 match venues — centroids for travel distance (openfootball ground names).
+host_cities:
+  Atlanta: { lat: 33.749, lon: -84.388 }
+  "Boston (Foxborough)": { lat: 42.360, lon: -71.058 }
+  "Dallas (Arlington)": { lat: 32.777, lon: -96.797 }
+  "Guadalajara (Zapopan)": { lat: 20.716, lon: -103.392 }
+  Houston: { lat: 29.760, lon: -95.369 }
+  "Kansas City": { lat: 39.100, lon: -94.578 }
+  "Los Angeles (Inglewood)": { lat: 33.942, lon: -118.408 }
+  "Mexico City": { lat: 19.433, lon: -99.133 }
+  "Miami (Miami Gardens)": { lat: 25.942, lon: -80.245 }
+  "Monterrey (Guadalupe)": { lat: 25.677, lon: -100.310 }
+  "New York/New Jersey (East Rutherford)": { lat: 40.813, lon: -74.074 }
+  Philadelphia: { lat: 39.953, lon: -75.164 }
+  "San Francisco Bay Area (Santa Clara)": { lat: 37.354, lon: -121.969 }
+  Seattle: { lat: 47.606, lon: -122.332 }
+  Toronto: { lat: 43.653, lon: -79.383 }
+  Vancouver: { lat: 49.283, lon: -123.121 }

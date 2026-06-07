@@ -1,0 +1,53 @@
+# FIFA 2026 team base camps (TBC) — city centroids for group-stage travel burden.
+# Sources: FIFA TBC announcement; Al Jazeera base-camp guide (May 2026);
+# WSJ "far-flung base camps" (June 2026). Coordinates are approximate city/training hubs.
+version: 1
+teams:
+  Algeria: { lat: 38.971, lon: -95.235, hub: "Lawrence, KS" }
+  Argentina: { lat: 39.100, lon: -94.578, hub: "Kansas City, MO" }
+  Australia: { lat: 37.804, lon: -122.271, hub: "Oakland, CA" }
+  Austria: { lat: 34.421, lon: -119.703, hub: "Santa Barbara, CA" }
+  Belgium: { lat: 47.482, lon: -122.217, hub: "Renton, WA" }
+  "Bosnia & Herzegovina": { lat: 38.627, lon: -90.199, hub: "St Louis, MO" }
+  Brazil: { lat: 40.600, lon: -74.480, hub: "Morristown, NJ" }
+  Canada: { lat: 49.283, lon: -123.121, hub: "Vancouver, BC" }
+  "Cape Verde": { lat: 27.951, lon: -82.458, hub: "Tampa, FL" }
+  Colombia: { lat: 20.716, lon: -103.392, hub: "Guadalajara, MX" }
+  Croatia: { lat: 38.805, lon: -77.047, hub: "Alexandria, VA" }
+  "Curaçao": { lat: 26.350, lon: -80.083, hub: "Palm Beach, FL" }
+  "Czech Republic": { lat: 32.563, lon: -97.141, hub: "Mansfield, TX" }
+  "DR Congo": { lat: 29.760, lon: -95.369, hub: "Houston, TX" }
+  Ecuador: { lat: 39.961, lon: -83.000, hub: "Columbus, OH" }
+  Egypt: { lat: 47.658, lon: -117.426, hub: "Spokane, WA" }
+  England: { lat: 39.100, lon: -94.578, hub: "Kansas City, MO" }
+  France: { lat: 42.360, lon: -71.058, hub: "Waltham, MA" }
+  Germany: { lat: 36.099, lon: -80.244, hub: "Winston-Salem, NC" }
+  Ghana: { lat: 41.922, lon: -71.537, hub: "Smithfield, RI" }
+  Haiti: { lat: 39.427, lon: -74.498, hub: "Galloway, NJ" }
+  Iran: { lat: 32.515, lon: -117.038, hub: "Tijuana, MX" }
+  Iraq: { lat: 37.796, lon: -80.304, hub: "White Sulphur Springs, WV" }
+  "Ivory Coast": { lat: 39.852, lon: -75.354, hub: "Chester, PA" }
+  Japan: { lat: 36.204, lon: -86.692, hub: "Antioch, TN" }
+  Jordan: { lat: 45.523, lon: -122.676, hub: "Portland, OR" }
+  Mexico: { lat: 19.433, lon: -99.133, hub: "Mexico City, MX" }
+  Morocco: { lat: 40.706, lon: -74.549, hub: "Basking Ridge, NJ" }
+  Netherlands: { lat: 39.100, lon: -94.578, hub: "Kansas City, MO" }
+  "New Zealand": { lat: 32.715, lon: -117.161, hub: "San Diego, CA" }
+  Norway: { lat: 36.072, lon: -79.792, hub: "Greensboro, NC" }
+  Panama: { lat: 44.125, lon: -79.782, hub: "New Tecumseth, ON" }
+  Paraguay: { lat: 37.339, lon: -121.895, hub: "San Jose, CA" }
+  Portugal: { lat: 26.350, lon: -80.083, hub: "Palm Beach, FL" }
+  Qatar: { lat: 34.421, lon: -119.703, hub: "Santa Barbara, CA" }
+  "Saudi Arabia": { lat: 30.267, lon: -97.743, hub: "Austin, TX" }
+  Scotland: { lat: 35.227, lon: -80.843, hub: "Charlotte, NC" }
+  Senegal: { lat: 40.554, lon: -74.464, hub: "Piscataway, NJ" }
+  "South Africa": { lat: 20.101, lon: -98.757, hub: "Pachuca, MX" }
+  "South Korea": { lat: 20.716, lon: -103.392, hub: "Guadalajara, MX" }
+  Spain: { lat: 35.045, lon: -85.309, hub: "Chattanooga, TN" }
+  Sweden: { lat: 33.150, lon: -96.823, hub: "Frisco, TX" }
+  Switzerland: { lat: 32.715, lon: -117.161, hub: "San Diego, CA" }
+  Tunisia: { lat: 25.677, lon: -100.310, hub: "Monterrey, MX" }
+  Turkey: { lat: 33.415, lon: -111.831, hub: "Mesa, AZ" }
+  USA: { lat: 33.684, lon: -117.826, hub: "Irvine, CA" }
+  Uruguay: { lat: 20.629, lon: -87.073, hub: "Playa del Carmen, MX" }
+  Uzbekistan: { lat: 33.952, lon: -84.549, hub: "Marietta, GA" }

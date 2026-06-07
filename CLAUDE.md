@@ -21,6 +21,7 @@ Open-source **conviction LP bot** for Polymarket **FIFA 2026 advance-to-knockout
 | 6 | Cross-venue | `cross_venue_scanner.py`, `cross_venue_paper.py`, `cross_venue_fills.py`, `cross_venue_exec.py`, `kalshi_auth.py`, `kalshi_orders.py`, `kalshi_rest.py`, `config/cross_venue.yaml` | Gap scan; paper ledger (A); manual fills (B); **gated auto-exec** (C) |
 | 7 | Ledger / PnL | `ledger.py`, `logic_version.py`, `venue_reconcile.py` | JSONL + `logic_version`; venue CSV diff |
 | 7b | Risk gates | `streak_sizing.py`, `portfolio_gates.py`, `config/risk_gates.yaml` | **ON by default** — streak mult + % PnL gates; live bankroll from PM wallet |
+| — | Travel burden | `travel_burden.py`, `config/travel_burden.yaml`, `data/wc2026-base-camps.yaml` | Slight notional haircut from base-camp → group match miles |
 | — | Liquidity gate | `liquidity_scanner.py`, `clob_rest.py` | Live — public CLOB `/book`; bid/ask band floors in `operating.yaml` |
 | — | Conviction ops | `conviction_staleness.py`, `conviction_patch.py`, `fixture_watch.py` | Staleness alerts, DR patch staging, fixture upstream diff |
 | — | Preflight | `preflight.py`, `clob_rest.py`, `clob_signing.py` | Geoblock + auth checks |

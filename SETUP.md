@@ -61,6 +61,8 @@ world-cup-bot risk-status --json
 
 Live bankroll = free USDC + resting BUY collateral (`WC_BANKROLL_FROM_WALLET=1`, default in `.env.example`). Set `WC_BANKROLL_USD` only if you want a fixed reference instead of wallet sync. Disable layers in `config/risk_gates.yaml` if you prefer bare conviction caps only.
 
+**Travel burden:** `config/travel_burden.yaml` applies a **small** notional haircut (max 6%) when a team's FIFA base camp is far from group-stage venues (data in `data/wc2026-base-camps.yaml`). Does not change conviction tiers — only quote size in `plan`.
+
 ## Live fill watch (Module 4)
 
 ```bash

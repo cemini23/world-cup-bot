@@ -1,6 +1,7 @@
 # World Cup Bot — conviction LP seeds
 # Prices from Gamma at runtime; this file only gates WHICH teams to quote.
 # Tiers from public research (Gemini Deep Research + community LP analysis, May 2026).
+# Group-stage travel burden (base camp → match miles) scales notional slightly — config/travel_burden.yaml.
 
 version: 5
 

@@ -1,0 +1,11 @@
+# Group-stage travel burden — slight notional haircut for far-flung base camps vs match venues.
+# Distances computed at runtime from data/wc2026-base-camps.yaml + fixtures + host cities.
+# Sources: FIFA TBC; Al Jazeera May 2026; WSJ far-flung base camps guide (June 2026).
+
+enabled: true
+# Max notional reduction (e.g. 0.06 = 6% smaller quotes at worst travel)
+max_notional_penalty_pct: 0.06
+# One-way miles from base camp to farthest group match below this → no penalty
+miles_no_penalty_below: 300
+# One-way miles at/above this → full penalty
+miles_full_penalty_at: 2000
