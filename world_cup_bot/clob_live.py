@@ -315,6 +315,11 @@ class LivePmArbClient:
             size_shares=size_shares,
         )
 
+    def cancel_order(self, order_id: str, *, dry_run: bool) -> dict[str, Any]:
+        if dry_run:
+            return {"orderID": order_id, "status": "cancel_dry_run"}
+        return cancel_order_id(self._client, order_id)
+
 
 def cancel_order_id(client: Any, order_id: str) -> dict[str, Any]:
     """Cancel one resting order by id."""

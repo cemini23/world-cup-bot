@@ -20,7 +20,7 @@ from world_cup_bot.fill_handler import (
     submit_exit,
     volatility_pull_triggered,
 )
-from world_cup_bot.ledger import record_exit_intent, record_fill
+from world_cup_bot.ledger import record_exit_intent, record_fill, watch_ledger_seed
 from world_cup_bot.liquidity_scanner import fetch_ahead_bid_notional_usd
 from world_cup_bot.logic_version import StrategyVersionSpec
 from world_cup_bot.operating_config import OperatingConfig
@@ -102,11 +102,41 @@ def _parse_timestamp(msg: dict[str, Any]) -> datetime:
         raw = msg.get(key)
         if raw is None or raw == "":
             continue
-        ts = int(str(raw))
+        try:
+            ts = int(str(raw))
+        except ValueError:
+            logger.warning("unparseable ws timestamp key=%s raw=%r", key, raw)
+            continue
         if ts > 1_000_000_000_000:
             ts //= 1000
         return datetime.fromtimestamp(ts, tz=UTC)
     return datetime.now(UTC)
+
+
+def hydrate_watch_context(ctx: FillWatchContext) -> None:
+    """Seed dedup keys and reconcile cursor from ledger (survives watch restarts)."""
+    from pathlib import Path
+
+    from world_cup_bot.reconcile import RECONCILE_BOOTSTRAP_LOOKBACK_SEC
+
+    seed = watch_ledger_seed(Path(ctx.ledger_path), ctx.version_spec)
+    for order_id in seed.seen_order_ids:
+        ctx.seen_fill_keys.add(f"ledger:{order_id}")
+    if seed.last_fill_epoch is not None:
+        ctx.reconcile_state.last_after_ts = max(
+            0,
+            seed.last_fill_epoch - 60,
+        )
+    elif ctx.reconcile_state.last_after_ts is None:
+        ctx.reconcile_state.last_after_ts = (
+            int(ctx.reconcile_state.started_at.timestamp()) - RECONCILE_BOOTSTRAP_LOOKBACK_SEC
+        )
+    if seed.seen_order_ids:
+        logger.info(
+            "watch hydrated %d fill order_id(s) from ledger; reconcile after_ts=%s",
+            len(seed.seen_order_ids),
+            ctx.reconcile_state.last_after_ts,
+        )
 
 
 def _side_from_outcome(
@@ -188,6 +218,12 @@ def fill_dedup_key(trade_id: str, fill: FillEvent) -> str:
     return f"{trade_id}:{fill.order_id}"
 
 
+def _fill_already_seen(trade_id: str, fill: FillEvent, ctx: FillWatchContext) -> bool:
+    if fill_dedup_key(trade_id, fill) in ctx.seen_fill_keys:
+        return True
+    return f"ledger:{fill.order_id}" in ctx.seen_fill_keys
+
+
 def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[FillHandlerResult]:
     """Parse TRADE → handle_fill → optional ledger; returns results for this message."""
     if not is_matched_trade_message(msg):
@@ -202,11 +238,10 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
 
     results: list[FillHandlerResult] = []
     for fill in extract_maker_fills(msg, ctx.markets_by_condition):
-        key = fill_dedup_key(trade_id, fill)
-        if key in ctx.seen_fill_keys:
+        if _fill_already_seen(trade_id, fill, ctx):
             ctx.stats.fills_skipped_dedup += 1
             continue
-        ctx.seen_fill_keys.add(key)
+        ctx.seen_fill_keys.add(fill_dedup_key(trade_id, fill))
 
         market = ctx.markets_by_condition[condition_id]
         ahead_usd = 0.0
@@ -378,7 +413,8 @@ async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> 
         try:
             await asyncio.wait_for(stop.wait(), timeout=RECONCILE_INTERVAL_SEC)
         except TimeoutError:
-            stats = run_reconcile_pass(
+            stats = await asyncio.to_thread(
+                run_reconcile_pass,
                 clob_url=ctx.clob_url,
                 auth=ctx.auth,
                 poly_address=ctx.poly_address,
@@ -398,7 +434,7 @@ async def reconciliation_loop(*, stop: asyncio.Event, ctx: FillWatchContext) -> 
                     stats.trades_fetched,
                     stats.fills_skipped,
                 )
-            market_safety_pass(ctx)
+            await asyncio.to_thread(market_safety_pass, ctx)
 
 
 async def _ping_loop(ws: Any, *, stop: asyncio.Event) -> None:
@@ -426,6 +462,8 @@ async def watch_fills(
     sub = build_user_subscription(auth, condition_ids)
     stop = asyncio.Event()
 
+    hydrate_watch_context(ctx)
+
     logger.info(
         "connecting %s — %d condition ids (%d teams)",
         ws_url,
@@ -443,7 +481,7 @@ async def watch_fills(
                 msg = parse_ws_text(raw if isinstance(raw, str) else raw.decode())
                 if msg is None:
                     continue
-                process_trade_message(msg, ctx)
+                await asyncio.to_thread(process_trade_message, msg, ctx)
         finally:
             stop.set()
             ping_task.cancel()

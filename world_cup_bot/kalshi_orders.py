@@ -8,12 +8,24 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from world_cup_bot.http_client import USER_AGENT
+from world_cup_bot.http_client import (
+    GET_HOST_ALLOWLIST,
+    USER_AGENT,
+    _hostname,
+    _reject_private_host,
+)
 from world_cup_bot.kalshi_auth import SIGN_PATH_PREFIX, KalshiAuth, authenticated_headers
 
 
 class KalshiOrderError(RuntimeError):
     """Kalshi rejected or failed an order request."""
+
+
+def _validate_kalshi_api_url(url: str) -> None:
+    host = _hostname(url)
+    _reject_private_host(host)
+    if host not in GET_HOST_ALLOWLIST:
+        raise KalshiOrderError(f"Kalshi API host not allowlisted: {host}")
 
 
 @dataclass(frozen=True)
@@ -117,6 +129,7 @@ def create_limit_order(
         )
 
     url = f"{base_url.rstrip('/')}/portfolio/orders"
+    _validate_kalshi_api_url(url)
     data = json.dumps(body).encode()
     headers = authenticated_headers(auth, method="POST", path=path)
     headers["User-Agent"] = USER_AGENT
@@ -161,6 +174,7 @@ def cancel_order(
         return {"order_id": order_id, "status": "cancel_dry_run"}
 
     url = f"{base_url.rstrip('/')}/portfolio/orders/{order_id}"
+    _validate_kalshi_api_url(url)
     headers = authenticated_headers(auth, method="DELETE", path=path)
     headers["User-Agent"] = USER_AGENT
     request = urllib.request.Request(url, headers=headers, method="DELETE")

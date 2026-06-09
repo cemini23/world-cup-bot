@@ -27,7 +27,12 @@ from world_cup_bot.cross_venue_exec import (
     list_orphans,
 )
 from world_cup_bot.cross_venue_scanner import CrossVenueScanRow
-from world_cup_bot.kalshi_orders import KalshiOrderRequest, KalshiOrderResult, build_kalshi_order
+from world_cup_bot.kalshi_orders import (
+    KalshiOrderError,
+    KalshiOrderRequest,
+    KalshiOrderResult,
+    build_kalshi_order,
+)
 from world_cup_bot.ledger import LedgerRow, append_row, load_rows
 
 
@@ -35,12 +40,17 @@ class _FakePmClient:
     def __init__(self, *, fail: bool = False) -> None:
         self.fail = fail
         self.calls: list[dict] = []
+        self.cancelled: list[str] = []
 
     def post_arb_order(self, **kwargs) -> dict:
         self.calls.append(kwargs)
         if self.fail:
             raise RuntimeError("pm post failed")
         return {"orderID": "pm-123", "status": "submitted"}
+
+    def cancel_order(self, order_id: str, *, dry_run: bool) -> dict:
+        self.cancelled.append(order_id)
+        return {"orderID": order_id, "status": "cancelled"}
 
 
 def _cfg() -> CrossVenueConfig:
@@ -219,6 +229,34 @@ def test_execute_orphan_on_pm_failure(tmp_path: Path):
     assert cancelled == ["kal-orphan"]
     orphans = list_orphans(load_rows(ledger))
     assert len(orphans) == 1
+
+
+def test_execute_orphan_on_kalshi_failure_cancels_pm(tmp_path: Path):
+    ledger = tmp_path / "l.jsonl"
+
+    class _PmFirstClient(_FakePmClient):
+        def post_arb_order(self, **kwargs) -> dict:
+            self.calls.append(kwargs)
+            return {"orderID": "pm-orphan", "status": "submitted"}
+
+    client = _PmFirstClient()
+
+    def _kal_place(req: KalshiOrderRequest, *, dry_run: bool = False) -> KalshiOrderResult:
+        raise KalshiOrderError("kalshi leg failed")
+
+    result = execute_dual_leg(
+        _plan(),
+        ledger_path=ledger,
+        kalshi_auth=None,
+        kalshi_base_url="https://example.com/trade-api/v2",
+        pm_client=client,
+        dry_run=False,
+        kalshi_first=False,
+        kalshi_place=_kal_place,
+    )
+    assert result.status == "orphan"
+    assert result.orphan_venue == "polymarket"
+    assert client.cancelled == ["pm-orphan"]
 
 
 def _alert_row(*, team: str = "USA", gap: float = 6.0) -> CrossVenueScanRow:

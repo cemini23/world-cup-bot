@@ -107,7 +107,8 @@ def test_submit_dry_run_returns_intents():
         snapshot=snap,
     )
     out = quoter.submit_quotes([intent], settings)
-    assert out == [intent]
+    assert out.posted_list == [intent]
+    assert not out.failed
 
 
 def test_submit_live_requires_clob_client(monkeypatch):
@@ -191,4 +192,6 @@ def test_submit_live_skips_crosses_book(monkeypatch):
     monkeypatch.setattr("world_cup_bot.clob_live.post_quote_intent", fake_post)
     monkeypatch.setattr("world_cup_bot.preflight.assert_live_post_allowed", lambda _s: None)
     out = quoter.submit_quotes([ok, bad], settings)
-    assert out == [ok]
+    assert out.posted_list == [ok]
+    assert len(out.failed) == 1
+    assert out.failed[0][0].team == "Portugal"

@@ -831,7 +831,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
     halt = trading_halt_from_ledger(Path(settings.ledger_path))
 
-    intents = quoter.submit_quotes(
+    submit_result = quoter.submit_quotes(
         intents,
         settings,
         markets=markets,
@@ -839,6 +839,14 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         ledger_path=settings.ledger_path if args.record else None,
         version_spec=version_spec if args.record else None,
     )
+    intents = submit_result.posted_list
+
+    if submit_result.failed:
+        for intent, reason in submit_result.failed:
+            print(
+                f"QUOTE_SKIP {intent.team} {intent.side}: {reason}",
+                file=sys.stderr,
+            )
 
     if not intents and not settings.dry_run:
         return _plan_abort(
@@ -1905,24 +1913,32 @@ def _cmd_cross_venue_exec(args: argparse.Namespace) -> int:
         if match is None:
             print(f"No orphan for correlation_id={args.correlation_id!r}", file=sys.stderr)
             return 1
-        if args.action != "cancel_kalshi":
-            print("Only cancel_kalshi supported in v1", file=sys.stderr)
-            return 1
-        from world_cup_bot.kalshi_auth import load_kalshi_auth
-
-        auth = load_kalshi_auth()
         dry_run = settings.dry_run or args.dry_run
-        resp = cross_venue_exec.resolve_orphan_cancel_kalshi(
-            match,
-            kalshi_auth=auth,
-            kalshi_base_url=settings.kalshi_base_url,
-            ledger_path=ledger_path,
-            dry_run=dry_run,
-        )
+        if args.action == "cancel_kalshi":
+            from world_cup_bot.kalshi_auth import load_kalshi_auth
+
+            auth = load_kalshi_auth()
+            resp = cross_venue_exec.resolve_orphan_cancel_kalshi(
+                match,
+                kalshi_auth=auth,
+                kalshi_base_url=settings.kalshi_base_url,
+                ledger_path=ledger_path,
+                dry_run=dry_run,
+            )
+        elif args.action == "cancel_pm":
+            resp = cross_venue_exec.resolve_orphan_cancel_pm(
+                match,
+                settings=settings,
+                ledger_path=ledger_path,
+                dry_run=dry_run,
+            )
+        else:
+            print(f"Unsupported resolve action: {args.action!r}", file=sys.stderr)
+            return 1
         if args.json:
             print(json.dumps(resp, indent=2))
         else:
-            print(f"Resolved orphan {args.correlation_id} (cancel_kalshi dry_run={dry_run})")
+            print(f"Resolved orphan {args.correlation_id} ({args.action} dry_run={dry_run})")
         return 0
 
     # attempt
@@ -2991,7 +3007,7 @@ def build_parser() -> argparse.ArgumentParser:
     cvres.add_argument("correlation_id", help="correlation_id from orphan row")
     cvres.add_argument(
         "--action",
-        choices=["cancel_kalshi"],
+        choices=["cancel_kalshi", "cancel_pm"],
         default="cancel_kalshi",
         help="Resolution action",
     )

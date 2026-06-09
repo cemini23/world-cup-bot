@@ -64,6 +64,22 @@ class QuoteIntent:
     snapshot: MarketSnapshot
 
 
+@dataclass(frozen=True)
+class QuoteSubmitResult:
+    """Outcome of a live or dry quote submit batch."""
+
+    posted: tuple[QuoteIntent, ...]
+    failed: tuple[tuple[QuoteIntent, str], ...]
+
+    @property
+    def posted_list(self) -> list[QuoteIntent]:
+        return list(self.posted)
+
+    def __iter__(self):
+        """Backward-compatible iteration over posted intents only."""
+        return iter(self.posted)
+
+
 def _tick_price(value: float) -> float:
     """Polymarket sports books typically tick at 0.01; clamp to valid range."""
     return max(0.01, min(0.99, round(value, 2)))
@@ -187,15 +203,15 @@ def submit_quotes(
     halt: TradingHalt | None = None,
     ledger_path: str | None = None,
     version_spec: StrategyVersionSpec | None = None,
-) -> list[QuoteIntent]:
+) -> QuoteSubmitResult:
     """Post to CLOB when DRY_RUN=false; cancel-replace stale orders first."""
     if not intents:
-        return intents
+        return QuoteSubmitResult(posted=(), failed=())
 
     if halt is not None:
         intents = [i for i in intents if not halt.is_halted(i.team)]
         if not intents:
-            return []
+            return QuoteSubmitResult(posted=(), failed=())
 
     if markets is not None and not settings.dry_run:
         from world_cup_bot.operating_config import load_operating_config
@@ -224,7 +240,7 @@ def submit_quotes(
                 intent.price,
                 intent.size_shares,
             )
-        return intents
+        return QuoteSubmitResult(posted=tuple(intents), failed=())
 
     from world_cup_bot.preflight import assert_live_post_allowed
 
@@ -234,6 +250,7 @@ def submit_quotes(
 
     client = build_clob_client(settings)
     posted: list[QuoteIntent] = []
+    failed: list[tuple[QuoteIntent, str]] = []
     for intent in intents:
         try:
             post_quote_intent(client, intent)
@@ -247,6 +264,13 @@ def submit_quotes(
                     intent.side,
                     exc,
                 )
+                failed.append((intent, str(exc)))
                 continue
             raise RuntimeError(f"quote POST failed for {intent.team} {intent.side}: {exc}") from exc
-    return posted
+    if failed:
+        logger.warning(
+            "quote batch: %d posted, %d skipped (book/balance)",
+            len(posted),
+            len(failed),
+        )
+    return QuoteSubmitResult(posted=tuple(posted), failed=tuple(failed))

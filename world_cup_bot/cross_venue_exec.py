@@ -32,9 +32,9 @@ from world_cup_bot.logic_version import StrategyVersionSpec
 
 EXEC_SPEC = StrategyVersionSpec(
     strategy_key="pm_wc_cross_venue_exec",
-    version_id="wc_cross_venue_exec_v1",
-    deployed_at=datetime(2026, 5, 30, tzinfo=UTC),
-    note="Auto dual-leg cross-venue arb — pilot caps, orphan handling",
+    version_id="wc_cross_venue_exec_v2",
+    deployed_at=datetime(2026, 6, 9, tzinfo=UTC),
+    note="Auto dual-leg arb — PM orphan auto-cancel + resolve_orphan_cancel_pm",
     legacy_version_ids=frozenset(),
 )
 
@@ -177,6 +177,8 @@ class PmArbClient(Protocol):
         size_shares: float,
         dry_run: bool,
     ) -> dict[str, Any]: ...
+
+    def cancel_order(self, order_id: str, *, dry_run: bool) -> dict[str, Any]: ...
 
 
 def auto_arb_from_cross_venue(cfg: CrossVenueConfig) -> AutoArbConfig:
@@ -413,6 +415,7 @@ def execute_dual_leg(
     kalshi_first: bool = True,
     kalshi_place: Callable[..., KalshiOrderResult] | None = None,
     kalshi_cancel: Callable[..., dict[str, Any]] | None = None,
+    pm_cancel: Callable[..., dict[str, Any]] | None = None,
 ) -> DualLegResult:
     now = datetime.now(UTC).isoformat()
     _append_exec_row(
@@ -434,6 +437,11 @@ def execute_dual_leg(
     )
     cancel_kalshi = kalshi_cancel or (
         lambda oid, **kw: cancel_order(kalshi_auth, oid, base_url=kalshi_base_url, **kw)
+    )
+    cancel_pm = pm_cancel or (
+        (lambda oid, **kw: pm_client.cancel_order(oid, **kw))  # type: ignore[union-attr]
+        if pm_client is not None
+        else None
     )
 
     pm_result: LegFillResult | None = None
@@ -503,11 +511,17 @@ def execute_dual_leg(
                     },
                 ),
             )
-            if orphan_venue == "kalshi" and filled.order_id and not dry_run:
-                try:
-                    cancel_kalshi(filled.order_id, dry_run=dry_run)
-                except KalshiOrderError:
-                    pass
+            if filled.order_id and not dry_run:
+                if orphan_venue == "kalshi":
+                    try:
+                        cancel_kalshi(filled.order_id, dry_run=dry_run)
+                    except KalshiOrderError:
+                        pass
+                elif orphan_venue == "polymarket" and cancel_pm is not None:
+                    try:
+                        cancel_pm(filled.order_id, dry_run=dry_run)
+                    except Exception:
+                        pass
             pm_result = leg_results.get("pm")
             kal_result = leg_results.get("kalshi")
             return DualLegResult(
@@ -639,6 +653,44 @@ def resolve_orphan_cancel_kalshi(
             team=orphan_row.get("team"),
             correlation_id=orphan_row.get("correlation_id"),
             reason="orphan_resolved_cancel_kalshi",
+            extra={"orphan_resolved": True, "cancel_response": resp},
+        ),
+    )
+    return resp
+
+
+def resolve_orphan_cancel_pm(
+    orphan_row: dict[str, Any],
+    *,
+    settings: Any,
+    ledger_path: Path,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, cancel_order_id
+    from world_cup_bot.config import Settings
+
+    order_id = str(orphan_row.get("filled_order_id") or "")
+    if not order_id:
+        raise ValueError("orphan row missing filled_order_id")
+    if dry_run:
+        resp: dict[str, Any] = {"orderID": order_id, "status": "cancel_dry_run"}
+    else:
+        cfg = settings if isinstance(settings, Settings) else Settings.from_env()
+        client = build_clob_client(cfg)
+        try:
+            resp = cancel_order_id(client, order_id)
+        except LiveClobPostError as exc:
+            raise RuntimeError(f"PM orphan cancel failed: {exc}") from exc
+    append_row(
+        ledger_path,
+        LedgerRow(
+            event=EVENT_EXEC_COMPLETE,
+            logic_version=EXEC_SPEC.version_id,
+            strategy_key=EXEC_SPEC.strategy_key,
+            timestamp=datetime.now(UTC).isoformat(),
+            team=orphan_row.get("team"),
+            correlation_id=orphan_row.get("correlation_id"),
+            reason="orphan_resolved_cancel_pm",
             extra={"orphan_resolved": True, "cancel_response": resp},
         ),
     )

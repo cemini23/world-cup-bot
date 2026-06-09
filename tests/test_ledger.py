@@ -47,6 +47,34 @@ def _intent(**overrides) -> QuoteIntent:
     return QuoteIntent(**base)
 
 
+def test_load_rows_skips_corrupt_lines(version_spec, ledger_path):
+    ledger_path.write_text(
+        '{"event":"order_fill","logic_version":"x"}\n'
+        "not json\n"
+        '{"event":"quote_intent","logic_version":"'
+        f'{version_spec.version_id}"}}\n'
+    )
+    rows = ledger.load_rows(ledger_path)
+    assert len(rows) == 2
+    assert rows[0]["event"] == "order_fill"
+    assert rows[1]["event"] == "quote_intent"
+
+
+def test_watch_ledger_seed_from_fills(version_spec, ledger_path):
+    ledger.record_fill(
+        path=ledger_path,
+        spec=version_spec,
+        team="Turkey",
+        side="YES",
+        order_id="0xabc",
+        price=0.44,
+        size_shares=100.0,
+    )
+    seed = ledger.watch_ledger_seed(ledger_path, version_spec)
+    assert "0xabc" in seed.seen_order_ids
+    assert seed.last_fill_epoch is not None
+
+
 def test_load_rows_accepts_str_path(version_spec, ledger_path):
     ledger.append_row(
         str(ledger_path),

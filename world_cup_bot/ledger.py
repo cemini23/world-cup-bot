@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,6 +17,8 @@ from world_cup_bot.logic_version import (
     filter_rows_by_scope,
 )
 from world_cup_bot.quoter import MarketSnapshot, QuoteIntent
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_LEDGER = Path("data/local/ledger.jsonl")
 
@@ -108,12 +111,69 @@ def load_rows(path: Path | str) -> list[dict[str, Any]]:
         return []
     rows: list[dict[str, Any]] = []
     with path.open(encoding="utf-8") as f:
-        for line in f:
+        for lineno, line in enumerate(f, start=1):
             line = line.strip()
             if not line:
                 continue
-            rows.append(json.loads(line))
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as exc:
+                logger.warning("ledger %s:%d corrupt JSONL skipped: %s", path, lineno, exc)
+                continue
+            if isinstance(row, dict):
+                rows.append(row)
+            else:
+                logger.warning("ledger %s:%d non-object row skipped", path, lineno)
     return rows
+
+
+@dataclass(frozen=True)
+class WatchLedgerSeed:
+    """Hydrate watch/reconcile session state from prior ledger fills."""
+
+    seen_order_ids: frozenset[str]
+    last_fill_epoch: int | None
+
+
+def _row_epoch_seconds(row: dict[str, Any]) -> int | None:
+    ts_raw = row.get("timestamp")
+    if not ts_raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return int(dt.timestamp())
+    except ValueError:
+        return None
+
+
+def watch_ledger_seed(
+    path: Path | str,
+    spec: StrategyVersionSpec,
+    *,
+    lookback_sec: int = 3600,
+) -> WatchLedgerSeed:
+    """Seed fill dedup + reconcile cursor from scoped order_fill rows."""
+    order_ids: set[str] = set()
+    last_epoch: int | None = None
+    for row in load_rows(path):
+        if row.get("event") != "order_fill":
+            continue
+        if row.get("logic_version") != spec.version_id:
+            continue
+        oid = row.get("order_id")
+        if oid:
+            order_ids.add(str(oid))
+        epoch = _row_epoch_seconds(row)
+        if epoch is not None:
+            last_epoch = epoch if last_epoch is None else max(last_epoch, epoch)
+    if last_epoch is None:
+        last_epoch = int(datetime.now(UTC).timestamp()) - lookback_sec
+    return WatchLedgerSeed(
+        seen_order_ids=frozenset(order_ids),
+        last_fill_epoch=last_epoch,
+    )
 
 
 def record_quote_intents(

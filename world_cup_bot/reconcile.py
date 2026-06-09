@@ -13,6 +13,9 @@ from world_cup_bot.clob_rest import fetch_trades
 
 logger = logging.getLogger(__name__)
 
+# First-pass lookback when no ledger cursor exists (was 60s — too narrow on restart).
+RECONCILE_BOOTSTRAP_LOOKBACK_SEC = 3600
+
 _RECONCILE_TRADE_STATUSES = {
     "MATCHED",
     "CONFIRMED",
@@ -73,7 +76,7 @@ def run_reconcile_pass(
     stats = ReconcileStats()
     after_ts = state.last_after_ts
     if after_ts is None:
-        after_ts = int(state.started_at.timestamp()) - 60
+        after_ts = int(state.started_at.timestamp()) - RECONCILE_BOOTSTRAP_LOOKBACK_SEC
 
     try:
         trades = fetch_trades(
@@ -92,15 +95,17 @@ def run_reconcile_pass(
     max_match_ts = after_ts
 
     for trade in trades:
+        match_ts: int | None = None
         match_time = trade.get("match_time")
         if match_time is not None:
             try:
-                max_match_ts = max(max_match_ts, int(str(match_time)))
+                match_ts = int(str(match_time))
             except ValueError:
                 pass
 
         status = str(trade.get("status") or "")
         if status not in _RECONCILE_TRADE_STATUSES:
+            # Pending trades may later confirm — do not advance cursor past them.
             stats.fills_skipped += 1
             continue
 
@@ -121,6 +126,9 @@ def run_reconcile_pass(
             )
         else:
             stats.fills_skipped += 1
+
+        if match_ts is not None:
+            max_match_ts = max(max_match_ts, match_ts)
 
     state.last_pass_at = now
     state.last_after_ts = max_match_ts

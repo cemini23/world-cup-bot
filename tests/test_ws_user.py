@@ -155,6 +155,42 @@ def test_process_trade_queue_depletion(monkeypatch):
     assert "queue depletion" in results[0].reason
 
 
+def test_parse_timestamp_skips_invalid_then_uses_next_key():
+    msg = {"timestamp": "not-a-ts", "matchtime": "1717248000"}
+    parsed = ws_user._parse_timestamp(msg)
+    assert parsed == ws_user._parse_timestamp({"matchtime": "1717248000"})
+
+
+def test_hydrate_watch_context_seeds_ledger_order_ids(tmp_path: Path):
+    market = make_market("Turkey", mid=0.45)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    ledger_path = tmp_path / "ledger.jsonl"
+    version_spec = load_strategy_version()
+    ledger.record_fill(
+        path=ledger_path,
+        spec=version_spec,
+        team="Turkey",
+        side="YES",
+        order_id="0xhydrate",
+        price=0.44,
+        size_shares=100.0,
+    )
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={"0x1": market},
+        markets=[market],
+        operating=load_operating_config(),
+        version_spec=version_spec,
+        ledger_path=str(ledger_path),
+        dry_run=True,
+        record=False,
+    )
+    ws_user.hydrate_watch_context(ctx)
+    assert "ledger:0xhydrate" in ctx.seen_fill_keys
+    assert ctx.reconcile_state.last_after_ts is not None
+
+
 def test_market_safety_vol_pull_respects_cooldown(monkeypatch):
     from world_cup_bot.config import Settings
 
