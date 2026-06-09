@@ -2,7 +2,15 @@
 
 Companion to [README.md](README.md) (overview), [SHADOW.md](SHADOW.md) (go-live gates), and [SETUP.md](SETUP.md) (configuration).
 
-**Logic version:** `wc_advance_lp_v5` · risk gates: `wc_risk_gates_v1` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 315 pytest (CI on push)
+**Logic version:** `wc_advance_lp_v5` · risk gates: `wc_risk_gates_v1` · paper arb: `wc_cross_venue_paper_v1` · exec: `wc_cross_venue_exec_v1` · match-shock: `wc_match_shock_v1` · **Tests:** 327 pytest (CI on push)
+
+---
+
+## Tournament kickoff — 2026-06-11
+
+- **Opening match:** Mexico vs South Africa (2026-06-11 UTC)
+- **Operator guide:** [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md)
+- **Distribution:** [Outlier Weekly Issue 5](https://outlierweekly.substack.com) (tournament-era writeup)
 
 ---
 
@@ -102,6 +110,7 @@ Phase C auto execution requires explicit `WC_CROSS_VENUE_AUTO_EXEC=1`, `WC_CROSS
 | 2026-06-03 | **Public launch** (Outlier Weekly Issue 3); split-ledger SHADOW docs; `WC_LEDGER_PATH` fix |
 | 2026-06-04 | OSINT K98 scope note — prod PM latency brief does not change WC modules |
 | 2026-06-05 | Audit wave → `wc_advance_lp_v5` (fill dedup, balance cap, cross-venue slippage) |
+| 2026-06-09 | Tournament kickoff docs; match-shock plan `status: skipped` when no tape; TOURNAMENT_KICKOFF.md |
 | 2026-06-06 | **K102 risk gates** — streak sizing + portfolio PnL gates on by default; PM wallet bankroll |
 
 ---

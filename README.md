@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap scan, paper ledger, and **optional gated dual-leg auto-exec** (Phase C, off by default). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** **v1 public** (2026-06-03) — MIT OSS, **shadow-first** (`DRY_RUN=true`). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
+**CI:** passing · **Status:** **v1 public** — MIT OSS, **shadow-first** (`DRY_RUN=true`). **FIFA World Cup 2026** opening match **2026-06-11**. Tournament guide: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot); tournament writeup in [Outlier Weekly Issue 5](https://outlierweekly.substack.com). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 
@@ -19,7 +19,7 @@ World Cup Bot is **open source** for operators who run their own infrastructure.
 | 3 | Keep **one** `LEDGER_PATH` / `WC_LEDGER_PATH` for every recorded session ([SHADOW.md](SHADOW.md) § split-ledger trap) |
 | 4 | Read [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) for architecture; use [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) for retail WC / PM context |
 
-Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixtures, conviction staleness, cross-venue discovery, match-shock readiness).
+Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixtures, conviction staleness, cross-venue discovery, match-shock readiness). Full tournament-week checklist: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md).
 
 ## What it does (v1)
 
@@ -184,7 +184,7 @@ See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contrib
 
 ## Related
 
-- Methodology newsletter: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) · [Outlier Weekly home](https://outlierweekly.substack.com)
+- Methodology newsletter: [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) (launch) · [Issue 5](https://outlierweekly.substack.com) (tournament kickoff) · [Outlier Weekly home](https://outlierweekly.substack.com)
 - Operator runbook: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 - **Retail / bankroll lens:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) — WC contract types, books vs PM, CLV ([prediction-markets crossover](https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/prediction-markets-crossover.md)). **This repo** = bot/LP automation only.
 - YouTube: [@Cemini23](https://www.youtube.com/@Cemini23)

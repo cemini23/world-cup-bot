@@ -60,3 +60,16 @@ def test_run_plan_once_with_tape(settings, tmp_path, monkeypatch):
     )
     assert stats.slugs_scanned >= 1
     assert (tmp_path / "status.json").is_file()
+
+
+def test_run_plan_once_no_tape_writes_skipped(settings, tmp_path, monkeypatch):
+    monkeypatch.setenv("WC_SHOCK_ENABLED", "1")
+    status_path = tmp_path / "status.json"
+    stats = run_plan_once(
+        settings,
+        ledger_path=tmp_path / "shock.jsonl",
+        status_path=status_path,
+    )
+    assert stats.errors
+    payload = __import__("json").loads(status_path.read_text())
+    assert payload["status"] == "skipped"

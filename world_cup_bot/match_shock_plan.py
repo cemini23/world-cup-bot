@@ -44,7 +44,14 @@ class PlanSessionStats:
 
 def write_plan_status(path: Path, stats: PlanSessionStats) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    if stats.errors and all(is_benign_plan_error(err) for err in stats.errors):
+        status = "skipped"
+    elif stats.errors:
+        status = "error"
+    else:
+        status = "ok"
     payload = {
+        "status": status,
         "last_run_at": stats.last_run_at or datetime.now(UTC).isoformat(),
         "shocks": stats.shocks,
         "ladders": stats.ladders,

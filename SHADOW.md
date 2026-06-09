@@ -40,6 +40,8 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] Risk gates understood (`config/risk_gates.yaml` — streak sizing active in shadow; portfolio % gates defer until live; `world-cup-bot risk-status`)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
+**Shadow PnL:** `pnl --scope current` may show **$0 realized** when the ledger has `quote_intent_dry_run` rows but no `order_fill` rows with `pnl_usd`. That measures wiring, not edge. Realized PnL requires `watch --record` (Phase 2+) and optional `rewards sync --record`. See [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md).
+
 ### One canonical ledger (split-ledger trap)
 
 `shadow-status` counts **calendar days in the ledger file it reads**. If manual CLI writes `data/local/ledger.jsonl` but systemd writes `$INSTALL_ROOT/logs/ledger.jsonl`, Phase 1 can show **1 day** while you already have **3 days** across files.
