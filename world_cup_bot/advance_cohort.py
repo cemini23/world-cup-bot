@@ -46,9 +46,7 @@ def firm_advance_markets(
     return [
         m
         for m in markets
-        if m.market_type == "advance_to_knockout"
-        and m.accepting_orders
-        and m.slug
+        if m.market_type == "advance_to_knockout" and m.accepting_orders and m.slug
     ]
 
 
@@ -58,16 +56,12 @@ def scan_advance_cohort_refresh(
     cross_venue_config_path: Path,
 ) -> AdvanceCohortRefresh:
     pm_all = [
-        m
-        for m in discover_polymarket_markets(gamma_url)
-        if m.market_type == "advance_to_knockout"
+        m for m in discover_polymarket_markets(gamma_url) if m.market_type == "advance_to_knockout"
     ]
     firm = firm_advance_markets(gamma_url)
     cfg = load_cross_venue_config(cross_venue_config_path)
     configured = _config_advance_slugs(cfg)
-    missing = tuple(
-        sorted(m.slug for m in firm if m.slug and m.slug not in configured)
-    )
+    missing = tuple(sorted(m.slug for m in firm if m.slug and m.slug not in configured))
     return AdvanceCohortRefresh(
         pm_advance_count=len(pm_all),
         firm_slug_count=len(firm),

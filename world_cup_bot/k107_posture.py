@@ -43,15 +43,11 @@ def load_k107_posture(path: Path | None = None) -> K107PostureConfig:
     lp_raw = raw.get("lp_safety_dr") or {}
     return K107PostureConfig(
         pre_kickoff_inflow_headline=bool(raw.get("pre_kickoff_inflow_headline", False)),
-        block_volume_based_cap_scaling=bool(
-            raw.get("block_volume_based_cap_scaling", True)
-        ),
+        block_volume_based_cap_scaling=bool(raw.get("block_volume_based_cap_scaling", True)),
         cluster_repricing=ClusterRepricingConfig(
             enabled=bool(cluster_raw.get("enabled", True)),
             min_markets=int(cluster_raw.get("min_markets", 5)),
-            fast_repricing_pp_per_hour=float(
-                cluster_raw.get("fast_repricing_pp_per_hour", 3.0)
-            ),
+            fast_repricing_pp_per_hour=float(cluster_raw.get("fast_repricing_pp_per_hour", 3.0)),
             elevated_repricing_pp_per_hour=float(
                 cluster_raw.get("elevated_repricing_pp_per_hour", 1.5)
             ),

@@ -39,9 +39,7 @@ def test_lp_safety_due_when_marker_missing(tmp_path: Path, monkeypatch):
 
 def test_lp_safety_not_due_after_mark(tmp_path: Path, monkeypatch):
     marker = tmp_path / "marker.txt"
-    cfg = K107PostureConfig(
-        lp_safety_dr=LpSafetyDrConfig(last_run_marker=str(marker))
-    )
+    cfg = K107PostureConfig(lp_safety_dr=LpSafetyDrConfig(last_run_marker=str(marker)))
     monkeypatch.setattr(
         "world_cup_bot.k107_posture.resolve_project_path",
         lambda p: marker,
