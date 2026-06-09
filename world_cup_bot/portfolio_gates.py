@@ -106,6 +106,10 @@ def _row_month(row: dict[str, Any]) -> str | None:
 
 
 def _net_pnl_row(row: dict[str, Any]) -> float:
+    from world_cup_bot.ledger import is_synthetic_backfill_exit
+
+    if is_synthetic_backfill_exit(row):
+        return 0.0
     if row.get("event") in {"order_fill", "exit_fill", "position_exit"}:
         for key in ("pnl_usd", "realized_pnl_usd"):
             val = row.get(key)

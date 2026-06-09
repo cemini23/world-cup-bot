@@ -39,9 +39,13 @@ def _row_day(row: dict) -> str | None:
 
 def daily_pnl_series(rows: list[dict]) -> dict[str, float]:
     """Sum pnl_usd by UTC day from fill/exit rows."""
+    from world_cup_bot.ledger import is_synthetic_backfill_exit
+
     by_day: dict[str, float] = {}
     for row in rows:
         if row.get("event") not in ("order_fill", "exit_fill", "position_exit"):
+            continue
+        if is_synthetic_backfill_exit(row):
             continue
         day = _row_day(row)
         if not day:

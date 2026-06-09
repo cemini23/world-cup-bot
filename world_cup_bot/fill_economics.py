@@ -167,6 +167,11 @@ def synthesize_position_exits_from_entry_fills(
         size = float(row.get("size_shares") or 0)
         if entry_price <= 0 or size <= 0:
             continue
+        from world_cup_bot.config import Settings
+
+        max_notional = Settings.from_env().max_notional_per_market_usd
+        if max_notional > 0:
+            size = min(size, max_notional / entry_price)
         exit_price = build_exit_price(entry_price, ops)
         pnl = compute_exit_pnl_usd(
             entry_price=entry_price,

@@ -176,6 +176,10 @@ def test_synthesize_position_exits_for_orphan_fills(tmp_path):
 
     written = synthesize_position_exits_from_entry_fills(path, spec, operating)
     assert written == 1
-    summary = ledger.summarize_pnl(ledger.load_rows(path), spec, PnlScope.CURRENT)
+    rows = ledger.load_rows(path)
     ticks = operating.fill_handler.exit_loss_ticks
-    assert summary.realized_pnl_usd == pytest.approx(-0.01 * ticks * 100.0)
+    exit_row = next(r for r in rows if r.get("event") == "position_exit")
+    assert exit_row.get("reason") == "backfill_synthetic_exit"
+    assert float(exit_row["pnl_usd"]) == pytest.approx(-0.01 * ticks * 100.0)
+    summary = ledger.summarize_pnl(rows, spec, PnlScope.CURRENT)
+    assert summary.realized_pnl_usd == 0.0

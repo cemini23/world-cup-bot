@@ -362,8 +362,19 @@ REALIZED_PNL_EVENTS = frozenset({"order_fill", "exit_fill", "position_exit"})
 REWARD_PNL_EVENTS = frozenset({"reward_accrual", "rewards_sync"})
 
 
+def is_synthetic_backfill_exit(row: dict[str, Any]) -> bool:
+    """Ledger backfill-pnl synthetic exits are bookkeeping, not soak PnL."""
+    if row.get("event") != "position_exit":
+        return False
+    if str(row.get("reason") or "") == "backfill_synthetic_exit":
+        return True
+    return str(row.get("order_id") or "").startswith("backfill-synthetic-")
+
+
 def _realized_pnl_usd(row: dict[str, Any]) -> float:
     """Realized PnL from fill, exit, or round-trip position_exit rows."""
+    if is_synthetic_backfill_exit(row):
+        return 0.0
     if row.get("event") not in REALIZED_PNL_EVENTS:
         return 0.0
     for key in ("pnl_usd", "realized_pnl_usd"):
