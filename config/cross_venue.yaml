@@ -2,7 +2,7 @@
 # Source: Gemini DR + live discover cohort triage (2026-05-29)
 # Semantic note: ONLY group-winner pairs with rules_hash match. Advance-to-knockout
 # PM slugs TBD — do NOT pair KXWCGROUPQUAL vs PM advance until rules hash matches.
-# Bosnia fade_watch: SKIP until PM posts non-playoff group-winner slug.
+# Bosnia/Iraq playoff-winner slugs added 2026-06-09 (cross-venue scan; LP remains fade_watch).
 
 # K99 (2026-06-05): Gemini DR cross-venue research — fee-adjusted alert gate + GROUPQUAL fade-watch
 alert_min_fee_adjusted_gap_pp: 0.5  # suppress raw-only gaps (e.g. USA 4pp → -2pp after Kalshi fee)
@@ -527,6 +527,27 @@ pairs:
     enabled: true
     last_verified: "2026-06-05"
     notes: "K100 — ~0.1pp; conviction skip — alert-only"
+  - team: Iraq
+    market_type: group_winner
+    polymarket_hint: "Will Iraq win Group I in the 2026 FIFA World Cup?"
+    polymarket_slug: will-the-winner-of-boliviairaqsuriname-playoff-win-group-i-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26I
+    kalshi_market_ticker: KXWCGROUPWIN-26I-IRQ
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-09"
+    notes: "Playoff-winner slug live 2026-06-09; ~0.5pp gap; thin book — alert-only"
+
+  - team: Bosnia & Herzegovina
+    market_type: group_winner
+    polymarket_hint: "Will Bosnia and Herzegovina win Group B in the 2026 FIFA World Cup?"
+    polymarket_slug: will-the-winner-of-bosnia-and-herzegovinaitalynorthern-irelandwales-win-group-a-in-the-2026-fifa-world-cup
+    kalshi_event_ticker: KXWCGROUPWIN-26B
+    kalshi_market_ticker: KXWCGROUPWIN-26B-BIH
+    rules_hash: group_winner_fifa_tiebreak_v1
+    enabled: true
+    last_verified: "2026-06-09"
+    notes: "UEFA playoff-winner slug live 2026-06-09; PM slug group-a path, question/Kalshi Group B; fade_watch LP"
 
   # --- K99 fade_watch group qualify (R32 escape) — verified 2026-06-05 Gemini DR ---
   - team: USA
@@ -583,8 +604,8 @@ blockers:
   - "Polymarket explicit advance-to-knockout / R32 slugs TBD for fade_watch cohort (2026-05-29)"
   - "Do not pair KXWCGROUPQUAL (group qualify) vs PM advance until resolution strings match"
   - "Do not pair KXWCROUND-26RO16 vs PM group escape — sequential stage mismatch"
-  - "Bosnia & Herzegovina fade_watch — PM slug is UEFA playoff conditional; skip until direct market"
-  - "Iraq fade_watch — PM slug is Bolivia/Iraq/Suriname playoff conditional; skip until direct market"
+  - "Bosnia & Herzegovina — cross-venue paired 2026-06-09; LP fade_watch in conviction.yaml"
+  - "Iraq — cross-venue paired 2026-06-09; thin book (~1¢ mid); LP fade_watch"
   - "Reject PM stub slugs (50¢ placeholders): group-a/group-d/group-f without 2026-fifa-world-cup suffix"
   - "K99: PM Reach Round of 16 ≠ KXWCGROUPQUAL — use round_of_16_qualify block + rules_hash"
 
