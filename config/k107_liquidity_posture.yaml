@@ -1,6 +1,7 @@
 # K107 — pre-kickoff WC liquidity / inflow environment (shadow posture)
 # Digest R3–R5: ~$2B PM+Kalshi WC exposure [TENTATIVE news tier] — environment flag, NOT edge.
 # See briefs/2026-06-09_k107-wc-market-inflows-liquidity-cemini-prod.md
+# CI: shadow-only posture — no live sizing multiplier enablement
 
 version: 1
 
