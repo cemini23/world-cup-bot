@@ -226,6 +226,10 @@ def submit_quotes(
             )
         return intents
 
+    from world_cup_bot.preflight import assert_live_post_allowed
+
+    assert_live_post_allowed(settings)
+
     from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_quote_intent
 
     client = build_clob_client(settings)

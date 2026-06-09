@@ -827,10 +827,15 @@ def _cmd_plan(args: argparse.Namespace) -> int:
             )
         intents = capped
 
+    from world_cup_bot.trading_halt_persist import trading_halt_from_ledger
+
+    halt = trading_halt_from_ledger(Path(settings.ledger_path))
+
     intents = quoter.submit_quotes(
         intents,
         settings,
         markets=markets,
+        halt=halt,
         ledger_path=settings.ledger_path if args.record else None,
         version_spec=version_spec if args.record else None,
     )
@@ -1076,6 +1081,39 @@ def _cmd_pnl(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ledger_backfill_pnl(args: argparse.Namespace) -> int:
+    settings = Settings.from_env()
+    version_spec = load_strategy_version(Path(settings.logic_version_config))
+    path = Path(args.path) if args.path else Path(settings.ledger_path)
+    if not path.is_file():
+        print(f"No ledger at {path}")
+        return 1
+
+    from world_cup_bot.fill_economics import (
+        backfill_position_exits,
+        synthesize_position_exits_from_entry_fills,
+    )
+    from world_cup_bot.operating_config import load_operating_config
+
+    print(version_spec.version_banner())
+    print(f"ledger: {path}")
+    written = backfill_position_exits(path, version_spec)
+    print(f"Wrote {written} position_exit row(s) from exit_intent history")
+    if args.synthesize:
+        operating = load_operating_config(Path(settings.operating_config))
+        synth = synthesize_position_exits_from_entry_fills(path, version_spec, operating)
+        print(f"Wrote {synth} synthetic position_exit row(s) for orphan entry fills")
+        written += synth
+
+    if args.verify:
+        rows = ledger.load_rows(path)
+        summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
+        print(f"realized_pnl_usd: {summary.realized_pnl_usd:+.2f}")
+        print(f"rewards_usd:      {summary.rewards_usd:+.2f}")
+        print(f"net_pnl_usd:      {summary.net_pnl_usd:+.2f}")
+    return 0
+
+
 def _cmd_rewards_sync(args: argparse.Namespace) -> int:
     settings = Settings.from_env()
     version_spec = load_strategy_version(Path(settings.logic_version_config))
@@ -1191,6 +1229,8 @@ def _cmd_fill(args: argparse.Namespace) -> int:
             order_id=fill.order_id,
             price=fill.fill_price,
             size_shares=fill.fill_shares,
+            pnl_usd=0.0,
+            reason="entry_fill",
         ):
             print(f"ledger dedup skip order_id={fill.order_id}")
             return 0
@@ -1202,6 +1242,18 @@ def _cmd_fill(args: argparse.Namespace) -> int:
                 fill_order_id=fill.order_id,
                 dry_run=settings.dry_run,
             )
+            from world_cup_bot.fill_economics import attribute_roundtrip_from_exit_intent
+
+            pnl = attribute_roundtrip_from_exit_intent(
+                path=Path(settings.ledger_path),
+                spec=version_spec,
+                exit_intent=result.exit_intent,
+                fill_order_id=fill.order_id,
+                entry_price=fill.fill_price,
+                dry_run=settings.dry_run,
+            )
+            if pnl is not None:
+                print(f"position_exit pnl_usd: {pnl:+.4f}")
 
     print(f"fill:         {fill.order_id} {fill.side} @ {fill.fill_price:.2f} x {fill.fill_shares}")
     print(f"kill_switch:  {result.kill_switch}")
@@ -2579,6 +2631,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print breakdown grouped by logic_version",
     )
     pn.set_defaults(func=_cmd_pnl)
+
+    led = sub.add_parser("ledger", help="Ledger maintenance")
+    led_sub = led.add_subparsers(dest="ledger_cmd", required=True)
+    led_bf = led_sub.add_parser(
+        "backfill-pnl",
+        help="Backfill position_exit rows from exit_intent + order_fill history",
+    )
+    led_bf.add_argument("--path", help="Ledger JSONL path (default: WC_LEDGER_PATH)")
+    led_bf.add_argument(
+        "--synthesize",
+        action="store_true",
+        help=(
+            "Synthetic position_exit for entry fills missing exit_intent "
+            "(operating-config exit price)"
+        ),
+    )
+    led_bf.add_argument(
+        "--verify",
+        action="store_true",
+        help="Print PnL summary after backfill",
+    )
+    led_bf.set_defaults(func=_cmd_ledger_backfill_pnl)
 
     rw = sub.add_parser("rewards", help="Polymarket liquidity rewards (CLOB /rewards/user)")
     rw_sub = rw.add_subparsers(dest="rewards_cmd", required=True)

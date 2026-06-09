@@ -140,6 +140,7 @@ def test_submit_live_requires_clob_client(monkeypatch):
         raise LiveClobNotConfiguredError("missing")
 
     monkeypatch.setattr("world_cup_bot.clob_live.build_clob_client", fake_build)
+    monkeypatch.setattr("world_cup_bot.preflight.assert_live_post_allowed", lambda _s: None)
     with pytest.raises(LiveClobNotConfiguredError):
         quoter.submit_quotes([intent], settings)
 
@@ -188,5 +189,6 @@ def test_submit_live_skips_crosses_book(monkeypatch):
 
     monkeypatch.setattr("world_cup_bot.clob_live.build_clob_client", lambda _s: object())
     monkeypatch.setattr("world_cup_bot.clob_live.post_quote_intent", fake_post)
+    monkeypatch.setattr("world_cup_bot.preflight.assert_live_post_allowed", lambda _s: None)
     out = quoter.submit_quotes([ok, bad], settings)
     assert out == [ok]

@@ -106,12 +106,12 @@ def _row_month(row: dict[str, Any]) -> str | None:
 
 
 def _net_pnl_row(row: dict[str, Any]) -> float:
-    if row.get("event") == "order_fill":
+    if row.get("event") in {"order_fill", "exit_fill", "position_exit"}:
         for key in ("pnl_usd", "realized_pnl_usd"):
             val = row.get(key)
             if val is not None:
                 return float(val)
-    if row.get("event") == "rewards_sync":
+    if row.get("event") in {"rewards_sync", "reward_accrual"}:
         return float(row.get("rewards_usd") or row.get("notional_usd") or 0)
     return 0.0
 
@@ -127,10 +127,16 @@ def peak_cumulative_pnl(rows: list[dict[str, Any]], spec: StrategyVersionSpec) -
     scoped = filter_rows_by_scope(rows, spec, PnlScope.CURRENT)
     dated: list[tuple[str, float]] = []
     for row in scoped:
-        if row.get("event") not in {"order_fill", "rewards_sync"}:
+        if row.get("event") not in {
+            "order_fill",
+            "exit_fill",
+            "position_exit",
+            "rewards_sync",
+            "reward_accrual",
+        }:
             continue
         ts = str(row.get("timestamp") or "")
-        if row.get("event") == "order_fill":
+        if row.get("event") in {"order_fill", "exit_fill", "position_exit"}:
             delta = _net_pnl_row(row)
             if row.get("fees_usd") is not None:
                 delta -= float(row["fees_usd"])
@@ -165,7 +171,7 @@ def period_realized_loss_usd(
     scoped = filter_rows_by_scope(rows, spec, PnlScope.CURRENT)
     loss = 0.0
     for row in scoped:
-        if row.get("event") != "order_fill":
+        if row.get("event") not in {"order_fill", "exit_fill", "position_exit"}:
             continue
         if day and _row_day(row) != day:
             continue

@@ -131,3 +131,42 @@ def test_permanent_halt_idempotent(tmp_path):
     pause = active_gate_pause(rows, rg)
     assert pause is not None
     assert pause.permanent_halt
+
+
+def test_peak_drawdown_includes_reward_accrual(tmp_path, monkeypatch):
+    monkeypatch.setenv("WC_BANKROLL_USD", "1000")
+    path = tmp_path / "l.jsonl"
+    spec = _spec()
+    ts = datetime.now(UTC).isoformat()
+    ledger.append_row(
+        path,
+        ledger.LedgerRow(
+            event="reward_accrual",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=ts,
+            rewards_usd=50.0,
+        ),
+    )
+    from world_cup_bot.portfolio_gates import peak_cumulative_pnl
+
+    assert peak_cumulative_pnl(ledger.load_rows(path), spec) == pytest.approx(50.0)
+
+
+def test_daily_loss_uses_position_exit_pnl(tmp_path, monkeypatch):
+    monkeypatch.setenv("WC_BANKROLL_USD", "1000")
+    path = tmp_path / "l.jsonl"
+    spec = _spec()
+    ledger.append_row(
+        path,
+        ledger.LedgerRow(
+            event="position_exit",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=datetime.now(UTC).isoformat(),
+            pnl_usd=-60.0,
+        ),
+    )
+    result = check_portfolio_gates(path, spec, _rg_cfg(), record_breach=True)
+    assert not result.allowed
+    assert result.gate == "daily_loss"

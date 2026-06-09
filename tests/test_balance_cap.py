@@ -41,7 +41,8 @@ def test_cap_scales_down_to_budget() -> None:
     assert all(i.size_shares >= 50.0 for i in capped)
 
 
-def test_cap_prefers_cheaper_legs_when_tight() -> None:
+def test_cap_prefers_cheaper_legs_when_tight(monkeypatch) -> None:
+    monkeypatch.setenv("WC_CAP_PACK_MODE", "cheap_first")
     cheap = _intent("Cheap", 30.0)
     cheap = replace(cheap, price=0.1, size_shares=50.0, notional_usd=5.0)
     expensive = _intent("Rich", 200.0)
@@ -70,6 +71,49 @@ def test_cap_extra_spread_respects_original_notional() -> None:
     capped = cap_intents_to_collateral([cheap], 50.0)
     assert len(capped) == 1
     assert capped[0].notional_usd <= 5.0 + 0.01
+
+
+def test_cap_tier_first_prefers_yes_over_cheap_no(monkeypatch) -> None:
+    monkeypatch.setenv("WC_CAP_PACK_MODE", "tier_first")
+
+    def _snap(mid: float) -> MarketSnapshot:
+        return MarketSnapshot(
+            mid=mid,
+            best_bid=mid - 0.02,
+            best_ask=mid + 0.02,
+            spread=0.04,
+            rewards_min_shares=50.0,
+            rewards_max_spread=4.5,
+            hours_to_kickoff=100.0,
+        )
+
+    cheap_no = QuoteIntent(
+        team="Favorite",
+        side="NO",
+        token_id="no",
+        order_id="dry-fav-no",
+        price=0.05,
+        size_shares=50.0,
+        notional_usd=2.5,
+        dry_run=True,
+        reason="mandatory NO",
+        snapshot=_snap(0.95),
+    )
+    yes_leg = QuoteIntent(
+        team="Favorite",
+        side="YES",
+        token_id="yes",
+        order_id="dry-fav-yes",
+        price=0.55,
+        size_shares=50.0,
+        notional_usd=27.5,
+        dry_run=True,
+        reason="test",
+        snapshot=_snap(0.55),
+    )
+    capped = cap_intents_to_collateral([cheap_no, yes_leg], 28.0)
+    assert len(capped) == 1
+    assert capped[0].side == "YES"
 
 
 def test_cap_to_collateral_explicit_opt_out(monkeypatch) -> None:

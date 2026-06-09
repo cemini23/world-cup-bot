@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from world_cup_bot import calendar_guard
 from world_cup_bot.clob_auth import (
@@ -405,6 +406,15 @@ def apply_fill_safety_actions(
         return None
     if kill_switch and halt is not None:
         halt.halt_team(team, "kill_switch — fill inside cancel/live window")
+    if kill_switch and ledger_path and version_spec is not None:
+        from world_cup_bot.trading_halt_persist import record_trading_halt
+
+        record_trading_halt(
+            Path(ledger_path),
+            version_spec,
+            team=team,
+            reason="kill_switch — fill inside cancel/live window",
+        )
     result = cancel_for_teams(
         settings,
         markets,

@@ -305,3 +305,27 @@ def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightRep
 
     _finalize_geoblock_report(report, settings)
     return report
+
+
+def assert_live_post_allowed(settings: Settings) -> None:
+    """Hard gate before any live CLOB POST (LP quotes or exits)."""
+    if settings.dry_run:
+        return
+
+    try:
+        geo = fetch_geoblock()
+        if geo.blocked:
+            raise RuntimeError(
+                "live POST blocked: geoblock "
+                f"{geo.country}/{geo.region} ({geo.ip}) — use non-US egress"
+            )
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError(f"live POST blocked: geoblock check failed: {exc}") from exc
+
+    report = run_preflight(settings, test_auth=True)
+    failures = [c for c in report.checks if c.status == CheckStatus.FAIL]
+    if failures:
+        detail = "; ".join(f"{c.name}: {c.detail}" for c in failures)
+        raise RuntimeError(f"live POST blocked: preflight FAIL — {detail}")

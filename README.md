@@ -31,7 +31,7 @@ Optional health check before kickoff: `world-cup-bot tournament-ops check` (fixt
 | **Fill handler (4)** | WS user channel + REST reconcile; kill-switch + queue pull + vol cooldown; exit within ~60s |
 | **Calendar guard (5)** | CC0 fixtures; cancel window before kickoff |
 | **Cross-venue (6)** | PM vs Kalshi gap scan (15 cohort pairs); **Phase A** paper ledger (`--record`); **Phase B** manual fills; **Phase C** gated auto-exec; optional webhook |
-| **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **rewards sync** (separate cron unit) |
+| **Ledger (7)** | Versioned JSONL — quotes, fills, cancels, **`position_exit`** round-trips, **rewards sync** (`reward_accrual`) |
 | **Risk gates (7b)** | Streak sizing + portfolio PnL gates — **on by default**; live bankroll from PM wallet (`risk-status`) |
 | **Liquidity gate** | Public CLOB `/book` depth vs `config/operating.yaml`; asymmetric bid/ask band floors; optional auto-clear `human_review` (default off) |
 | **Optional advisor** | `plan --advisor` — LLM overlay; off by default |
@@ -48,6 +48,8 @@ Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_wa
 - Auto-cancel resting quotes when teams enter the pre-kickoff window (`plan`, `watch`, calendar timer)
 - Cancel-replace stale quotes before new posts
 - Kill-switch on cancel-window fills → halt team + pull quotes
+- **Persistent kill-switch** — `trading_halt` / `trading_halt_clear` ledger events survive plan cron restarts
+- **Live POST preflight gate** — `submit_quotes` and `submit_exit` call `assert_live_post_allowed()` before CLOB POST when `DRY_RUN=false`
 - Queue depletion + volatility pull in fill watch (configurable in `operating.yaml`)
 - Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack HTTPS only)
 - **`MAX_NOTIONAL_PER_MARKET_USD`** — env hard ceiling on per-market quote size (min with YAML caps)
@@ -91,6 +93,7 @@ world-cup-bot conviction-patch dr-output.md --stage
 world-cup-bot watch --verbose --record   # needs L2 API creds
 world-cup-bot rewards sync --record      # CLOB liquidity rewards → ledger (L2 required)
 world-cup-bot pnl --scope current
+world-cup-bot ledger backfill-pnl --verify # position_exit from exit_intent; --synthesize for orphan fills
 
 # Operator
 world-cup-bot cancel --cancel-window

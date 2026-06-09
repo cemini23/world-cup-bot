@@ -8,6 +8,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from world_cup_bot.clob_auth import ClobAuth
@@ -236,6 +237,8 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
                 order_id=fill.order_id,
                 price=fill.fill_price,
                 size_shares=fill.fill_shares,
+                pnl_usd=0.0,
+                reason="entry_fill",
             ):
                 ctx.stats.fills_skipped_dedup += 1
                 logger.info("ledger dedup skip order_id=%s", fill.order_id)
@@ -246,6 +249,16 @@ def process_trade_message(msg: dict[str, Any], ctx: FillWatchContext) -> list[Fi
                     ctx.version_spec,
                     path=ctx.ledger_path,
                     fill_order_id=fill.order_id,
+                    dry_run=ctx.dry_run,
+                )
+                from world_cup_bot.fill_economics import attribute_roundtrip_from_exit_intent
+
+                attribute_roundtrip_from_exit_intent(
+                    path=Path(ctx.ledger_path),
+                    spec=ctx.version_spec,
+                    exit_intent=result.exit_intent,
+                    fill_order_id=fill.order_id,
+                    entry_price=fill.fill_price,
                     dry_run=ctx.dry_run,
                 )
 

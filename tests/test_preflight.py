@@ -1,5 +1,7 @@
 """Tests for preflight checks."""
 
+import pytest
+
 from world_cup_bot.clob_auth import ClobAuth
 from world_cup_bot.clob_rest import ClobBurstProbe, GeoblockStatus
 from world_cup_bot.config import Settings
@@ -144,3 +146,53 @@ def test_preflight_live_requires_clob_v2(monkeypatch):
     report = run_preflight(Settings.from_env(), test_auth=False)
     names = {c.name: c.status for c in report.checks}
     assert names.get("py_clob_client_v2") == CheckStatus.PASS
+
+
+def test_assert_live_post_allowed_skips_in_dry_run(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "true")
+    from world_cup_bot.preflight import assert_live_post_allowed
+
+    assert_live_post_allowed(Settings.from_env())
+
+
+def test_assert_live_post_allowed_blocks_geoblock(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_geoblock",
+        lambda: GeoblockStatus(blocked=True, ip="1.2.3.4", country="US", region="FL"),
+    )
+
+    from world_cup_bot.preflight import assert_live_post_allowed
+
+    with pytest.raises(RuntimeError, match="geoblock"):
+        assert_live_post_allowed(Settings.from_env())
+
+
+def test_assert_live_post_allowed_blocks_preflight_fail(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_geoblock",
+        lambda: GeoblockStatus(blocked=False, ip="1.2.3.4", country="FI", region=""),
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.run_preflight",
+        lambda *_a, **_k: type(
+            "R",
+            (),
+            {
+                "checks": [
+                    type("C", (), {"name": "gamma", "status": CheckStatus.FAIL, "detail": "down"})()
+                ],
+                "ok": False,
+            },
+        )(),
+    )
+
+    from world_cup_bot.preflight import assert_live_post_allowed
+
+    with pytest.raises(RuntimeError, match="preflight FAIL"):
+        assert_live_post_allowed(Settings.from_env())

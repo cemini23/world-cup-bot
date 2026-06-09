@@ -73,6 +73,8 @@ sudo bash deploy/systemd/install-systemd.sh --profile trading
 | `world-cup-bot-cross-venue-reconcile.timer` | `cross-venue-fill reconcile --json` | Weekly Sun 08:00 UTC — after `--record` alerts |
 | `world-cup-bot-rewards-sync.timer` | `rewards sync --record` | Phase 2+ after L2 creds on `.env` / `.env.trading` |
 
+Live POST runs `assert_live_post_allowed()` when `DRY_RUN=false`. Kill-switch halts persist via `trading_halt` ledger events.
+
 PnL reads the shadow ledger only. Rewards sync fails without authenticated CLOB access — keep it disabled until trading host is ready.
 
 ## Operator commands

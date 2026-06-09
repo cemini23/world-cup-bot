@@ -230,6 +230,53 @@ def record_exit_intent(
     )
 
 
+def record_position_exit(
+    *,
+    path: Path,
+    spec: StrategyVersionSpec,
+    team: str,
+    side: str,
+    entry_order_id: str,
+    exit_order_id: str,
+    entry_price: float,
+    exit_price: float,
+    size_shares: float,
+    pnl_usd: float,
+    dry_run: bool = True,
+    reason: str | None = None,
+    kill_switch: bool = False,
+    fees_usd: float | None = None,
+) -> None:
+    """Round-trip economics for entry fill + exit intent/fill."""
+    append_row(
+        path,
+        LedgerRow(
+            event="position_exit",
+            logic_version=spec.version_id,
+            strategy_key=spec.strategy_key,
+            timestamp=_now_iso(),
+            team=team,
+            side=side,
+            order_id=exit_order_id,
+            price=exit_price,
+            size_shares=size_shares,
+            notional_usd=exit_price * size_shares,
+            pnl_usd=pnl_usd,
+            fees_usd=fees_usd,
+            reason=reason,
+            correlation_id=entry_order_id,
+            extra={
+                "entry_order_id": entry_order_id,
+                "exit_order_id": exit_order_id,
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "dry_run": dry_run,
+                "kill_switch": kill_switch,
+            },
+        ),
+    )
+
+
 def record_order_cancel(
     spec: StrategyVersionSpec,
     *,
@@ -311,15 +358,26 @@ class PnlSummary:
     legacy_excluded: int
 
 
-def _fill_pnl_usd(row: dict[str, Any]) -> float:
-    """PnL on order_fill rows: pnl_usd, else realized_pnl_usd alias."""
-    if row.get("event") != "order_fill":
+REALIZED_PNL_EVENTS = frozenset({"order_fill", "exit_fill", "position_exit"})
+REWARD_PNL_EVENTS = frozenset({"reward_accrual", "rewards_sync"})
+
+
+def _realized_pnl_usd(row: dict[str, Any]) -> float:
+    """Realized PnL from fill, exit, or round-trip position_exit rows."""
+    if row.get("event") not in REALIZED_PNL_EVENTS:
         return 0.0
     for key in ("pnl_usd", "realized_pnl_usd"):
         val = row.get(key)
         if val is not None:
             return float(val)
     return 0.0
+
+
+def _fill_pnl_usd(row: dict[str, Any]) -> float:
+    """Backward-compatible alias for order_fill-only callers."""
+    if row.get("event") != "order_fill":
+        return 0.0
+    return _realized_pnl_usd(row)
 
 
 def record_diagnostic(
@@ -356,8 +414,10 @@ def summarize_pnl(
     )
     fills = sum(1 for r in scoped if r.get("event") == "order_fill")
 
-    realized = sum(_fill_pnl_usd(r) for r in scoped)
-    rewards = sum(float(r.get("rewards_usd") or 0) for r in scoped)
+    realized = sum(_realized_pnl_usd(r) for r in scoped)
+    rewards = sum(
+        float(r.get("rewards_usd") or 0) for r in scoped if r.get("event") in REWARD_PNL_EVENTS
+    )
     fees = sum(float(r.get("fees_usd") or 0) for r in scoped)
     net = realized + rewards - fees
 

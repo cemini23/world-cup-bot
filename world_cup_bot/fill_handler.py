@@ -169,10 +169,13 @@ def submit_exit(
 ) -> ExitIntent:
     if dry_run:
         return intent
-    from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_exit_intent
     from world_cup_bot.config import Settings as BotSettings
+    from world_cup_bot.preflight import assert_live_post_allowed
 
     cfg = settings or BotSettings.from_env()
+    assert_live_post_allowed(cfg)
+    from world_cup_bot.clob_live import LiveClobPostError, build_clob_client, post_exit_intent
+
     client = build_clob_client(cfg)
     try:
         post_exit_intent(client, intent)

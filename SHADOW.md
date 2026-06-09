@@ -40,7 +40,7 @@ world-cup-bot shadow-status --min-phase 1      # gate: prints Ledger path: … +
 - [ ] Risk gates understood (`config/risk_gates.yaml` — streak sizing active in shadow; portfolio % gates defer until live; `world-cup-bot risk-status`)
 - [ ] `shadow-status --min-phase 1` exits 0 (ledger path matches `LEDGER_PATH` / `WC_LEDGER_PATH`)
 
-**Shadow PnL:** `pnl --scope current` may show **$0 realized** when the ledger has `quote_intent_dry_run` rows but no `order_fill` rows with `pnl_usd`. That measures wiring, not edge. Realized PnL requires `watch --record` (Phase 2+) and optional `rewards sync --record`. See [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md).
+**Shadow PnL:** `pnl --scope current` may show **$0 realized** when the ledger has `quote_intent_dry_run` rows but no `order_fill` / `position_exit` rows with `pnl_usd`. Realized PnL requires `watch --record` (Phase 2+) — each fill writes `exit_intent` + `position_exit` — and optional `rewards sync --record`. Orphan historical fills: `ledger backfill-pnl --synthesize --verify`. See [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md).
 
 ### One canonical ledger (split-ledger trap)
 

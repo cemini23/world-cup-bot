@@ -10,8 +10,8 @@ Not financial advice. Default is shadow mode (`DRY_RUN=true`). Live order POST r
 
 ```
 WORLD CUP BOT — RUNBOOK SNAPSHOT
-Effective: 2026-06-06
-Repo: github.com/cemini23/world-cup-bot @ main (≥ 344ec78)
+Effective: 2026-06-09
+Repo: github.com/cemini23/world-cup-bot @ main
 Public launch: 2026-06-03 — Outlier Weekly Issue 3
 
 Package: world-cup-bot 0.1.0
@@ -91,13 +91,15 @@ Requires L2 API creds in `.env`.
 world-cup-bot watch --verbose --record
 world-cup-bot rewards sync --record
 world-cup-bot pnl --scope current
+world-cup-bot ledger backfill-pnl --verify
 world-cup-bot fill --team <TEAM>   # dry-run single fill / exit path inspect
 ```
 
 | Command | What it does |
 |---------|----------------|
-| `watch --record` | WS user channel + REST reconcile; kill-switch on bad fills |
-| `rewards sync --record` | CLOB liquidity incentives into same ledger (L2 required) |
+| `watch --record` | WS user channel + REST reconcile; kill-switch; writes `position_exit` PnL |
+| `rewards sync --record` | CLOB incentives → `reward_accrual` (L2; portfolio gates count these) |
+| `ledger backfill-pnl` | Backfill `position_exit` from history; `--synthesize` for orphan fills |
 | `fill --team …` | Inspect exit intent without live POST |
 
 ---

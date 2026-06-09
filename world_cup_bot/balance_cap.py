@@ -45,6 +45,12 @@ def _min_collateral(intent: QuoteIntent) -> float:
     return intent.snapshot.rewards_min_shares * intent.price
 
 
+def _pack_sort_key(intent: QuoteIntent) -> tuple:
+    """Prefer YES / higher-mid legs before cheap deep-NO when wallet is tight."""
+    mandatory_no = "mandatory NO" in intent.reason
+    return (1 if mandatory_no else 0, -intent.snapshot.mid, _min_collateral(intent))
+
+
 def _intent_at_notional(intent: QuoteIntent, notional_usd: float) -> QuoteIntent:
     shares = _shares_for_notional(notional_usd, intent.price, intent.snapshot.rewards_min_shares)
     return replace(intent, size_shares=shares, notional_usd=round(shares * intent.price, 4))
@@ -63,10 +69,11 @@ def cap_intents_to_collateral(
     if total <= budget_usd:
         return intents
 
-    # Greedy pack: cheapest min-collateral legs first (max coverage on small wallets).
+    pack_mode = os.environ.get("WC_CAP_PACK_MODE", "tier_first").strip().lower()
+    sort_key = _min_collateral if pack_mode == "cheap_first" else _pack_sort_key
     remaining = budget_usd
     selected: list[QuoteIntent] = []
-    for intent in sorted(intents, key=_min_collateral):
+    for intent in sorted(intents, key=sort_key):
         floor = _min_collateral(intent)
         if floor > remaining + 0.01:
             continue

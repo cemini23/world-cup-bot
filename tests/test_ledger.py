@@ -185,3 +185,23 @@ def test_legacy_excluded_in_summary(version_spec, ledger_path):
     summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
     assert summary.legacy_excluded == 1
     assert summary.realized_pnl_usd == pytest.approx(5.0)
+
+
+def test_position_exit_realized_pnl(version_spec, ledger_path):
+    ledger.record_position_exit(
+        path=ledger_path,
+        spec=version_spec,
+        team="Turkey",
+        side="YES",
+        entry_order_id="entry-1",
+        exit_order_id="exit-1",
+        entry_price=0.44,
+        exit_price=0.52,
+        size_shares=100.0,
+        pnl_usd=8.0,
+        dry_run=False,
+    )
+    rows = ledger.load_rows(ledger_path)
+    summary = ledger.summarize_pnl(rows, version_spec, PnlScope.CURRENT)
+    assert summary.realized_pnl_usd == pytest.approx(8.0)
+    assert summary.fills == 0
