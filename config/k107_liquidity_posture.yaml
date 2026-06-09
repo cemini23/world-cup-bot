@@ -1,0 +1,20 @@
+# K107 — pre-kickoff WC liquidity / inflow environment (shadow posture)
+# Digest R3–R5: ~$2B PM+Kalshi WC exposure [TENTATIVE news tier] — environment flag, NOT edge.
+# See briefs/2026-06-09_k107-wc-market-inflows-liquidity-cemini-prod.md
+
+version: 1
+
+# News-tier inflow headline active — do NOT auto-scale quote caps on volume alone.
+pre_kickoff_inflow_headline: true
+block_volume_based_cap_scaling: true
+
+cluster_repricing:
+  enabled: true
+  min_markets: 5
+  # Fear-index hand-read (@0x_Punisher K107): cluster median move above this → elevated
+  fast_repricing_pp_per_hour: 3.0
+  elevated_repricing_pp_per_hour: 1.5
+
+lp_safety_dr:
+  interval_days: 7
+  last_run_marker: data/local/k107_lp_safety_last_run.txt

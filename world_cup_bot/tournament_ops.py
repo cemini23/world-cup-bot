@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from world_cup_bot import cross_venue_scanner
+from world_cup_bot.advance_cohort import scan_advance_cohort_refresh
 from world_cup_bot.config import Settings, match_shock_enabled, match_shock_live
 from world_cup_bot.conviction_staleness import scan_mid_staleness
 from world_cup_bot.cross_venue_config import load_cross_venue_config
@@ -16,6 +17,7 @@ from world_cup_bot.fixture_watch import (
     FixtureCheckResult,
     check_fixtures,
 )
+from world_cup_bot.k107_posture import load_k107_posture, lp_safety_due
 from world_cup_bot.match_shock_config import load_match_shock_config
 from world_cup_bot.paths import resolve_project_path
 from world_cup_bot.scanner import discover_markets
@@ -167,6 +169,72 @@ def _check_cross_venue_discover(
     )
 
 
+def _check_advance_cohort_refresh(settings: Settings) -> TournamentCheck:
+    """K107 / K83 — PM advance slugs with firm books not yet in cross_venue.yaml."""
+    try:
+        refresh = scan_advance_cohort_refresh(
+            gamma_url=settings.gamma_url,
+            cross_venue_config_path=Path(settings.cross_venue_config),
+        )
+    except Exception as exc:  # noqa: BLE001
+        return TournamentCheck(
+            id="advance_cohort_refresh",
+            title="Advance cohort (PM slugs)",
+            status=CheckStatus.WARN,
+            detail=str(exc),
+        )
+    if not refresh.needs_refresh:
+        return TournamentCheck(
+            id="advance_cohort_refresh",
+            title="Advance cohort (PM slugs)",
+            status=CheckStatus.PASS,
+            detail=(
+                f"{refresh.firm_slug_count} firm advance slug(s); "
+                f"{refresh.config_advance_slugs} in cross_venue.yaml"
+            ),
+            data=refresh.to_dict(),
+        )
+    sample = ", ".join(refresh.missing_from_config[:5])
+    extra = (
+        f" (+{len(refresh.missing_from_config) - 5} more)"
+        if len(refresh.missing_from_config) > 5
+        else ""
+    )
+    return TournamentCheck(
+        id="advance_cohort_refresh",
+        title="Advance cohort (PM slugs)",
+        status=CheckStatus.WARN,
+        detail=(
+            f"{len(refresh.missing_from_config)} firm PM advance slug(s) not in config "
+            f"— run cross-venue-scan --discover-only ({sample}{extra})"
+        ),
+        data=refresh.to_dict(),
+    )
+
+
+def _check_lp_safety_dr(settings: Settings) -> TournamentCheck:
+    """K107 — weekly LP safety DR reminder (Gemini 03-team-lp-risk before YAML edits)."""
+    k107 = load_k107_posture()
+    due = lp_safety_due(k107)
+    if not due:
+        return TournamentCheck(
+            id="lp_safety_dr",
+            title="LP safety deep research (K107)",
+            status=CheckStatus.PASS,
+            detail=f"Last run within {k107.lp_safety_dr.interval_days}d window",
+        )
+    return TournamentCheck(
+        id="lp_safety_dr",
+        title="LP safety deep research (K107)",
+        status=CheckStatus.WARN,
+        detail=(
+            "Due — run: bash scripts/run_wc_lp_safety_reminder.sh "
+            "(review prompts/gemini-deep-research/03-team-lp-risk.md before conviction.yaml edits)"
+        ),
+        data={"interval_days": k107.lp_safety_dr.interval_days},
+    )
+
+
 def _check_match_shock_readiness(settings: Settings) -> TournamentCheck:
     """Module 8 pre-kickoff hygiene — discovery, tapes, promotion gates (K94/K97)."""
     cfg = load_match_shock_config()
@@ -233,6 +301,8 @@ def run_tournament_ops_check(
         _check_fixtures(local_path=fixture_local, upstream_url=fixture_upstream_url),
         _check_conviction_staleness(settings, threshold_pp=threshold_pp),
         _check_cross_venue_discover(settings, strict=strict_discover),
+        _check_advance_cohort_refresh(settings),
+        _check_lp_safety_dr(settings),
         _check_match_shock_readiness(settings),
     )
     return TournamentOpsResult(checks=checks)

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from world_cup_bot.advance_cohort import AdvanceCohortRefresh
 from world_cup_bot.config import Settings
 from world_cup_bot.fixture_watch import FixtureCheckResult
 from world_cup_bot.tournament_ops import (
@@ -41,6 +42,15 @@ def settings(tmp_path):
     )
 
 
+def _cohort_refresh_ok() -> AdvanceCohortRefresh:
+    return AdvanceCohortRefresh(
+        pm_advance_count=2,
+        firm_slug_count=2,
+        config_advance_slugs=2,
+        missing_from_config=(),
+    )
+
+
 def test_tournament_ops_all_pass(settings):
     fixture_ok = FixtureCheckResult(
         local_path=settings.ledger_path,
@@ -68,6 +78,11 @@ def test_tournament_ops_all_pass(settings):
             "world_cup_bot.tournament_ops._check_match_shock_readiness",
             return_value=shock_pass,
         ),
+        patch(
+            "world_cup_bot.tournament_ops.scan_advance_cohort_refresh",
+            return_value=_cohort_refresh_ok(),
+        ),
+        patch("world_cup_bot.tournament_ops.lp_safety_due", return_value=False),
     ):
         mock_scan.return_value = MagicMock(discoveries=[])
         result = run_tournament_ops_check(settings)
@@ -96,6 +111,11 @@ def test_tournament_ops_fixture_fail(settings):
             "world_cup_bot.tournament_ops._check_match_shock_readiness",
             return_value=MagicMock(status=CheckStatus.PASS),
         ),
+        patch(
+            "world_cup_bot.tournament_ops.scan_advance_cohort_refresh",
+            return_value=_cohort_refresh_ok(),
+        ),
+        patch("world_cup_bot.tournament_ops.lp_safety_due", return_value=False),
     ):
         mock_scan.return_value = MagicMock(discoveries=[])
         result = run_tournament_ops_check(settings)
@@ -124,6 +144,11 @@ def test_tournament_ops_discover_warn(settings):
             "world_cup_bot.tournament_ops._check_match_shock_readiness",
             return_value=MagicMock(status=CheckStatus.PASS),
         ),
+        patch(
+            "world_cup_bot.tournament_ops.scan_advance_cohort_refresh",
+            return_value=_cohort_refresh_ok(),
+        ),
+        patch("world_cup_bot.tournament_ops.lp_safety_due", return_value=False),
     ):
         mock_scan.return_value = MagicMock(discoveries=[discovery])
         result = run_tournament_ops_check(settings, strict_discover=False)

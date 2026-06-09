@@ -595,17 +595,56 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         liquidity_gate=use_liq,
     )
     skip_summary = conviction.summarize_skip_buckets(all_results)
-    event_log.log_event(
-        "negative_filter_summary",
-        market_count=len(markets),
+    from world_cup_bot import cluster_repricing, k107_posture
+
+    k107_cfg = k107_posture.load_k107_posture()
+    nf_fields = {
+        "market_count": len(markets),
         **skip_summary,
-    )
+        **k107_posture.environment_telemetry(k107_cfg),
+    }
+    event_log.log_event("negative_filter_summary", **nf_fields)
     if args.record:
         ledger.record_diagnostic(
             version_spec,
             path=Path(settings.ledger_path),
             event="negative_filter_summary",
-            fields={"market_count": len(markets), **skip_summary},
+            fields=nf_fields,
+        )
+
+    if k107_cfg.cluster_repricing.enabled:
+        cluster = cluster_repricing.analyze_cluster_repricing(
+            markets,
+            Path(settings.ledger_path),
+            k107_cfg.cluster_repricing,
+        )
+        cluster_fields = cluster.to_dict()
+        print(
+            "event=cluster_repricing "
+            f"tier={cluster.fear_index_tier} "
+            f"speed_pp_h={cluster.cluster_speed_pp_per_hour} "
+            f"moved={cluster.markets_moved}/{cluster.markets_with_prior}"
+        )
+        event_log.log_event("cluster_repricing_summary", **cluster_fields)
+        if args.record:
+            ledger.record_diagnostic(
+                version_spec,
+                path=Path(settings.ledger_path),
+                event="cluster_repricing_summary",
+                fields=cluster_fields,
+            )
+            ledger.record_diagnostic(
+                version_spec,
+                path=Path(settings.ledger_path),
+                event="market_mid_snapshot",
+                fields={"mids": cluster_repricing.snapshot_fields(markets)},
+            )
+
+    if k107_cfg.pre_kickoff_inflow_headline:
+        print(
+            "event=k107_liquidity_posture "
+            f"inflow_headline={k107_cfg.pre_kickoff_inflow_headline} "
+            f"block_volume_cap_scaling={k107_cfg.block_volume_based_cap_scaling}"
         )
     results = [r for r in all_results if r.quote]
 
@@ -733,7 +772,12 @@ def _cmd_plan(args: argparse.Namespace) -> int:
                         f"farthest={tb.farthest_ground} mult={travel_mult:.3f}"
                     )
                     travel_logged.add(result.market.team)
-            mult = multipliers.get(result.market.team, 1.0) * streak_mult * travel_mult
+            base_mult = multipliers.get(result.market.team, 1.0) * streak_mult * travel_mult
+            mult = k107_posture.clamp_notional_multiplier(
+                base_mult,
+                volume_scale=1.0,
+                cfg=k107_cfg,
+            )
             intents.extend(
                 quoter.build_quotes(
                     result,
