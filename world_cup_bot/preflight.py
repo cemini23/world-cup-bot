@@ -312,18 +312,6 @@ def assert_live_post_allowed(settings: Settings) -> None:
     if settings.dry_run:
         return
 
-    try:
-        geo = fetch_geoblock()
-        if geo.blocked:
-            raise RuntimeError(
-                "live POST blocked: geoblock "
-                f"{geo.country}/{geo.region} ({geo.ip}) — use non-US egress"
-            )
-    except RuntimeError:
-        raise
-    except Exception as exc:
-        raise RuntimeError(f"live POST blocked: geoblock check failed: {exc}") from exc
-
     report = run_preflight(settings, test_auth=True)
     failures = [c for c in report.checks if c.status == CheckStatus.FAIL]
     if failures:

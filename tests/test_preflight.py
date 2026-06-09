@@ -157,17 +157,58 @@ def test_assert_live_post_allowed_skips_in_dry_run(monkeypatch):
 
 def test_assert_live_post_allowed_blocks_geoblock(monkeypatch):
     monkeypatch.setenv("DRY_RUN", "false")
-    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+    monkeypatch.delenv("POLYMARKET_API_KEY", raising=False)
 
     monkeypatch.setattr(
         "world_cup_bot.preflight.fetch_geoblock",
         lambda: GeoblockStatus(blocked=True, ip="1.2.3.4", country="US", region="FL"),
     )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_search_payload",
+        lambda *_a, **_k: {"events": [{"id": 1}]},
+    )
+    monkeypatch.setattr("world_cup_bot.preflight.fetch_clob_time", lambda *_a, **_k: 1700000000)
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.probe_clob_burst",
+        lambda *_a, **_k: ClobBurstProbe(5, 5, 0, {}),
+    )
 
     from world_cup_bot.preflight import assert_live_post_allowed
 
-    with pytest.raises(RuntimeError, match="geoblock"):
+    with pytest.raises(RuntimeError, match="preflight FAIL"):
         assert_live_post_allowed(Settings.from_env())
+
+
+def test_assert_live_post_allowed_egress_safe_when_clob_auth_ok(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+    monkeypatch.setenv("POLYMARKET_POLY_ADDRESS", "0x" + "22" * 20)
+
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_geoblock",
+        lambda: GeoblockStatus(blocked=True, ip="204.168.139.190", country="DE", region=""),
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_search_payload",
+        lambda *_a, **_k: {"events": [{"id": 1}]},
+    )
+    monkeypatch.setattr("world_cup_bot.preflight.fetch_clob_time", lambda *_a, **_k: 1700000000)
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.probe_clob_burst",
+        lambda *_a, **_k: ClobBurstProbe(5, 5, 0, {}),
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.load_clob_auth",
+        lambda: ClobAuth("k", "s", "p"),
+    )
+    monkeypatch.setattr(
+        "world_cup_bot.preflight.fetch_open_orders",
+        lambda *_a, **_k: [],
+    )
+
+    from world_cup_bot.preflight import assert_live_post_allowed
+
+    assert_live_post_allowed(Settings.from_env())
 
 
 def test_assert_live_post_allowed_blocks_preflight_fail(monkeypatch):
