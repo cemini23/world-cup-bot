@@ -44,9 +44,7 @@ class SemanticRulesConfig:
                 continue
             kal_match = not rule.kalshi_ticker_patterns
             if rule.kalshi_ticker_patterns:
-                kal_match = any(
-                    _pattern_match(ticker, pat) for pat in rule.kalshi_ticker_patterns
-                )
+                kal_match = any(_pattern_match(ticker, pat) for pat in rule.kalshi_ticker_patterns)
             slug_match = not rule.pm_slug_patterns
             if rule.pm_slug_patterns:
                 slug_match = any(_pattern_match(slug, pat.lower()) for pat in rule.pm_slug_patterns)
