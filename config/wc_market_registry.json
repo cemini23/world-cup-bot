@@ -1,26 +1,342 @@
 {
   "schema": "wc_market_registry_v1",
-  "pulled_at_utc": "2026-06-09",
+  "pulled_at_utc": "2026-06-10",
   "polymarket_events": [
     {
-      "slug_hint": "world-cup-winner",
-      "resolution_class": "outright_winner",
-      "rewards_lp_eligible": true
-    },
-    {
-      "slug_hint": "world-cup-group-",
-      "resolution_class": "group_winner",
-      "rewards_lp_eligible": false
-    },
-    {
-      "slug_hint": "team-to-advance",
+      "team": "Algeria",
+      "slug_hint": "advance knockout algeria",
       "resolution_class": "group_advance_r32",
-      "rewards_lp_eligible": true
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-ALG"
     },
     {
-      "slug_hint": "reach-quarterfinals",
-      "resolution_class": "reach_qf",
-      "rewards_lp_eligible": true
+      "team": "Argentina",
+      "slug_hint": "advance knockout argentina",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-ARG"
+    },
+    {
+      "team": "Australia",
+      "slug_hint": "advance knockout australia",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-AUS"
+    },
+    {
+      "team": "Austria",
+      "slug_hint": "advance knockout austria",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-AUT"
+    },
+    {
+      "team": "Belgium",
+      "slug_hint": "advance knockout belgium",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-BEL"
+    },
+    {
+      "team": "Bosnia & Herzegovina",
+      "slug_hint": "advance knockout bosnia & herzegovina",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-BIH"
+    },
+    {
+      "team": "Brazil",
+      "slug_hint": "advance knockout brazil",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-BRA"
+    },
+    {
+      "team": "Canada",
+      "slug_hint": "advance knockout canada",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-CAN"
+    },
+    {
+      "team": "Cape Verde",
+      "slug_hint": "advance knockout cape verde",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-CPV"
+    },
+    {
+      "team": "Colombia",
+      "slug_hint": "advance knockout colombia",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-COL"
+    },
+    {
+      "team": "Croatia",
+      "slug_hint": "advance knockout croatia",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26L-CRO"
+    },
+    {
+      "team": "Cura\u00e7ao",
+      "slug_hint": "advance knockout cura\u00e7ao",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-CUW"
+    },
+    {
+      "team": "Czech Republic",
+      "slug_hint": "advance knockout czech republic",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-CZE"
+    },
+    {
+      "team": "DR Congo",
+      "slug_hint": "advance knockout dr congo",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-COD"
+    },
+    {
+      "team": "Ecuador",
+      "slug_hint": "advance knockout ecuador",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-ECU"
+    },
+    {
+      "team": "Egypt",
+      "slug_hint": "advance knockout egypt",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-EGY"
+    },
+    {
+      "team": "England",
+      "slug_hint": "advance knockout england",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26L-ENG"
+    },
+    {
+      "team": "France",
+      "slug_hint": "advance knockout france",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-FRA"
+    },
+    {
+      "team": "Germany",
+      "slug_hint": "advance knockout germany",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-GER"
+    },
+    {
+      "team": "Ghana",
+      "slug_hint": "advance knockout ghana",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-GHA"
+    },
+    {
+      "team": "Haiti",
+      "slug_hint": "advance knockout haiti",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-HAI"
+    },
+    {
+      "team": "Iran",
+      "slug_hint": "advance knockout iran",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-IRN"
+    },
+    {
+      "team": "Iraq",
+      "slug_hint": "advance knockout iraq",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-IRA"
+    },
+    {
+      "team": "Ivory Coast",
+      "slug_hint": "advance knockout ivory coast",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-CIV"
+    },
+    {
+      "team": "Japan",
+      "slug_hint": "advance knockout japan",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-JPN"
+    },
+    {
+      "team": "Jordan",
+      "slug_hint": "advance knockout jordan",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-JOR"
+    },
+    {
+      "team": "Mexico",
+      "slug_hint": "advance knockout mexico",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26A-MEX"
+    },
+    {
+      "team": "Morocco",
+      "slug_hint": "advance knockout morocco",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-MAR"
+    },
+    {
+      "team": "Netherlands",
+      "slug_hint": "advance knockout netherlands",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-NED"
+    },
+    {
+      "team": "New Zealand",
+      "slug_hint": "advance knockout new zealand",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-NZL"
+    },
+    {
+      "team": "Norway",
+      "slug_hint": "advance knockout norway",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-NOR"
+    },
+    {
+      "team": "Panama",
+      "slug_hint": "advance knockout panama",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-PAN"
+    },
+    {
+      "team": "Paraguay",
+      "slug_hint": "advance knockout paraguay",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-PAR"
+    },
+    {
+      "team": "Portugal",
+      "slug_hint": "advance knockout portugal",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-POR"
+    },
+    {
+      "team": "Qatar",
+      "slug_hint": "advance knockout qatar",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-QAT"
+    },
+    {
+      "team": "Saudi Arabia",
+      "slug_hint": "advance knockout saudi arabia",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SAU"
+    },
+    {
+      "team": "Scotland",
+      "slug_hint": "advance knockout scotland",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SCO"
+    },
+    {
+      "team": "Senegal",
+      "slug_hint": "advance knockout senegal",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SEN"
+    },
+    {
+      "team": "South Africa",
+      "slug_hint": "advance knockout south africa",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SAF"
+    },
+    {
+      "team": "South Korea",
+      "slug_hint": "advance knockout south korea",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-KOR"
+    },
+    {
+      "team": "Spain",
+      "slug_hint": "advance knockout spain",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SPA"
+    },
+    {
+      "team": "Sweden",
+      "slug_hint": "advance knockout sweden",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-SWE"
+    },
+    {
+      "team": "Switzerland",
+      "slug_hint": "advance knockout switzerland",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26B-SUI"
+    },
+    {
+      "team": "Tunisia",
+      "slug_hint": "advance knockout tunisia",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-TUN"
+    },
+    {
+      "team": "Turkey",
+      "slug_hint": "advance knockout turkey",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-TUR"
+    },
+    {
+      "team": "USA",
+      "slug_hint": "advance knockout usa",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26D-USA"
+    },
+    {
+      "team": "Uruguay",
+      "slug_hint": "advance knockout uruguay",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-URU"
+    },
+    {
+      "team": "Uzbekistan",
+      "slug_hint": "advance knockout uzbekistan",
+      "resolution_class": "group_advance_r32",
+      "rewards_lp_eligible": true,
+      "kalshi_ticker_hint": "KXWCGROUPQUAL-26*-UZB"
     }
   ],
   "kalshi_series": [
@@ -57,6 +373,46 @@
       "pairable": true,
       "pm_slug_hint": "reach-quarterfinals",
       "kalshi_series": "KXWCROUND-26QUAR"
+    },
+    {
+      "rules_hash": "group_qualify_v1",
+      "pairable": true,
+      "team": "Croatia",
+      "pm_slug_hint": "Will Croatia advance to the knockout stages at the 2026 FIFA World Cup",
+      "kalshi_series": "KXWCGROUPQUAL-26L",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26L-CRO"
+    },
+    {
+      "rules_hash": "group_qualify_v1",
+      "pairable": true,
+      "team": "England",
+      "pm_slug_hint": "Will England advance to the knockout stages at the 2026 FIFA World Cup",
+      "kalshi_series": "KXWCGROUPQUAL-26L",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26L-ENG"
+    },
+    {
+      "rules_hash": "group_qualify_v1",
+      "pairable": true,
+      "team": "Mexico",
+      "pm_slug_hint": "Will Mexico advance to the knockout stages at the 2026 FIFA World Cup",
+      "kalshi_series": "KXWCGROUPQUAL-26A",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26A-MEX"
+    },
+    {
+      "rules_hash": "group_qualify_v1",
+      "pairable": true,
+      "team": "Switzerland",
+      "pm_slug_hint": "Will Switzerland advance to the knockout stages at the 2026 FIFA World Cup",
+      "kalshi_series": "KXWCGROUPQUAL-26B",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26B-SUI"
+    },
+    {
+      "rules_hash": "group_qualify_v1",
+      "pairable": true,
+      "team": "USA",
+      "pm_slug_hint": "Will USA advance to the knockout stages at the 2026 FIFA World Cup",
+      "kalshi_series": "KXWCGROUPQUAL-26D",
+      "kalshi_market_ticker": "KXWCGROUPQUAL-26D-USA"
     }
   ],
   "lp_routing": {
@@ -68,6 +424,10 @@
       "reach_final",
       "outright_winner"
     ],
-    "excluded": ["group_winner", "stage_of_elimination", "match_winner"]
+    "excluded": [
+      "group_winner",
+      "stage_of_elimination",
+      "match_winner"
+    ]
   }
 }

@@ -605,7 +605,20 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         **k107_posture.environment_telemetry(k107_cfg),
         **k108_retail_hygiene.negative_filter_telemetry(k108_cfg),
     }
-    event_log.log_event("negative_filter_summary", **nf_fields)
+    from world_cup_bot.k109_calendar_hooks import calendar_hook_payload
+
+    cal_hook = calendar_hook_payload(tournament_phase=phase_ctx.tournament_phase)
+    if cal_hook:
+        event_log.log_event(**cal_hook)
+        if args.record:
+            ledger.record_diagnostic(
+                version_spec,
+                path=Path(settings.ledger_path),
+                event=cal_hook.get("event", "k109_calendar_hook"),
+                fields=cal_hook,
+            )
+
+        event_log.log_event("negative_filter_summary", **nf_fields)
     if args.record:
         ledger.record_diagnostic(
             version_spec,

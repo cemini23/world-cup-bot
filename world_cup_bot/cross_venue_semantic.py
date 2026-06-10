@@ -35,10 +35,22 @@ class SemanticRulesConfig:
         pm_slug: str | None,
         kalshi_ticker: str | None,
         pm_market_type: str | None,
+        pm_question: str | None = None,
+        tournament_phase: str | None = None,
     ) -> tuple[str, str] | None:
+        from world_cup_bot.k109_calendar_hooks import match_market_mapping_allowed
+
         slug = (pm_slug or "").lower()
         ticker = (kalshi_ticker or "").upper()
         mtype = (pm_market_type or "").lower()
+        allowed, rej_reason = match_market_mapping_allowed(
+            pm_question=pm_question,
+            pm_market_type=pm_market_type,
+            kalshi_ticker=kalshi_ticker,
+            tournament_phase=tournament_phase,
+        )
+        if not allowed and rej_reason:
+            return "REJ_04", rej_reason.split(": ", 1)[-1] if ": " in rej_reason else rej_reason
         for rule in self.blocklist:
             if rule.pm_market_types and mtype and mtype not in rule.pm_market_types:
                 continue

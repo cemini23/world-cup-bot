@@ -318,7 +318,11 @@ def lp_quoting_allowed(ctx: PhaseRouterContext, *, market_phase_id: str | None =
     if ctx.tournament_phase == "disabled":
         return True
     phase = market_phase_id or ctx.market_phase_id
-    return phase in ctx.lp_active_phases
+    if phase not in ctx.lp_active_phases:
+        return False
+    from world_cup_bot.wc_market_registry import get_wc_market_registry
+
+    return get_wc_market_registry().lp_allowed_for_phase(phase)
 
 
 def cross_venue_allowed(ctx: PhaseRouterContext) -> bool:

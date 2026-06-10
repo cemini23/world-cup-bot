@@ -45,6 +45,11 @@ Shadow-only — **no live sizing GO** until LP safety DR + shadow soak pass.
 
 **Semantic routing (K109):** registry `config/wc_market_registry.json`. Do not pair PM group-winner with `KXWCGROUPQUAL` (REJ_03). Kalshi macro props log `kalshi_macro_unhedged`.
 
+
+**K109 P1 calendar hooks:** On 2026-06-27 final group day, `plan` emits `k109_calendar_hook` (third-place GD candidates + completed group matches). Knockout `KXWCGAME` pairing requires PM 90-min rules text — see `k109_calendar_hooks.py`.
+
+**K109 P1 LP routing:** `wc_market_registry.json` (48 teams) drives LP exclusions via `lp_routing.excluded` — rebuild with `python scripts/build_wc_market_registry.py`.
+
 Re-run LP safety DR before `conviction.yaml` edits: `bash scripts/run_wc_lp_safety_reminder.sh`
 
 ---

@@ -339,7 +339,11 @@ def filter_lp_eligible(
 ) -> list[AdvanceMarket]:
     if not lp_only:
         return markets
+    from world_cup_bot.wc_market_registry import get_wc_market_registry
+
+    registry = get_wc_market_registry()
     out = [m for m in markets if m.lp_eligible]
+    out = [m for m in out if registry.lp_allowed_for_phase(m.market_phase_id)]
     if lp_phase_ids:
         out = [m for m in out if m.market_phase_id in lp_phase_ids]
     return out

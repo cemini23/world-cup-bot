@@ -248,6 +248,7 @@ def discover_candidate_pairs(
     pm_markets: list[PolymarketSnapshot],
     kalshi_markets: list[KalshiMarketSnapshot],
     semantic_rules: Any | None = None,
+    tournament_phase: str | None = None,
 ) -> list[DiscoveredPairProposal]:
     """Auto-pair PM + Kalshi by team + market_type for markets not yet in config."""
     config_keys = {p.pair_key for p in config.pairs}
@@ -270,6 +271,8 @@ def discover_candidate_pairs(
                 pm_slug=pm.slug,
                 kalshi_ticker=kalshi.ticker,
                 pm_market_type=pm.market_type,
+                pm_question=pm.question,
+                tournament_phase=tournament_phase,
             )
             if hit:
                 blocked = True
@@ -336,6 +339,22 @@ class CrossVenueScanResult:
         }
 
 
+def _resolve_tournament_phase_for_scan() -> str | None:
+    import os
+
+    if os.environ.get("WC_PHASE_ROUTER_ENABLED", "").lower() not in {"1", "true", "yes"}:
+        return None
+    try:
+        from world_cup_bot.paths import resolve_project_path
+        from world_cup_bot.phase_router import default_override_path, resolve_phase_router
+
+        cfg_path = resolve_project_path("config/market_phases.yaml")
+        ctx = resolve_phase_router(cfg_path, override_path=default_override_path())
+        return ctx.tournament_phase
+    except Exception:
+        return None
+
+
 def run_scan(
     config: CrossVenueConfig | None = None,
     *,
@@ -349,6 +368,8 @@ def run_scan(
 ) -> CrossVenueScanResult:
     cfg = config or load_cross_venue_config()
     semantic = load_semantic_rules()
+
+    tournament_phase = _resolve_tournament_phase_for_scan()
 
     pm_markets = pm_fetcher(
         gamma_url,
@@ -383,6 +404,7 @@ def run_scan(
                 pm_markets=pm_markets,
                 kalshi_markets=kalshi_markets,
                 semantic_rules=semantic,
+                tournament_phase=tournament_phase,
             )
         )
         for d in discoveries:
