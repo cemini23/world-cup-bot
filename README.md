@@ -1,12 +1,12 @@
 # World Cup Bot
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=githubactions&logoColor=white&updated=20260610T131707Z)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
-<!-- ci-badge-updated:2026-06-10T13:17:07Z -->
+[![CI](https://img.shields.io/badge/CI-failing-red?logo=githubactions&logoColor=white&updated=20260610T132450Z)](https://github.com/cemini23/world-cup-bot/actions/workflows/ci.yml)
+<!-- ci-badge-updated:2026-06-10T13:24:50Z -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap scan, paper ledger, and **optional gated dual-leg auto-exec** (Phase C, off by default). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** **v1 public** — MIT OSS, **shadow-first** (`DRY_RUN=true`). **FIFA World Cup 2026** opening match **2026-06-11**. Tournament guide: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot); tournament writeup in [Outlier Weekly Issue 5](https://outlierweekly.substack.com). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
+**CI:** failing · **Status:** **v1 public** — MIT OSS, **shadow-first** (`DRY_RUN=true`). **FIFA World Cup 2026** opening match **2026-06-11**. Tournament guide: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot); tournament writeup in [Outlier Weekly Issue 5](https://outlierweekly.substack.com). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 
