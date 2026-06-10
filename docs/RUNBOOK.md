@@ -31,6 +31,24 @@ Legacy LP logic IDs: `wc_advance_lp_v3`, `wc_advance_lp_v2`, `wc_advance_lp_v1`,
 
 ---
 
+## Pre-kickoff overlays (K107 / K108 / K109)
+
+Shadow-only — **no live sizing GO** until LP safety DR + shadow soak pass.
+
+| Brief | Config | Bot action |
+|-------|--------|------------|
+| K107 inflows | `config/k107_liquidity_posture.yaml` | Block volume-headline cap scaling; log cluster repricing on `plan` |
+| K108 retail hygiene | `config/k108_retail_hygiene.yaml` | `negative_filter_summary` includes `sports_taker_fee_model_pp`; prefer limit posts |
+| K109 semantic routing | `config/wc_semantic_rules.yaml` | `cross-venue-scan` emits `cross_venue_suppressed` for REJ_* pairs |
+
+**Retail hygiene overlay (K108):** sports taker ~0.75% at 50¢; model 1–2% round-trip before widening caps. Fee schedule URL in `k108_retail_hygiene.yaml`. Prefer limit posts (maker-first LP).
+
+**Semantic routing (K109):** registry `config/wc_market_registry.json`. Do not pair PM group-winner with `KXWCGROUPQUAL` (REJ_03). Kalshi macro props log `kalshi_macro_unhedged`.
+
+Re-run LP safety DR before `conviction.yaml` edits: `bash scripts/run_wc_lp_safety_reminder.sh`
+
+---
+
 ## Phase 0 — Install and discovery
 
 ```bash

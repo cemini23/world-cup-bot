@@ -1,0 +1,75 @@
+# K109 semantic routing — reject before price compare (2026-06-09 brief).
+schema: wc_semantic_rules_v1
+pulled_at_utc: "2026-06-09"
+
+semantic_blocklist:
+  - id: REJ_01
+    reason: "Advance = R32 entry; RO16 requires R32 win"
+    pm_slug_patterns:
+      - "*team-to-advance*"
+      - "*advance-to-the-knockout*"
+    kalshi_ticker_patterns:
+      - "KXWCROUND-26RO16*"
+  - id: REJ_02
+    reason: "R16 reach ≠ group qualify"
+    pm_slug_patterns:
+      - "*reach-round-of-16*"
+      - "*reach-the-round-of-16*"
+    kalshi_ticker_patterns:
+      - "KXWCGROUPQUAL*"
+  - id: REJ_03
+    reason: "Group winner ⊄ group qualify (2nd / best-3rd paths)"
+    pm_slug_patterns:
+      - "*world-cup-group-*-winner*"
+      - "will-*-win-group-*-in-the-2026-fifa-world-cup"
+    kalshi_ticker_patterns:
+      - "KXWCGROUPQUAL*"
+    pm_market_types:
+      - group_winner
+  - id: REJ_04
+    reason: "Kalshi KXWCGAME = 90-min 1x2 only; PM match without ET tag"
+    kalshi_ticker_patterns:
+      - "KXWCGAME*"
+    pm_market_types:
+      - match_winner
+      - unknown
+
+verified_pairs:
+  - id: MATCH_01
+    rules_hash: MATCH_01
+    pm_slug_hint: world-cup-winner
+    kalshi_series: KXMENWORLDCUP
+    notes: "Apply Kalshi ~7% profit fee drag"
+  - id: MATCH_02
+    rules_hash: MATCH_02
+    pm_slug_hint: world-cup-group-
+    kalshi_series: KXWCGROUPWIN-26
+    notes: "Tiebreakers aligned"
+  - id: MATCH_03
+    rules_hash: MATCH_03
+    pm_slug_hint: team-to-advance
+    kalshi_series: KXWCGROUPQUAL-26
+    notes: "R32 entry"
+  - id: MATCH_04
+    rules_hash: MATCH_04
+    pm_slug_hint: reach-quarterfinals
+    kalshi_series: KXWCROUND-26QUAR
+    notes: "Milestone survival"
+
+kalshi_macro_unhedged_prefixes:
+  - KXWCHOSTKO
+  - KXWCREGIONKO
+  - KXWCGROUPWINELIM
+
+lp_eligible_resolution_classes:
+  - group_advance_r32
+  - reach_r16
+  - reach_qf
+  - reach_sf
+  - reach_final
+  - outright_winner
+
+lp_excluded_resolution_classes:
+  - group_winner
+  - stage_of_elimination
+  - match_winner

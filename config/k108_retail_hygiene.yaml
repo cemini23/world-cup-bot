@@ -1,0 +1,6 @@
+# K108 retail hygiene overlay — fee model for shadow telemetry (no live sizing GO).
+schema: k108_retail_hygiene_v1
+sports_taker_fee_peak_pct: 0.75
+round_trip_fee_pct_low: 1.0
+round_trip_fee_pct_high: 2.0
+sports_fee_schedule_url: "https://docs.polymarket.com/polymarket-learn/trading/fees"
