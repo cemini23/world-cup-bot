@@ -12,10 +12,6 @@ from world_cup_bot.cross_venue_config import (
     CrossVenuePair,
     load_cross_venue_config,
 )
-from world_cup_bot.cross_venue_semantic import (
-    load_semantic_rules,
-    suppression_event,
-)
 from world_cup_bot.kalshi_rest import KalshiMarketSnapshot, discover_wc_markets, fetch_market
 from world_cup_bot.pm_discovery import (
     PolymarketSnapshot,
@@ -247,7 +243,6 @@ def discover_candidate_pairs(
     *,
     pm_markets: list[PolymarketSnapshot],
     kalshi_markets: list[KalshiMarketSnapshot],
-    semantic_rules: Any | None = None,
 ) -> list[DiscoveredPairProposal]:
     """Auto-pair PM + Kalshi by team + market_type for markets not yet in config."""
     config_keys = {p.pair_key for p in config.pairs}
@@ -265,15 +260,6 @@ def discover_candidate_pairs(
 
         rules = config.discovery.rules_hash_by_market_type.get(pm.market_type, "")
         blocked, block_reason = _is_blocked_market_type(config, pm.market_type)
-        if semantic_rules is not None:
-            hit = semantic_rules.check(
-                pm_slug=pm.slug,
-                kalshi_ticker=kalshi.ticker,
-                pm_market_type=pm.market_type,
-            )
-            if hit:
-                blocked = True
-                block_reason = f"{hit[0]}: {hit[1]}"
         g = gap_pp(pm.mid, kalshi.mid)
 
         proposals.append(
@@ -308,8 +294,6 @@ class CrossVenueScanResult:
     discoveries: tuple[DiscoveredPairProposal, ...]
     pm_market_count: int
     kalshi_market_count: int
-    suppressed: tuple[dict[str, Any], ...] = ()
-    macro_unhedged: tuple[dict[str, Any], ...] = ()
 
     @property
     def alerts(self) -> list[CrossVenueScanRow]:
@@ -331,8 +315,6 @@ class CrossVenueScanResult:
             "slug_warnings": [r.to_dict() for r in self.slug_warnings],
             "rows": [r.to_dict() for r in self.rows],
             "discoveries": [d.to_dict() for d in self.discoveries],
-            "suppressed": list(self.suppressed),
-            "macro_unhedged": list(self.macro_unhedged),
         }
 
 
@@ -348,7 +330,6 @@ def run_scan(
     kalshi_discoverer: Any = discover_wc_markets,
 ) -> CrossVenueScanResult:
     cfg = config or load_cross_venue_config()
-    semantic = load_semantic_rules()
 
     pm_markets = pm_fetcher(
         gamma_url,
@@ -375,43 +356,10 @@ def run_scan(
     )
 
     discoveries: tuple[DiscoveredPairProposal, ...] = ()
-    suppressed_events: list[dict[str, Any]] = []
     if include_discoveries:
         discoveries = tuple(
-            discover_candidate_pairs(
-                cfg,
-                pm_markets=pm_markets,
-                kalshi_markets=kalshi_markets,
-                semantic_rules=semantic,
-            )
+            discover_candidate_pairs(cfg, pm_markets=pm_markets, kalshi_markets=kalshi_markets)
         )
-        for d in discoveries:
-            if d.blocked and d.block_reason and d.block_reason.startswith("REJ_"):
-                bid, _, rest = d.block_reason.partition(": ")
-                suppressed_events.append(
-                    suppression_event(
-                        block_id=bid,
-                        reason=rest or d.block_reason,
-                        rules_hash=d.rules_hash,
-                        pm_slug=d.pm_slug,
-                        kalshi_ticker=d.kalshi_ticker,
-                        team=d.team,
-                        market_type=d.market_type,
-                    )
-                )
-
-    macro_events: list[dict[str, Any]] = []
-    for k in kalshi_markets:
-        if semantic.is_macro_unhedged(k.ticker):
-            macro_events.append(
-                {
-                    "event": "kalshi_macro_unhedged",
-                    "kalshi_ticker": k.ticker,
-                    "kalshi_title": k.title,
-                    "team": k.team,
-                    "market_type": k.market_type,
-                }
-            )
 
     return CrossVenueScanResult(
         scanned_at=datetime.now(UTC).isoformat(),
@@ -422,6 +370,4 @@ def run_scan(
         discoveries=discoveries,
         pm_market_count=len(pm_markets),
         kalshi_market_count=len(kalshi_markets),
-        suppressed=tuple(suppressed_events),
-        macro_unhedged=tuple(macro_events),
     )
