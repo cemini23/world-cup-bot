@@ -595,13 +595,15 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         liquidity_gate=use_liq,
     )
     skip_summary = conviction.summarize_skip_buckets(all_results)
-    from world_cup_bot import cluster_repricing, k107_posture
+    from world_cup_bot import cluster_repricing, k107_posture, k108_retail_hygiene
 
     k107_cfg = k107_posture.load_k107_posture()
+    k108_cfg = k108_retail_hygiene.load_k108_retail_hygiene()
     nf_fields = {
         "market_count": len(markets),
         **skip_summary,
         **k107_posture.environment_telemetry(k107_cfg),
+        **k108_retail_hygiene.negative_filter_telemetry(k108_cfg),
     }
     event_log.log_event("negative_filter_summary", **nf_fields)
     if args.record:
@@ -2340,6 +2342,10 @@ def _cmd_cross_venue_scan(args: argparse.Namespace) -> int:
             print(json.dumps(payload, indent=2))
         elif not args.alert_only:
             _print_cross_venue_scan(result)
+            for sup in result.suppressed:
+                event_log.log_event(**sup)
+            for macro in result.macro_unhedged:
+                event_log.log_event(**macro)
             if rec is not None:
                 lp = cross_venue_paper.default_cross_venue_ledger_path()
                 print(
