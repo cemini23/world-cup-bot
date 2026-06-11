@@ -10,7 +10,7 @@
 
 ## Environment
 
-Copy `.env.example` → `.env` and fill values locally.
+Copy `.env.example` → `.env` and fill values locally. The `world-cup-bot` CLI loads `.env` from the repo root on startup (shell env wins; set `WC_SKIP_DOTENV=1` to disable).
 
 | Variable | Required | Notes |
 |----------|----------|-------|
@@ -22,6 +22,7 @@ Copy `.env.example` → `.env` and fill values locally.
 | `DRY_RUN` | yes | Keep `true` until you have shadow-tested |
 | `LEDGER_PATH` / `WC_LEDGER_PATH` | recommended | **Same path** for manual CLI and systemd — see [SHADOW.md](SHADOW.md) split-ledger section |
 | `WC_LOAD_POLYMARKET_ENV` | optional | Set `1` if L2 keys live in `.env-polymarket` (Cemini layout) |
+| `WC_SKIP_DOTENV` | optional | Set `1` to skip auto-loading repo-root `.env` (CI/tests) |
 | `MAX_NOTIONAL_PER_MARKET_USD` | no | Hard ceiling per market (minimum with `conviction.yaml` caps; default `2000`) |
 | `WC_BANKROLL_FROM_WALLET` | no | Default `1` — portfolio gate % limits use live PM USDC + open BUY lock (see `config/risk_gates.yaml`) |
 | `WC_BANKROLL_USD` | no | Optional static bankroll override; unset = wallet sync when live |

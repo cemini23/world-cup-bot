@@ -48,6 +48,58 @@ def test_extract_maker_fills_from_fixture():
     assert fill.filled_at == ws_user._parse_timestamp(msg)
 
 
+def test_extract_maker_fills_skips_sell_maker_leg():
+    market = make_market("Turkey", mid=0.45)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    msg = _load_trade_fixture()
+    msg["maker_orders"] = [
+        {
+            "asset_id": "yes",
+            "matched_amount": "500",
+            "order_id": "0xexit-sell-order",
+            "outcome": "YES",
+            "price": "0.43",
+            "side": "SELL",
+        }
+    ]
+    assert ws_user.extract_maker_fills(msg, {"0x1": market}) == []
+
+
+def test_process_trade_skips_sell_maker_leg(tmp_path: Path):
+    market = make_market("Turkey", mid=0.45)
+    market = market.__class__(
+        **{**market.__dict__, "condition_id": "0x1", "yes_token_id": "yes", "no_token_id": "no"}
+    )
+    ctx = ws_user.FillWatchContext(
+        markets_by_condition={"0x1": market},
+        markets=[market],
+        operating=load_operating_config(),
+        version_spec=load_strategy_version(),
+        ledger_path=str(tmp_path / "ledger.jsonl"),
+        dry_run=False,
+        record=True,
+    )
+    msg = _load_trade_fixture()
+    msg["id"] = "sell-fill-trade"
+    msg["maker_orders"] = [
+        {
+            "asset_id": "yes",
+            "matched_amount": "500",
+            "order_id": "0xexit-sell-order",
+            "outcome": "YES",
+            "price": "0.43",
+            "side": "SELL",
+        }
+    ]
+    with patch("world_cup_bot.ws_user.submit_exit") as submit_exit:
+        results = ws_user.process_trade_message(msg, ctx)
+    assert results == []
+    assert ctx.stats.fills_processed == 0
+    submit_exit.assert_not_called()
+
+
 def test_skips_non_matched_status():
     market = make_market("Turkey", mid=0.45)
     msg = _load_trade_fixture()

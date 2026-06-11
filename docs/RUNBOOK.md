@@ -16,7 +16,7 @@ Public launch: 2026-06-03 — Outlier Weekly Issue 3
 
 Package: world-cup-bot 0.1.0
 Conviction config: config/conviction.yaml version 5
-LP logic: wc_advance_lp_v5 (deployed 2026-06-05)
+LP logic: wc_advance_lp_v8 (deployed 2026-06-11)
 Risk gates: wc_risk_gates_v1 (streak + portfolio; on by default)
 Cross-venue paper: wc_cross_venue_paper_v1
 Cross-venue auto-exec: wc_cross_venue_exec_v1 (off by default)
@@ -96,7 +96,7 @@ world-cup-bot shadow-status --min-phase 1
 | Command | What it does |
 |---------|----------------|
 | `plan --liquidity-gate` | Build quote intents from live Gamma mids; no POST when `DRY_RUN=true` |
-| `plan --record --liquidity-gate` | Append quote intents to JSONL; tags `logic_version: wc_advance_lp_v5` |
+| `plan --record --liquidity-gate` | Append quote intents to JSONL; tags `logic_version: wc_advance_lp_v8` |
 | `pnl --scope current` | PnL for current logic version only |
 | `shadow-status --min-phase 1` | Gate before Phase 2; exit 1 if fewer than 3 dry-run days or ledger mismatch |
 

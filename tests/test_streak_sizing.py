@@ -93,7 +93,7 @@ def test_streak_state_from_ledger(tmp_path):
         ledger.append_row(
             path,
             ledger.LedgerRow(
-                event="order_fill",
+                event="position_exit",
                 logic_version=spec.version_id,
                 strategy_key=spec.strategy_key,
                 timestamp="2026-06-06T12:00:00+00:00",
@@ -105,3 +105,28 @@ def test_streak_state_from_ledger(tmp_path):
     assert state.consecutive_wins == 1
     assert state.consecutive_losses == 0
     assert state.size_multiplier == 1.0
+
+
+def test_streak_state_ignores_entry_fills_with_zero_pnl(tmp_path):
+    from world_cup_bot import ledger
+
+    path = tmp_path / "l.jsonl"
+    spec = _spec()
+    for _ in range(5):
+        ledger.append_row(
+            path,
+            ledger.LedgerRow(
+                event="order_fill",
+                logic_version=spec.version_id,
+                strategy_key=spec.strategy_key,
+                timestamp="2026-06-06T12:00:00+00:00",
+                pnl_usd=0.0,
+                reason="entry_fill",
+            ),
+        )
+    rows = ledger.load_rows(path)
+    state = streak_state_from_ledger(rows, spec, _cfg())
+    assert state.consecutive_wins == 0
+    assert state.consecutive_losses == 0
+    assert state.size_multiplier == 1.0
+    assert state.fill_outcomes_count == 0

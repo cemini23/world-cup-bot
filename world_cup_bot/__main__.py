@@ -3168,8 +3168,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     from world_cup_bot.console import configure_stdio
+    from world_cup_bot.env_loader import bootstrap_env
 
     configure_stdio()
+    bootstrap_env()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     settings = Settings.from_env()
     install_sigusr1_reload(Path(settings.market_phases_config))

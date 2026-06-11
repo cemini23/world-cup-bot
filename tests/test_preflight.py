@@ -92,7 +92,7 @@ def test_preflight_geoblock_pass_when_blocked_but_clob_auth_ok_in_shadow(monkeyp
     assert report.ok is True
 
 
-def test_preflight_geoblock_warn_when_blocked_but_clob_auth_ok(monkeypatch):
+def test_preflight_geoblock_fail_when_blocked_but_clob_auth_ok_in_live(monkeypatch):
     monkeypatch.setenv("DRY_RUN", "false")
     monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
     monkeypatch.setenv("POLYMARKET_POLY_ADDRESS", "0x" + "22" * 20)
@@ -121,8 +121,8 @@ def test_preflight_geoblock_warn_when_blocked_but_clob_auth_ok(monkeypatch):
 
     report = run_preflight(Settings.from_env(), test_auth=True)
     geo = next(c for c in report.checks if c.name == "geoblock")
-    assert geo.status == CheckStatus.WARN
-    assert report.ok is True
+    assert geo.status == CheckStatus.FAIL
+    assert report.ok is False
 
 
 def test_preflight_live_requires_clob_v2(monkeypatch):
@@ -179,7 +179,7 @@ def test_assert_live_post_allowed_blocks_geoblock(monkeypatch):
         assert_live_post_allowed(Settings.from_env())
 
 
-def test_assert_live_post_allowed_egress_safe_when_clob_auth_ok(monkeypatch):
+def test_assert_live_post_allowed_blocks_geoblock_when_clob_auth_ok(monkeypatch):
     monkeypatch.setenv("DRY_RUN", "false")
     monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
     monkeypatch.setenv("POLYMARKET_POLY_ADDRESS", "0x" + "22" * 20)
@@ -208,7 +208,32 @@ def test_assert_live_post_allowed_egress_safe_when_clob_auth_ok(monkeypatch):
 
     from world_cup_bot.preflight import assert_live_post_allowed
 
-    assert_live_post_allowed(Settings.from_env())
+    with pytest.raises(RuntimeError, match="preflight FAIL"):
+        assert_live_post_allowed(Settings.from_env())
+
+
+def test_assert_live_exit_allowed_skips_full_preflight(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+
+    def boom(*_a, **_k):
+        raise AssertionError("run_preflight should not run for exit POST")
+
+    monkeypatch.setattr("world_cup_bot.preflight.run_preflight", boom)
+
+    from world_cup_bot.preflight import assert_live_exit_allowed
+
+    assert_live_exit_allowed(Settings.from_env())
+
+
+def test_assert_live_exit_allowed_blocks_missing_key(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.delenv("POLYMARKET_PRIVATE_KEY", raising=False)
+
+    from world_cup_bot.preflight import assert_live_exit_allowed
+
+    with pytest.raises(RuntimeError, match="live exit POST blocked"):
+        assert_live_exit_allowed(Settings.from_env())
 
 
 def test_assert_live_post_allowed_blocks_preflight_fail(monkeypatch):

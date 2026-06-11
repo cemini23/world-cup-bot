@@ -65,17 +65,20 @@ def _load_maker_address(poly_address: str | None) -> str | None:
 
 
 def _finalize_geoblock_report(report: PreflightReport, settings: Settings) -> None:
-    """Downgrade geoblock when CLOB auth works (Polymarket API country tag ≠ datacenter)."""
+    """Downgrade geoblock FAIL→PASS in shadow only when CLOB auth works."""
     geo = next((c for c in report.checks if c.name == "geoblock"), None)
     auth = next((c for c in report.checks if c.name == "clob_auth"), None)
     if not geo or geo.status not in {CheckStatus.FAIL, CheckStatus.WARN}:
         return
     if not auth or auth.status != CheckStatus.PASS:
         return
+    if not settings.dry_run:
+        # Live POST: never downgrade geoblock — L2 GET ≠ order POST egress.
+        return
     idx = report.checks.index(geo)
     report.checks[idx] = PreflightCheck(
         "geoblock",
-        CheckStatus.PASS if settings.dry_run else CheckStatus.WARN,
+        CheckStatus.PASS,
         f"{geo.detail} — authenticated CLOB OK; egress-safe (e.g. Helsinki VPS, API may tag DE)",
     )
     report.recompute_ok()
@@ -308,7 +311,7 @@ def run_preflight(settings: Settings, *, test_auth: bool = True) -> PreflightRep
 
 
 def assert_live_post_allowed(settings: Settings) -> None:
-    """Hard gate before any live CLOB POST (LP quotes or exits)."""
+    """Hard gate before live LP quote POST — full preflight (geoblock, Gamma, burst)."""
     if settings.dry_run:
         return
 
@@ -317,3 +320,20 @@ def assert_live_post_allowed(settings: Settings) -> None:
     if failures:
         detail = "; ".join(f"{c.name}: {c.detail}" for c in failures)
         raise RuntimeError(f"live POST blocked: preflight FAIL — {detail}")
+
+
+def assert_live_exit_allowed(settings: Settings) -> None:
+    """Minimal gate for time-critical exit POST — skips Gamma/burst (venue may still reject)."""
+    if settings.dry_run:
+        return
+
+    failures: list[str] = []
+    pk = os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip()
+    if not pk:
+        failures.append("POLYMARKET_PRIVATE_KEY missing")
+    try:
+        import py_clob_client_v2  # noqa: F401
+    except ImportError:
+        failures.append("pip install -e '.[live]' required (py-clob-client-v2)")
+    if failures:
+        raise RuntimeError(f"live exit POST blocked: {'; '.join(failures)}")

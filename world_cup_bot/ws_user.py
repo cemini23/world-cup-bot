@@ -139,6 +139,17 @@ def hydrate_watch_context(ctx: FillWatchContext) -> None:
         )
 
 
+def _is_entry_maker_leg(maker: dict[str, Any]) -> bool:
+    """Advance LP entry fills are maker BUY legs only — skip exit SELL fills."""
+    side = str(maker.get("side") or "").upper()
+    if side == "SELL":
+        return False
+    order_id = str(maker.get("order_id") or "")
+    if order_id.startswith(("exit-live-", "exit-dry-")):
+        return False
+    return True
+
+
 def _side_from_outcome(
     outcome: str | None,
     asset_id: str | None,
@@ -180,6 +191,8 @@ def extract_maker_fills(
 
     for maker in msg.get("maker_orders") or []:
         if not isinstance(maker, dict):
+            continue
+        if not _is_entry_maker_leg(maker):
             continue
         order_id = str(maker.get("order_id") or "")
         if not order_id:

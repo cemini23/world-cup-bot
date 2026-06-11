@@ -39,7 +39,7 @@ CLI entry: `world_cup_bot/__main__.py` → `world-cup-bot` console script.
 |------|--------|
 | `config/conviction.yaml` | Which teams to quote, bilateral/ fade lists, per-team notional caps, `human_review` |
 | `config/operating.yaml` | Calendar, bilateral mids, fill-handler seconds/USD/%, **liquidity** bid/ask band depth |
-| `config/strategy_logic_versions.yaml` | PnL attribution version (`wc_advance_lp_v6` current) |
+| `config/strategy_logic_versions.yaml` | PnL attribution version (`wc_advance_lp_v8` current) |
 | `config/cross_venue.yaml` | PM↔Kalshi pairs, poll interval, `verification_max_age_days` |
 
 CI runs `scripts/check_hardcoded_thresholds.py` (or `.sh` wrapper) — do not add `mid > 0.90`-style literals to `scanner.py`, `quoter.py`, or `fill_handler.py`.
@@ -86,9 +86,9 @@ world-cup-bot calendar --team NAME | --cancel-window
 world-cup-bot cancel --cancel-window | --team NAME | --all-wc
 world-cup-bot orders
 world-cup-bot pnl [--scope current|legacy|all] [--by-version]
-world-cup-bot venue-reconcile autofill [--logic-version wc_advance_lp_v6]
+world-cup-bot venue-reconcile autofill [--logic-version wc_advance_lp_v8]
 world-cup-bot venue-reconcile backfill
-world-cup-bot venue-reconcile compare <polymarket-export.csv> [--logic-version wc_advance_lp_v6]
+world-cup-bot venue-reconcile compare <polymarket-export.csv> [--logic-version wc_advance_lp_v8]
 world-cup-bot rewards sync [--record]
 world-cup-bot conviction-staleness [--notify]
 world-cup-bot fixture-check [--notify] [--apply]

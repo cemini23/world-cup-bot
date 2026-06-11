@@ -17,8 +17,13 @@ class StreakState:
     fill_outcomes_count: int
 
 
-def _fill_pnl(row: dict[str, Any]) -> float | None:
-    if row.get("event") != "order_fill":
+def _roundtrip_pnl(row: dict[str, Any]) -> float | None:
+    """Realized round-trip PnL for streak sizing (position_exit rows only)."""
+    if row.get("event") != "position_exit":
+        return None
+    from world_cup_bot.ledger import is_synthetic_backfill_exit
+
+    if is_synthetic_backfill_exit(row):
         return None
     for key in ("pnl_usd", "realized_pnl_usd"):
         val = row.get(key)
@@ -27,14 +32,14 @@ def _fill_pnl(row: dict[str, Any]) -> float | None:
     return None
 
 
-def _chronological_fill_pnls(
+def _chronological_roundtrip_pnls(
     rows: list[dict[str, Any]],
     spec: StrategyVersionSpec,
 ) -> list[float]:
     scoped = filter_rows_by_scope(rows, spec, PnlScope.CURRENT)
     dated: list[tuple[str, float]] = []
     for row in scoped:
-        pnl = _fill_pnl(row)
+        pnl = _roundtrip_pnl(row)
         if pnl is None:
             continue
         ts = str(row.get("timestamp") or "")
@@ -84,7 +89,7 @@ def streak_state_from_ledger(
     spec: StrategyVersionSpec,
     cfg: DynamicSizingConfig,
 ) -> StreakState:
-    pnls = _chronological_fill_pnls(rows, spec)
+    pnls = _chronological_roundtrip_pnls(rows, spec)
     wins, losses = trailing_streaks(pnls)
     mult = dynamic_size_multiplier(cfg, consecutive_wins=wins, consecutive_losses=losses)
     return StreakState(

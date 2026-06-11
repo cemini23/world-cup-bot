@@ -4,11 +4,13 @@
 strategy_key: pm_wc_advance_lp
 
 current:
-  version_id: wc_advance_lp_v6
-  deployed_at: "2026-06-09T12:00:00Z"
-  note: "Watch hydrate from ledger; reconcile cursor fix; async fill path; quote batch failures surfaced"
+  version_id: wc_advance_lp_v8
+  deployed_at: "2026-06-11T18:00:00Z"
+  note: "Streak sizing from position_exit; live geoblock hard FAIL; CLI loads .env"
 
 legacy_version_ids:
+  - wc_advance_lp_v7
+  - wc_advance_lp_v6
   - wc_advance_lp_v5
   - wc_advance_lp_v4
   - wc_advance_lp_v3

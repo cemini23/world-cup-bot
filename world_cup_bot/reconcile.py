@@ -93,6 +93,7 @@ def run_reconcile_pass(
     stats.trades_fetched = len(trades)
     now = datetime.now(UTC)
     max_match_ts = after_ts
+    pending_min_ts: int | None = None
 
     for trade in trades:
         match_ts: int | None = None
@@ -105,7 +106,11 @@ def run_reconcile_pass(
 
         status = str(trade.get("status") or "")
         if status not in _RECONCILE_TRADE_STATUSES:
-            # Pending trades may later confirm — do not advance cursor past them.
+            # Pending trades may later confirm — cap cursor below earliest pending.
+            if match_ts is not None:
+                pending_min_ts = (
+                    match_ts if pending_min_ts is None else min(pending_min_ts, match_ts)
+                )
             stats.fills_skipped += 1
             continue
 
@@ -129,6 +134,9 @@ def run_reconcile_pass(
 
         if match_ts is not None:
             max_match_ts = max(max_match_ts, match_ts)
+
+    if pending_min_ts is not None:
+        max_match_ts = min(max_match_ts, pending_min_ts - 1)
 
     state.last_pass_at = now
     state.last_after_ts = max_match_ts

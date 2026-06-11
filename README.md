@@ -6,7 +6,7 @@
 
 **World Cup Bot** — open-source liquidity provision for **FIFA World Cup 2026** *advance to knockout* markets on [Polymarket](https://polymarket.com), with **Polymarket vs [Kalshi](https://kalshi.com)** cross-venue gap scan, paper ledger, and **optional gated dual-leg auto-exec** (Phase C, off by default). Landing page: [cemini23.github.io/world-cup-bot](https://cemini23.github.io/world-cup-bot/).
 
-**CI:** passing · **Status:** **v1 public** — MIT OSS, **shadow-first** (`DRY_RUN=true`). **FIFA World Cup 2026** opening match **2026-06-11**. Tournament guide: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot); tournament writeup in [Outlier Weekly Issue 5](https://outlierweekly.substack.com). Logic versions: `wc_advance_lp_v5` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
+**CI:** passing · **Status:** **v1 public** — MIT OSS, **shadow-first** (`DRY_RUN=true`). **FIFA World Cup 2026** opening match **2026-06-11**. Tournament guide: [docs/TOURNAMENT_KICKOFF.md](docs/TOURNAMENT_KICKOFF.md). Announced in [Outlier Weekly Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot); tournament writeup in [Outlier Weekly Issue 5](https://outlierweekly.substack.com). Logic versions: `wc_advance_lp_v8` (advance LP) · `wc_risk_gates_v1` (streak + portfolio gates) · `wc_cross_venue_paper_v1` / `wc_cross_venue_exec_v1` (arb) · `wc_match_shock_v1` (in-play shock, **off by default**). Operator map: [docs/RUNBOOK.md](docs/RUNBOOK.md) · Gates: [SHADOW.md](SHADOW.md) · Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Public launch (2026-06-03)
 
@@ -49,7 +49,7 @@ Current risk posture: `Canada`, `Japan`, `Scotland`, and `Brazil` are **`fade_wa
 - Cancel-replace stale quotes before new posts
 - Kill-switch on cancel-window fills → halt team + pull quotes
 - **Persistent kill-switch** — `trading_halt` / `trading_halt_clear` ledger events survive plan cron restarts
-- **Live POST preflight gate** — `submit_quotes` and `submit_exit` call `assert_live_post_allowed()` before CLOB POST when `DRY_RUN=false`
+- **Live POST preflight gate** — `submit_quotes` runs full preflight; `submit_exit` uses a minimal key/deps gate (no Gamma/burst) so kill-switch flattens are not blocked by discovery outages when `DRY_RUN=false`
 - Queue depletion + volatility pull in fill watch (configurable in `operating.yaml`)
 - Optional operator alerts: `WC_ALERT_WEBHOOK_URL` (Discord/Slack HTTPS only)
 - **`MAX_NOTIONAL_PER_MARKET_USD`** — env hard ceiling on per-market quote size (min with YAML caps)
