@@ -14,6 +14,8 @@ from world_cup_bot.match_shock_config import MatchShockConfig, load_match_shock_
 from world_cup_bot.trading_mode import MarketKind, infer_market_kind_from_slug
 
 DEFAULT_SEARCH_QUERIES = (
+    "fifwc",
+    "mexico south africa",
     "fifa world cup beat",
     "2026 world cup beat",
     "world cup beat",

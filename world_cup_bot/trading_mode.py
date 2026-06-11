@@ -137,6 +137,7 @@ def infer_market_kind_from_slug(slug: str) -> MarketKind:
     if any(tok in s for tok in blocked):
         return MarketKind.ADVANCE
     match_tokens = (
+        "fifwc-",  # WC 2026 fixture slugs (e.g. fifwc-mex-rsa-2026-06-11-mex)
         "world-cup",
         "fifa-world-cup",
         "wc-2026",

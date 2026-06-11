@@ -88,3 +88,4 @@ def test_shock_disabled(cfg):
 def test_infer_market_kind():
     assert infer_market_kind_from_slug("will-brazil-advance-to-knockout") == MarketKind.ADVANCE
     assert infer_market_kind_from_slug("fifa-world-cup-usa-vs-mexico") == MarketKind.MATCH
+    assert infer_market_kind_from_slug("fifwc-mex-rsa-2026-06-11-mex") == MarketKind.MATCH
