@@ -1,0 +1,12 @@
+# K111 — AS / Cartea–Jaimungal inventory penalty consistency (Feys 2606.01477).
+# Identity: phi = gamma * sigma^2 / 2  =>  gamma_implied = 2 * phi / sigma^2
+# Terminal alpha is liquidation curvature, not preference — do not tune both independently.
+schema: inventory_penalty_v1
+pulled_at_utc: "2026-06-12"
+
+# CJ running inventory penalty (phi) and AS risk aversion (gamma) on WC advance LP desk.
+phi: 0.00125
+gamma: 1.0
+sigma: 0.05
+max_rel_gamma_error: 0.15
+notes: "K111 kickoff calibration — gamma matches 2*phi/sigma^2 within 15%"
