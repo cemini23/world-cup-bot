@@ -77,6 +77,35 @@ def load_ticks(path: Path) -> list[ParsedTick]:
     return ticks
 
 
+def load_ticks_for_slugs(
+    path: Path,
+    slug_set: frozenset[str] | set[str] | None,
+) -> list[ParsedTick]:
+    """Stream JSONL tape — only retain ticks for requested slugs (low RAM on large tapes)."""
+    if not slug_set:
+        return load_ticks(path)
+    wanted = frozenset(slug_set)
+    ticks: list[ParsedTick] = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                raw = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(raw, dict):
+                continue
+            slug = str(raw.get("slug") or "")
+            if slug not in wanted:
+                continue
+            tick = parse_tick_line(raw)
+            if tick is not None:
+                ticks.append(tick)
+    return ticks
+
+
 def group_by_slug(ticks: list[ParsedTick]) -> dict[str, list[ParsedTick]]:
     out: dict[str, list[ParsedTick]] = defaultdict(list)
     for t in ticks:

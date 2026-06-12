@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import urllib.error
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -122,7 +123,6 @@ def discover_match_markets(
     return out
 
 
-
 def discover_kickoff_event_markets(
     gamma_url: str,
     event_prefix: str,
@@ -166,6 +166,54 @@ def discover_kickoff_event_markets(
                 seen.add(key)
                 out.append(parsed)
     return filter_markets_by_slug_prefix(out, prefix)
+
+
+def discover_today_kickoff_markets(
+    gamma_url: str,
+    *,
+    cfg: MatchShockConfig | None = None,
+    opener: Any | None = None,
+    on_date: date | None = None,
+) -> list[MatchMarket]:
+    """Auto-discover all fifwc kickoff events for a calendar day (no manual prefix)."""
+    shock_cfg = cfg or load_match_shock_config()
+    day = on_date or datetime.now(UTC).date()
+    suffix = day.isoformat()
+    queries = (f"fifwc {suffix}", suffix)
+    seen_events: set[str] = set()
+    seen_cids: set[str] = set()
+    out: list[MatchMarket] = []
+    for query in queries:
+        try:
+            payload = scanner.fetch_search_payload(gamma_url, query, opener=opener)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            continue
+        for event in payload.get("events") or []:
+            event_slug = str(event.get("slug") or "").lower()
+            if not event_slug.startswith("fifwc-") or not event_slug.endswith(suffix):
+                continue
+            if event_slug in seen_events:
+                continue
+            seen_events.add(event_slug)
+            for market in event.get("markets") or []:
+                slug = str(market.get("slug") or "")
+                if not slug_in_scope(slug, shock_cfg):
+                    continue
+                parsed = parse_match_market(
+                    market,
+                    event_slug=event_slug,
+                    search_query=query,
+                )
+                if parsed is None:
+                    continue
+                key = parsed.condition_id.lower()
+                if key in seen_cids:
+                    continue
+                seen_cids.add(key)
+                out.append(parsed)
+    out.sort(key=lambda m: m.slug)
+    return out
+
 
 def filter_markets_by_slug_prefix(markets: list[MatchMarket], prefix: str) -> list[MatchMarket]:
     """Kickoff scope — keep slugs starting with prefix (e.g. fifwc-can-bih-2026-06-12)."""

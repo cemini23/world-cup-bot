@@ -2051,7 +2051,11 @@ def _cmd_match_shock_discover(args: argparse.Namespace) -> int:
         write_discovery_json,
     )
 
-    if getattr(args, "kickoff_event", None):
+    if getattr(args, "kickoff_today", False):
+        from world_cup_bot.match_market_discovery import discover_today_kickoff_markets
+
+        markets = discover_today_kickoff_markets(settings.gamma_url)
+    elif getattr(args, "kickoff_event", None):
         from world_cup_bot.match_market_discovery import discover_kickoff_event_markets
 
         markets = discover_kickoff_event_markets(settings.gamma_url, args.kickoff_event)
@@ -3059,6 +3063,11 @@ def build_parser() -> argparse.ArgumentParser:
     msd.add_argument(
         "--kickoff-event",
         help="Discover single fifwc kickoff event by Gamma search (e.g. fifwc-can-bih-2026-06-12)",
+    )
+    msd.add_argument(
+        "--kickoff-today",
+        action="store_true",
+        help="Discover all fifwc events for today UTC (auto kickoff scope)",
     )
     msd.set_defaults(func=_cmd_match_shock_discover)
 

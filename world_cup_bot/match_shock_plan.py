@@ -25,7 +25,7 @@ from world_cup_bot.match_shock_ledger import (
     record_shock_detected,
 )
 from world_cup_bot.match_shock_post import check_live_post_gates, submit_ladder
-from world_cup_bot.shock_tape import group_by_slug, load_ticks, scan_shocks
+from world_cup_bot.shock_tape import group_by_slug, load_ticks_for_slugs, scan_shocks
 from world_cup_bot.trading_mode import MarketKind, ModeHandoffConfig, resolve_trading_mode
 
 PLAN_STATUS_FILE = Path("data/local/match_shock_plan.status")
@@ -103,14 +103,11 @@ def process_tape_once(
     token_by_slug: dict[str, str] | None = None,
 ) -> PlanSessionStats:
     stats = PlanSessionStats(last_run_at=datetime.now(UTC).isoformat())
-    ticks = load_ticks(tape_path)
+    slug_set = frozenset(m.slug for m in markets) if markets else None
+    ticks = load_ticks_for_slugs(tape_path, slug_set)
     if not ticks:
         stats.errors.append(f"no ticks in {tape_path}")
         return stats
-
-    slug_set = {m.slug for m in markets} if markets else None
-    if slug_set:
-        ticks = [t for t in ticks if t.slug in slug_set]
 
     by_slug = group_by_slug(ticks)
     stats.slugs_scanned = len(by_slug)
