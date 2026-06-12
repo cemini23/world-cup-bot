@@ -2051,7 +2051,16 @@ def _cmd_match_shock_discover(args: argparse.Namespace) -> int:
         write_discovery_json,
     )
 
-    markets = discover_match_markets(settings.gamma_url)
+    if getattr(args, "kickoff_event", None):
+        from world_cup_bot.match_market_discovery import discover_kickoff_event_markets
+
+        markets = discover_kickoff_event_markets(settings.gamma_url, args.kickoff_event)
+    else:
+        markets = discover_match_markets(settings.gamma_url)
+    if getattr(args, "slug_prefix", None):
+        from world_cup_bot.match_market_discovery import filter_markets_by_slug_prefix
+
+        markets = filter_markets_by_slug_prefix(markets, args.slug_prefix)
     if args.out:
         write_discovery_json(markets, Path(args.out))
     if args.json:
@@ -3043,6 +3052,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write discovery JSON (condition_id + token ids for export/record)",
     )
     msd.add_argument("--json", action="store_true", help="Machine-readable output")
+    msd.add_argument(
+        "--slug-prefix",
+        help="Only keep markets whose slug starts with this prefix (kickoff scope)",
+    )
+    msd.add_argument(
+        "--kickoff-event",
+        help="Discover single fifwc kickoff event by Gamma search (e.g. fifwc-can-bih-2026-06-12)",
+    )
     msd.set_defaults(func=_cmd_match_shock_discover)
 
     mse = sub.add_parser(

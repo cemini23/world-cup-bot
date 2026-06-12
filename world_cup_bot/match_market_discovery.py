@@ -122,6 +122,59 @@ def discover_match_markets(
     return out
 
 
+
+def discover_kickoff_event_markets(
+    gamma_url: str,
+    event_prefix: str,
+    *,
+    cfg: MatchShockConfig | None = None,
+    opener: Any | None = None,
+) -> list[MatchMarket]:
+    """Gamma public-search for a single kickoff event (fifwc-* slugs not in beat queries)."""
+    shock_cfg = cfg or load_match_shock_config()
+    prefix = event_prefix.strip().lower()
+    if not prefix:
+        return []
+    # Human-readable fallback from slug tokens (fifwc-can-bih-2026-06-12 -> canada bosnia).
+    tokens = [t for t in prefix.replace("fifwc-", "").split("-") if t and not t.isdigit()]
+    queries = tuple(dict.fromkeys([prefix, " ".join(tokens[:2]), *tokens[:2]]))
+    seen: set[str] = set()
+    out: list[MatchMarket] = []
+    for query in queries:
+        try:
+            payload = scanner.fetch_search_payload(gamma_url, query, opener=opener)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            continue
+        for event in payload.get("events") or []:
+            event_slug = str(event.get("slug") or "").lower()
+            if not event_slug.startswith(prefix):
+                continue
+            for market in event.get("markets") or []:
+                slug = str(market.get("slug") or "")
+                if not slug_in_scope(slug, shock_cfg):
+                    continue
+                parsed = parse_match_market(
+                    market,
+                    event_slug=event_slug,
+                    search_query=query,
+                )
+                if parsed is None:
+                    continue
+                key = parsed.condition_id.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(parsed)
+    return filter_markets_by_slug_prefix(out, prefix)
+
+def filter_markets_by_slug_prefix(markets: list[MatchMarket], prefix: str) -> list[MatchMarket]:
+    """Kickoff scope — keep slugs starting with prefix (e.g. fifwc-can-bih-2026-06-12)."""
+    p = prefix.strip().lower()
+    if not p:
+        return list(markets)
+    return [m for m in markets if m.slug.lower().startswith(p)]
+
+
 def write_discovery_json(markets: list[MatchMarket], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     rows = [

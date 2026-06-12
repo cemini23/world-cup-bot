@@ -18,6 +18,9 @@ from world_cup_bot.match_shock import (
 )
 from world_cup_bot.match_shock_config import MatchShockConfig
 
+TICK_PRICE_SANE_MIN = 0.02
+TICK_PRICE_SANE_MAX = 0.98
+
 
 @dataclass
 class ParsedTick:
@@ -97,11 +100,13 @@ def scan_shocks(
     for i, tick in enumerate(ticks):
         if not slug_in_scope(tick.slug, cfg):
             continue
+        if tick.price < TICK_PRICE_SANE_MIN or tick.price > TICK_PRICE_SANE_MAX:
+            continue
         window_start = tick.ts_ms - window_ms
         window = [
             PriceTick(ts_ms=t.ts_ms, price=t.price)
             for t in ticks[: i + 1]
-            if t.ts_ms >= window_start
+            if t.ts_ms >= window_start and TICK_PRICE_SANE_MIN <= t.price <= TICK_PRICE_SANE_MAX
         ]
         shock = detect_shock(
             tuple(window),
