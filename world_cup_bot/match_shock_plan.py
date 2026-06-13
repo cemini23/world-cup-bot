@@ -98,7 +98,6 @@ def filter_in_play_markets(
     return out
 
 
-
 def _load_live_post_state(path: Path = LIVE_STATE_FILE) -> dict[str, float]:
     if not path.is_file():
         return {}
@@ -309,9 +308,7 @@ def run_plan_once(
         write_plan_status(status_path or PLAN_STATUS_FILE, stats)
         return stats
 
-    token_by_slug = {
-        m.slug: m.yes_token_id for m in discovery_markets if m.yes_token_id
-    }
+    token_by_slug = {m.slug: m.yes_token_id for m in discovery_markets if m.yes_token_id}
     if not token_by_slug:
         token_by_slug = {m.slug: m.yes_token_id for m in markets if m.yes_token_id}
     stats = process_tape_once(
