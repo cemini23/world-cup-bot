@@ -159,6 +159,11 @@ def process_tape_once(
         if not slug_ticks:
             continue
         slug_ticks.sort(key=lambda x: x.ts_ms)
+        if live and shock_cfg.live_tape_window_ms > 0:
+            tail_start = slug_ticks[-1].ts_ms - shock_cfg.live_tape_window_ms
+            slug_ticks = [t for t in slug_ticks if t.ts_ms >= tail_start]
+        if not slug_ticks:
+            continue
         total_ticks += len(slug_ticks)
         stats.slugs_scanned += 1
         shocks = scan_shocks(slug_ticks, shock_cfg)
