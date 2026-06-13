@@ -13,6 +13,7 @@ from world_cup_bot.config import Settings, match_shock_enabled
 from world_cup_bot.match_market_discovery import MatchMarket, load_discovery_json
 from world_cup_bot.match_shock import (
     ShockDetection,
+    horizon_exit_price,
     plan_ladder,
     simulate_paper_fill,
     simulate_recovery_pnl,
@@ -25,10 +26,16 @@ from world_cup_bot.match_shock_ledger import (
     record_shock_detected,
 )
 from world_cup_bot.match_shock_post import check_live_post_gates, submit_ladder
-from world_cup_bot.shock_tape import group_by_slug, load_ticks_for_slugs, scan_shocks
+from world_cup_bot.shock_tape import (
+    load_ticks_for_slug,
+    resolve_shock_tape_path,
+    scan_shocks,
+    slugs_in_tape,
+)
 from world_cup_bot.trading_mode import MarketKind, ModeHandoffConfig, resolve_trading_mode
 
 PLAN_STATUS_FILE = Path("data/local/match_shock_plan.status")
+LIVE_STATE_FILE = Path("/opt/cemini/logs/wc_match_shock_live_state.json")
 
 
 @dataclass
@@ -91,6 +98,23 @@ def filter_in_play_markets(
     return out
 
 
+
+def _load_live_post_state(path: Path = LIVE_STATE_FILE) -> dict[str, float]:
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return {str(k): float(v) for k, v in (raw.get("last_post_by_slug") or {}).items()}
+
+
+def _save_live_post_state(state: dict[str, float], path: Path = LIVE_STATE_FILE) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"last_post_by_slug": state, "updated_at": datetime.now(UTC).isoformat()}
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
 def process_tape_once(
     tape_path: Path,
     markets: list[MatchMarket],
@@ -101,20 +125,43 @@ def process_tape_once(
     ledger_path: Path | None = None,
     live: bool = False,
     token_by_slug: dict[str, str] | None = None,
+    tape_slug_set: frozenset[str] | None = None,
 ) -> PlanSessionStats:
     stats = PlanSessionStats(last_run_at=datetime.now(UTC).isoformat())
-    slug_set = frozenset(m.slug for m in markets) if markets else None
-    ticks = load_ticks_for_slugs(tape_path, slug_set)
-    if not ticks:
-        stats.errors.append(f"no ticks in {tape_path}")
+    slug_set = tape_slug_set
+    if slug_set is None and markets:
+        slug_set = frozenset(m.slug for m in markets)
+
+    if markets:
+        slugs_to_scan = [m.slug for m in markets]
+    elif slug_set:
+        slugs_to_scan = sorted(slug_set)
+    else:
+        slugs_to_scan = slugs_in_tape(tape_path)
+    if not slugs_to_scan:
+        stats.errors.append("no markets or tape slugs to scan")
         return stats
 
-    by_slug = group_by_slug(ticks)
-    stats.slugs_scanned = len(by_slug)
     depths = dict(historical_depths or {})
     tokens = token_by_slug or {m.slug: m.yes_token_id for m in markets}
+    total_ticks = 0
+    last_paper_fill_ms: dict[str, int] = {}
+    last_live_post_wall: dict[str, float] = _load_live_post_state() if live else {}
+    last_live_post_tape_ms: dict[str, int] = {}
+    paper_dedup_ms = shock_cfg.paper_dedup_interval_ms
+    exit_horizon_ms = max(
+        shock_cfg.ladder.order_ttl_ms,
+        shock_cfg.detection.cooldown_ms,
+        60_000,
+    )
 
-    for slug, slug_ticks in by_slug.items():
+    for slug in slugs_to_scan:
+        slug_ticks = load_ticks_for_slug(tape_path, slug)
+        if not slug_ticks:
+            continue
+        slug_ticks.sort(key=lambda x: x.ts_ms)
+        total_ticks += len(slug_ticks)
+        stats.slugs_scanned += 1
         shocks = scan_shocks(slug_ticks, shock_cfg)
         for tick, ctx, depth_cents in shocks:
             stats.shocks += 1
@@ -141,14 +188,36 @@ def process_tape_once(
             post_low = min(t.price for t in slug_ticks if t.ts_ms >= tick.ts_ms)
             fill = simulate_paper_fill(plan, post_low)
             if fill and ledger_path:
-                exit_price = min(plan.recovery_target_price, ctx.pre_price)
+                prev = last_paper_fill_ms.get(slug)
+                if prev is not None and tick.ts_ms - prev < paper_dedup_ms:
+                    fill = None
+            if fill and ledger_path:
+                exit_price = horizon_exit_price(
+                    slug_ticks,
+                    tick.ts_ms,
+                    recovery_target=plan.recovery_target_price,
+                    pre_price=ctx.pre_price,
+                    horizon_ms=exit_horizon_ms,
+                )
                 pnl = simulate_recovery_pnl(fill, exit_price)
                 record_paper_fill(ledger_path, slug=slug, plan=plan, fill=fill, pnl_usd=pnl)
                 stats.paper_fills += 1
+                last_paper_fill_ms[slug] = tick.ts_ms
 
             if live and tokens.get(slug):
                 gate = check_live_post_gates(settings, shock_cfg)
-                if gate.allowed:
+                if not gate.allowed:
+                    stats.errors.append(f"live blocked {slug}: {gate.reason}")
+                    continue
+                now_wall = time.time()
+                live_cooldown_s = paper_dedup_ms / 1000.0
+                prev_wall = last_live_post_wall.get(slug)
+                if prev_wall is not None and now_wall - prev_wall < live_cooldown_s:
+                    continue
+                prev_tape_live = last_live_post_tape_ms.get(slug)
+                if prev_tape_live is not None and tick.ts_ms - prev_tape_live < paper_dedup_ms:
+                    continue
+                try:
                     posts = submit_ladder(
                         plan,
                         token_id=tokens[slug],
@@ -158,7 +227,18 @@ def process_tape_once(
                         ledger_path=ledger_path,
                         dry_run=False,
                     )
-                    stats.live_posts += len(posts)
+                except Exception as exc:  # noqa: BLE001
+                    stats.errors.append(f"live POST {slug}: {exc}")
+                    continue
+                stats.live_posts += len(posts)
+                last_live_post_wall[slug] = now_wall
+                last_live_post_tape_ms[slug] = tick.ts_ms
+
+    if total_ticks == 0:
+        stats.errors.append(f"no ticks in {tape_path}")
+
+    if live and last_live_post_wall:
+        _save_live_post_state(last_live_post_wall)
 
     return stats
 
@@ -194,11 +274,20 @@ def run_plan_once(
         )
 
     markets: list[MatchMarket] = []
+    discovery_markets: list[MatchMarket] = []
     if discover_json and discover_json.is_file():
-        markets = load_discovery_json(discover_json)
+        discovery_markets = load_discovery_json(discover_json)
+        markets = list(discovery_markets)
 
     mode_cfg = _mode_cfg(settings, shock_cfg)
     markets = filter_in_play_markets(markets, cfg=mode_cfg)
+    if not markets and discovery_markets:
+        # Kickoff JSON lacks hours_to_kickoff — tape is kickoff-trimmed; scan those slugs.
+        markets = list(discovery_markets)
+
+    tape_slug_set: frozenset[str] | None = None
+    if discovery_markets:
+        tape_slug_set = frozenset(m.slug for m in discovery_markets)
 
     ledger = ledger_path or default_ledger_path(shock_cfg, settings.match_shock_tape_dir)
     depths: dict[str, list[float]] = {}
@@ -208,10 +297,9 @@ def run_plan_once(
     tape = tape_path
     if tape is None:
         tape_dir = Path(settings.match_shock_tape_dir)
-        day = datetime.now(UTC).strftime("%Y-%m-%d")
-        candidate = tape_dir / f"{day}.jsonl"
-        if candidate.is_file():
-            tape = candidate
+        resolved = resolve_shock_tape_path(tape_dir, kickoff_json=discover_json)
+        if resolved is not None:
+            tape = resolved
 
     if tape is None or not tape.is_file():
         stats = PlanSessionStats(
@@ -221,7 +309,11 @@ def run_plan_once(
         write_plan_status(status_path or PLAN_STATUS_FILE, stats)
         return stats
 
-    token_by_slug = {m.slug: m.yes_token_id for m in markets}
+    token_by_slug = {
+        m.slug: m.yes_token_id for m in discovery_markets if m.yes_token_id
+    }
+    if not token_by_slug:
+        token_by_slug = {m.slug: m.yes_token_id for m in markets if m.yes_token_id}
     stats = process_tape_once(
         tape,
         markets,
@@ -231,6 +323,7 @@ def run_plan_once(
         ledger_path=Path(ledger) if ledger else None,
         live=live,
         token_by_slug=token_by_slug,
+        tape_slug_set=tape_slug_set,
     )
     write_plan_status(status_path or PLAN_STATUS_FILE, stats)
     return stats

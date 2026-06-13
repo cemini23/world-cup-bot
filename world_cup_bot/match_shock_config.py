@@ -79,6 +79,7 @@ class MatchShockConfig:
     markets: MarketScopeConfig
     paper_ledger_suffix: str
     paper_dedup_interval_ms: int
+    live_tape_window_ms: int
     live_max_notional_per_shock_usd: float
     live_max_open_shocks: int
     live_max_daily_notional_usd: float
@@ -154,6 +155,7 @@ def load_match_shock_config(path: Path | None = None) -> MatchShockConfig:
         ),
         paper_ledger_suffix=str(paper.get("ledger_suffix", "match_shock_paper.jsonl")),
         paper_dedup_interval_ms=int(paper.get("dedup_interval_ms", 300_000)),
+        live_tape_window_ms=int(live.get("tape_window_ms", 900_000)),
         live_max_notional_per_shock_usd=float(live.get("max_notional_per_shock_usd", 50)),
         live_max_open_shocks=int(live.get("max_open_shocks", 2)),
         live_max_daily_notional_usd=float(live.get("max_daily_notional_usd", 500)),

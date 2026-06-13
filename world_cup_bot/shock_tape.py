@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from world_cup_bot.match_shock import (
     BookLevel,
@@ -20,6 +24,75 @@ from world_cup_bot.match_shock_config import MatchShockConfig
 
 TICK_PRICE_SANE_MIN = 0.02
 TICK_PRICE_SANE_MAX = 0.98
+
+
+_KICKOFF_SLUG_DATE_RE = re.compile(r"-(\d{4}-\d{2}-\d{2})-")
+
+
+def shock_tape_tz() -> ZoneInfo:
+    """WC match slugs use US calendar dates — default Eastern, not UTC."""
+    name = os.environ.get("WC_MATCH_SHOCK_TAPE_TZ", "America/New_York").strip()
+    return ZoneInfo(name)
+
+
+def shock_tape_calendar_day(now: datetime | None = None) -> str:
+    tz = shock_tape_tz()
+    dt = now if now is not None else datetime.now(tz)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=tz)
+    else:
+        dt = dt.astimezone(tz)
+    return dt.strftime("%Y-%m-%d")
+
+
+def tape_path_for_day(tape_dir: Path, day: str) -> Path:
+    return tape_dir / f"{day}.jsonl"
+
+
+def kickoff_slug_dates(kickoff_json: Path) -> list[str]:
+    """Extract YYYY-MM-DD segments from fifwc kickoff slugs (match calendar day)."""
+    try:
+        payload = json.loads(kickoff_json.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    dates: list[str] = []
+    seen: set[str] = set()
+    for row in payload.get("markets") or []:
+        slug = str(row.get("slug") or "")
+        m = _KICKOFF_SLUG_DATE_RE.search(slug)
+        if not m:
+            continue
+        d = m.group(1)
+        if d not in seen:
+            seen.add(d)
+            dates.append(d)
+    return sorted(dates)
+
+
+def resolve_shock_tape_path(
+    tape_dir: Path,
+    *,
+    kickoff_json: Path | None = None,
+) -> Path | None:
+    """Resolve daily tape: TZ calendar day, kickoff slug dates, then prior TZ day."""
+    day = shock_tape_calendar_day()
+    candidate = tape_path_for_day(tape_dir, day)
+    if candidate.is_file():
+        return candidate
+
+    if kickoff_json is not None and kickoff_json.is_file():
+        for slug_day in reversed(kickoff_slug_dates(kickoff_json)):
+            path = tape_path_for_day(tape_dir, slug_day)
+            if path.is_file():
+                return path
+
+    tz = shock_tape_tz()
+    today = datetime.now(tz).date()
+    prior = today.fromordinal(today.toordinal() - 1)
+    prior_path = tape_path_for_day(tape_dir, prior.isoformat())
+    if prior_path.is_file():
+        return prior_path
+    return None
 
 
 @dataclass
@@ -99,6 +172,47 @@ def load_ticks_for_slugs(
                 continue
             slug = str(raw.get("slug") or "")
             if slug not in wanted:
+                continue
+            tick = parse_tick_line(raw)
+            if tick is not None:
+                ticks.append(tick)
+    return ticks
+
+
+def slugs_in_tape(path: Path) -> list[str]:
+    """Unique slugs in a tape file without loading ticks into RAM."""
+    seen: set[str] = set()
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                raw = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            slug = str(raw.get("slug") or "")
+            if slug:
+                seen.add(slug)
+    return sorted(seen)
+
+
+def load_ticks_for_slug(path: Path, slug: str) -> list[ParsedTick]:
+    """Stream JSONL tape for a single slug (one slug in RAM — egress-safe)."""
+    ticks: list[ParsedTick] = []
+    want = str(slug)
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                raw = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(raw, dict):
+                continue
+            if str(raw.get("slug") or "") != want:
                 continue
             tick = parse_tick_line(raw)
             if tick is not None:

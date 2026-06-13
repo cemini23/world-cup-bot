@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -50,9 +49,10 @@ class RecordSession:
 
 
 def default_tape_path(base_dir: Path | None = None) -> Path:
-    day = datetime.now(UTC).strftime("%Y-%m-%d")
+    from world_cup_bot.shock_tape import shock_tape_calendar_day, tape_path_for_day
+
     root = base_dir or Path("data/local/shock_tapes")
-    return root / f"{day}.jsonl"
+    return tape_path_for_day(root, shock_tape_calendar_day())
 
 
 async def run_record_session(

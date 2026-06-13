@@ -65,21 +65,32 @@ def _load_maker_address(poly_address: str | None) -> str | None:
 
 
 def _finalize_geoblock_report(report: PreflightReport, settings: Settings) -> None:
-    """Downgrade geoblock FAIL→PASS in shadow only when CLOB auth works."""
+    """Downgrade geoblock FAIL→PASS when CLOB auth works and POST probe is not 403."""
     geo = next((c for c in report.checks if c.name == "geoblock"), None)
     auth = next((c for c in report.checks if c.name == "clob_auth"), None)
     if not geo or geo.status not in {CheckStatus.FAIL, CheckStatus.WARN}:
         return
     if not auth or auth.status != CheckStatus.PASS:
         return
-    if not settings.dry_run:
-        # Live POST: never downgrade geoblock — L2 GET ≠ order POST egress.
+    if settings.dry_run:
+        idx = report.checks.index(geo)
+        report.checks[idx] = PreflightCheck(
+            "geoblock",
+            CheckStatus.PASS,
+            f"{geo.detail} — authenticated CLOB OK; egress OK (Helsinki VPS, API may tag DE)",
+        )
+        report.recompute_ok()
+        return
+    from world_cup_bot.clob_rest import probe_order_post_status
+
+    post_status = probe_order_post_status(settings.clob_url)
+    if post_status is None or post_status == 403:
         return
     idx = report.checks.index(geo)
     report.checks[idx] = PreflightCheck(
         "geoblock",
         CheckStatus.PASS,
-        f"{geo.detail} — authenticated CLOB OK; egress-safe (e.g. Helsinki VPS, API may tag DE)",
+        f"{geo.detail} — POST /order {post_status}; egress OK (API geo unreliable)",
     )
     report.recompute_ok()
 

@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import urllib.error
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 from world_cup_bot import scanner
 from world_cup_bot.match_shock import slug_in_scope
 from world_cup_bot.match_shock_config import MatchShockConfig, load_match_shock_config
+from world_cup_bot.shock_tape import shock_tape_tz
 from world_cup_bot.trading_mode import MarketKind, infer_market_kind_from_slug
 
 DEFAULT_SEARCH_QUERIES = (
@@ -177,7 +178,7 @@ def discover_today_kickoff_markets(
 ) -> list[MatchMarket]:
     """Auto-discover all fifwc kickoff events for a calendar day (no manual prefix)."""
     shock_cfg = cfg or load_match_shock_config()
-    day = on_date or datetime.now(UTC).date()
+    day = on_date or datetime.now(shock_tape_tz()).date()
     suffix = day.isoformat()
     queries = (f"fifwc {suffix}", suffix)
     seen_events: set[str] = set()

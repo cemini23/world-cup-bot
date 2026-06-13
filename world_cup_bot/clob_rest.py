@@ -40,6 +40,29 @@ def fetch_geoblock() -> GeoblockStatus:
         return GeoblockStatus.from_payload(json.loads(resp.read().decode()))
 
 
+def probe_order_post_status(clob_url: str = "https://clob.polymarket.com") -> int | None:
+    """HTTP status for empty POST /order; 403 ⇒ geoblock, 401/400 ⇒ wire reached CLOB."""
+    import urllib.error
+    import urllib.request
+
+    from world_cup_bot.http_client import USER_AGENT
+
+    url = f"{clob_url.rstrip('/')}/order"
+    req = urllib.request.Request(
+        url,
+        data=b"{}",
+        method="POST",
+        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+    except Exception:
+        return None
+
+
 def fetch_clob_time(clob_url: str) -> int:
     with urlopen_get(f"{clob_url.rstrip('/')}/time", timeout=15) as resp:
         payload = json.loads(resp.read().decode())

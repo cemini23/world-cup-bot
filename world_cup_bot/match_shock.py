@@ -293,6 +293,23 @@ def simulate_recovery_pnl(
     return shares * exit_price - fill.size_usd
 
 
+def horizon_exit_price(
+    ticks: list,
+    shock_ts_ms: int,
+    *,
+    recovery_target: float,
+    pre_price: float,
+    horizon_ms: int,
+) -> float:
+    """Mark-to-market exit within horizon — can be below entry (honest paper)."""
+    end = shock_ts_ms + max(horizon_ms, 1)
+    window = [t.price for t in ticks if shock_ts_ms <= t.ts_ms <= end]
+    if not window:
+        return min(recovery_target, pre_price)
+    peak = max(window)
+    return min(peak, recovery_target, pre_price)
+
+
 def ladder_plan_to_dict(plan: LadderPlan) -> dict[str, Any]:
     return {
         "bucket_key": plan.bucket_key,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -106,7 +106,7 @@ def test_gates_pass_when_live(monkeypatch, settings):
         import dataclasses
 
         mock_cfg.return_value = dataclasses.replace(live_cfg, enabled=True)
-        with patch("world_cup_bot.match_shock_post.run_preflight") as mock_pf:
-            mock_pf.return_value = MagicMock(ok=True, checks=[])
-            gate = check_live_post_gates(live_settings, mock_cfg.return_value, test_auth=True)
+        monkeypatch.setenv("POLYMARKET_PRIVATE_KEY", "0x" + "11" * 32)
+        gate = check_live_post_gates(live_settings, mock_cfg.return_value, test_auth=False)
     assert gate.allowed
+    assert "py-clob-client-v2" in gate.reason

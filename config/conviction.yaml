@@ -61,6 +61,9 @@ limits:
 per_team:
   Turkey:
     max_notional_usd: 2500
+  Paraguay:
+    mode: skip
+    # Staleness 2026-06-13: mid 0.635→0.385 (−25pp) — skip until conviction DR re-run
   Morocco:
     max_notional_usd: 2500
     max_mid: 0.88

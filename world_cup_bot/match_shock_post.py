@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from world_cup_bot.clob_live import LiveClobNotConfiguredError, LiveClobPostError, build_clob_client
+from world_cup_bot.clob_live import (
+    LiveClobNotConfiguredError,
+    LiveClobPostError,
+    _check_post_response,
+    build_clob_client,
+)
 from world_cup_bot.config import (
     Settings,
     match_shock_enabled,
@@ -16,7 +22,6 @@ from world_cup_bot.config import (
 from world_cup_bot.match_shock import LadderPlan
 from world_cup_bot.match_shock_config import MatchShockConfig, load_match_shock_config
 from world_cup_bot.match_shock_ledger import record_live_post
-from world_cup_bot.preflight import run_preflight
 
 
 @dataclass(frozen=True)
@@ -41,6 +46,7 @@ def check_live_post_gates(
     *,
     test_auth: bool = False,
 ) -> LivePostGateResult:
+    """Gate live ladder POST — same v2 CLOB stack as LP quoter; no geoblock API gate."""
     shock_cfg = cfg or load_match_shock_config()
     if not shock_cfg.enabled:
         return LivePostGateResult(False, "shock_match.yaml enabled=false")
@@ -52,11 +58,33 @@ def check_live_post_gates(
         return LivePostGateResult(False, "DRY_RUN=true")
     if not match_shock_live_ack():
         return LivePostGateResult(False, "WC_MATCH_SHOCK_LIVE_ACK not set")
-    preflight = run_preflight(settings, test_auth=test_auth)
-    if not preflight.ok:
-        failed = [c.detail for c in preflight.checks if c.status.value == "fail"]
-        return LivePostGateResult(False, f"preflight failed: {'; '.join(failed) or 'unknown'}")
-    return LivePostGateResult(True, "gates pass")
+
+    pk = os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip()
+    if not pk:
+        return LivePostGateResult(False, "POLYMARKET_PRIVATE_KEY missing")
+
+    try:
+        import py_clob_client_v2  # noqa: F401
+    except ImportError:
+        return LivePostGateResult(False, "pip install -e '.[live]' (py-clob-client-v2)")
+
+    if test_auth:
+        from world_cup_bot.clob_auth import MissingClobAuthError, load_clob_auth
+        from world_cup_bot.clob_rest import fetch_open_orders
+
+        try:
+            auth = load_clob_auth()
+        except MissingClobAuthError as exc:
+            return LivePostGateResult(False, str(exc))
+
+        poly = os.environ.get("POLYMARKET_POLY_ADDRESS", "").strip()
+        if poly:
+            try:
+                fetch_open_orders(settings.clob_url, auth, poly, max_pages=1)
+            except Exception as exc:
+                return LivePostGateResult(False, f"L2 auth / orders failed: {exc}")
+
+    return LivePostGateResult(True, "gates pass (py-clob-client-v2)")
 
 
 def ladder_to_intents(
@@ -111,9 +139,7 @@ def post_shock_ladder_order(client: Any, intent: ShockLadderIntent) -> dict[str,
         _raise_post_error(exc)
     if not isinstance(resp, dict):
         return {"response": resp}
-    if resp.get("error") or resp.get("success") is False:
-        raise LiveClobPostError(str(resp.get("error") or resp))
-    return resp
+    return _check_post_response(resp)
 
 
 def submit_ladder(

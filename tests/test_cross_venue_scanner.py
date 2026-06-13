@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pytest
 
 from world_cup_bot.cross_venue_config import (
@@ -40,7 +42,7 @@ def _sample_config() -> CrossVenueConfig:
                 kalshi_market_ticker="KXWCGROUPWIN-26D-USA",
                 rules_hash="group_winner_fifa_tiebreak_v1",
                 enabled=True,
-                last_verified="2026-05-29",
+                last_verified=(date.today() - timedelta(days=1)).isoformat(),
                 notes=None,
                 polymarket_slug="usa-win-group-d",
                 polymarket_condition_id="0xabc",
