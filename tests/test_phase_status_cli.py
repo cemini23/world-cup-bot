@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -13,26 +14,31 @@ def _run_cli(args: list[str], env: dict[str, str]) -> subprocess.CompletedProces
 
 
 def test_phase_status_overlap_prefers_latest_configured_state(tmp_path: Path):
-    # Current date in this environment is 2026-05-31; make overlapping windows around it.
+    # Overlapping windows around today so the test does not depend on wall-clock date.
+    today = date.today()
+    alpha_start = (today - timedelta(days=40)).isoformat()
+    alpha_end = (today + timedelta(days=20)).isoformat()
+    zeta_start = (today - timedelta(days=25)).isoformat()
+    zeta_end = (today + timedelta(days=5)).isoformat()
     cfg = tmp_path / "market_phases_overlap.yaml"
     cfg.write_text(
-        """
+        f"""
 version: 2
 active_phase: group_advance
-calendar: {}
+calendar: {{}}
 phases:
   group_advance:
     description: "base"
     lp_eligible: true
 tournament_states:
   alpha:
-    calendar_start: "2026-05-01"
-    calendar_end: "2026-06-30"
+    calendar_start: "{alpha_start}"
+    calendar_end: "{alpha_end}"
     scanner_phase_ids: [group_advance]
     lp_active_phases: [group_advance]
   zeta:
-    calendar_start: "2026-05-15"
-    calendar_end: "2026-06-15"
+    calendar_start: "{zeta_start}"
+    calendar_end: "{zeta_end}"
     scanner_phase_ids: [group_advance]
     lp_active_phases: [group_advance]
 """.strip()

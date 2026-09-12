@@ -26,5 +26,6 @@ def test_must_not_cancel_outside_window():
 
 def test_usa_alias():
     schedule = calendar_guard.build_team_schedule()
-    assert calendar_guard.next_kickoff_utc("United States", schedule=schedule) is not None
-    assert calendar_guard.next_kickoff_utc("USA", schedule=schedule) is not None
+    now = datetime(2026, 6, 1, tzinfo=UTC)
+    assert calendar_guard.next_kickoff_utc("United States", schedule=schedule, now=now) is not None
+    assert calendar_guard.next_kickoff_utc("USA", schedule=schedule, now=now) is not None

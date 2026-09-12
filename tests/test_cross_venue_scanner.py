@@ -108,7 +108,7 @@ def test_alert_suppressed_when_fee_adjusted_below_min():
         kalshi_market_ticker="KXWCGROUPQUAL-26D-USA",
         rules_hash="group_qualify_v1",
         enabled=True,
-        last_verified="2026-06-05",
+        last_verified=(date.today() - timedelta(days=1)).isoformat(),
         notes=None,
     )
     pm = PolymarketSnapshot(
@@ -155,7 +155,7 @@ def test_group_qualify_config_pair_not_blocked_by_discovery_blocklist():
         kalshi_market_ticker="KXWCGROUPQUAL-26L-ENG",
         rules_hash="group_qualify_v1",
         enabled=True,
-        last_verified="2026-06-05",
+        last_verified=(date.today() - timedelta(days=1)).isoformat(),
         notes=None,
     )
     row = scan_config_pair(pair, _sample_config(), pm=None, kalshi=None)
