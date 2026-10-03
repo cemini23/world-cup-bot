@@ -190,7 +190,7 @@ See [SETUP.md](SETUP.md) for environment variables and geoblock notes. **Contrib
 - Methodology newsletter: [Outlier Weekly hub](https://outlierweekly.com/prediction-market-lp-bot/) · [Issue 3](https://outlierweekly.substack.com/p/i-open-sourced-the-world-cup-lp-bot) (launch) · [Issue 5](https://outlierweekly.substack.com) (tournament kickoff) · [letters](https://outlierweekly.substack.com)
 - Operator runbook: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 - **Retail / bankroll lens:** [Gambling-wiki](https://github.com/cemini23/Gambling-wiki) — WC contract types, books vs PM, CLV ([prediction-markets crossover](https://github.com/cemini23/Gambling-wiki/blob/main/wiki/concepts/prediction-markets-crossover.md)). **This repo** = bot/LP automation only.
-- YouTube: [@Cemini23](https://www.youtube.com/@Cemini23)
+- X: [@Cemini23](https://x.com/Cemini23)
 - Agent meta-wiki: [cemini-claude-code-CCC](https://github.com/cemini23/cemini-claude-code-CCC)
 - Agent toolkit: [vet](https://github.com/cemini23/vet) · [wikilint](https://github.com/cemini23/wikilint) · [phase0](https://github.com/cemini23/phase0) · [agent-toolkit-demo](https://github.com/cemini23/agent-toolkit-demo)
 - More Cemini repos: [all public →](https://github.com/orgs/cemini23/repositories?q=visibility%3Apublic)
